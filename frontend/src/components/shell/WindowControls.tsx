@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { desktopRuntime, isDesktop } from '../../desktop/runtime'
+import { desktopRuntime, isDesktop, isMacDesktop } from '../../desktop/runtime'
 
 export function WindowDragRegion({ title }: { title?: string }) {
   if (!isDesktop) return null
@@ -11,12 +11,12 @@ export function WindowDragRegion({ title }: { title?: string }) {
   )
 }
 
-/** Provides caption buttons for frameless desktop windows. */
+/** Provides caption buttons where the native window controls are hidden. */
 export function WindowControls() {
   const [maximized, setMaximized] = useState(false)
 
   useEffect(() => {
-    if (!isDesktop || !desktopRuntime) return
+    if (!isDesktop || isMacDesktop || !desktopRuntime) return
     let disposed = false
 
     async function refreshMaximized() {
@@ -37,7 +37,7 @@ export function WindowControls() {
     }
   }, [])
 
-  if (!isDesktop || !desktopRuntime) return null
+  if (!isDesktop || isMacDesktop || !desktopRuntime) return null
 
   async function toggleMaximized() {
     if (!desktopRuntime) return

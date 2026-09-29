@@ -13,6 +13,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	goruntime "runtime"
 	"strings"
 	"sync"
 	"time"
@@ -30,8 +31,9 @@ import (
 var assets embed.FS
 
 type DesktopService struct {
-	app     *application.App
-	runtime *bootstrap.Runtime
+	app        *application.App
+	runtime    *bootstrap.Runtime
+	recentMenu *application.Menu
 }
 
 // OpenDetached opens a native window for the existing detached-tab route.
@@ -46,7 +48,8 @@ func (s *DesktopService) OpenDetached(transferID string) error {
 		Width:     1100,
 		Height:    750,
 		URL:       "/detached/" + transferID,
-		Frameless: true,
+		Frameless: goruntime.GOOS != "darwin",
+		Mac:       application.MacWindow{TitleBar: application.MacTitleBarHidden},
 	})
 	window.OnWindowEvent(events.Common.WindowClosing, func(*application.WindowEvent) {
 		time.AfterFunc(500*time.Millisecond, func() {
@@ -267,8 +270,12 @@ func runDesktop(wailsLogger *slog.Logger) error {
 		MinWidth:  800,
 		MinHeight: 600,
 		URL:       "/",
-		Frameless: true,
+		Frameless: goruntime.GOOS != "darwin",
+		Mac:       application.MacWindow{TitleBar: application.MacTitleBarHidden},
 	})
+	if goruntime.GOOS == "darwin" {
+		installMacMenu(app, mainWindow, service)
+	}
 	mainWindow.Show()
 	log.Print("opening desktop window")
 	err = app.Run()

@@ -103,6 +103,23 @@ body.windows-desktop .window-control-button svg {
   color: #fff;
 }
 
+body.mac-desktop .app-header {
+  padding-left: 86px;
+  padding-right: 10px;
+}
+
+body.mac-desktop .detached-app-header {
+  padding-right: 86px;
+}
+
+body.mac-desktop .detached-app-header .window-drag-region {
+  justify-content: center;
+}
+
+body.mac-desktop .detached-app-header .window-drag-title {
+  padding-left: 0;
+}
+
 body.desktop-app .locked-session-check {
   pointer-events: none;
 }

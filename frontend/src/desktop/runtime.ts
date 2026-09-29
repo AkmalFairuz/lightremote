@@ -12,3 +12,6 @@ if (isDesktop) {
 if (isWindowsDesktop) {
   document.body.classList.add('windows-desktop')
 }
+if (isMacDesktop) {
+  document.body.classList.add('mac-desktop')
+}
