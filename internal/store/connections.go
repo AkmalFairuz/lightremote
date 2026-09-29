@@ -82,11 +82,11 @@ func (r *ConnectionRepository) Create(ctx context.Context, c model.Connection) e
 		INSERT INTO connections
 			(id, user_id, folder_id, name, kind, host, port, username, auth_type,
 			 ftp_tls, vnc_encoding, vnc_read_only, vnc_file_transfer, secret, proxy_type, proxy_host, proxy_port, proxy_username,
-			 proxy_secret, host_key, created_at, updated_at)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+			 proxy_secret, host_key, ssh_key_id, created_at, updated_at)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 		c.ID, c.UserID, c.FolderID, c.Name, c.Kind, c.Host, c.Port,
 		c.Username, c.AuthType, c.FTPTLS, c.VNCEncoding, c.VNCReadOnly, c.VNCFileTransfer, c.Secret, c.ProxyType,
-		c.ProxyHost, c.ProxyPort, c.ProxyUser, c.ProxySecret, c.HostKey,
+		c.ProxyHost, c.ProxyPort, c.ProxyUser, c.ProxySecret, c.HostKey, c.SSHKeyID,
 		c.CreatedAt, c.UpdatedAt)
 	return err
 }
@@ -98,11 +98,11 @@ func (r *ConnectionRepository) Update(ctx context.Context, c model.Connection) e
 		SET folder_id = ?, name = ?, kind = ?, host = ?, port = ?, username = ?,
 			auth_type = ?, ftp_tls = ?, vnc_encoding = ?, vnc_read_only = ?, vnc_file_transfer = ?,
 			secret = ?, proxy_type = ?, proxy_host = ?,
-			proxy_port = ?, proxy_username = ?, proxy_secret = ?, host_key = ?, updated_at = ?
+			proxy_port = ?, proxy_username = ?, proxy_secret = ?, host_key = ?, ssh_key_id = ?, updated_at = ?
 		WHERE id = ? AND user_id = ?`,
 		c.FolderID, c.Name, c.Kind, c.Host, c.Port, c.Username, c.AuthType,
 		c.FTPTLS, c.VNCEncoding, c.VNCReadOnly, c.VNCFileTransfer, c.Secret, c.ProxyType, c.ProxyHost, c.ProxyPort,
-		c.ProxyUser, c.ProxySecret, c.HostKey, c.UpdatedAt, c.ID, c.UserID)
+		c.ProxyUser, c.ProxySecret, c.HostKey, c.SSHKeyID, c.UpdatedAt, c.ID, c.UserID)
 	return err
 }
 

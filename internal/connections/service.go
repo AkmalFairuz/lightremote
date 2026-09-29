@@ -14,6 +14,7 @@ import (
 	"github.com/akmalfairuz/lightremote/internal/folders"
 	"github.com/akmalfairuz/lightremote/internal/model"
 	"github.com/akmalfairuz/lightremote/internal/security"
+	"github.com/akmalfairuz/lightremote/internal/sshkeys"
 	"github.com/akmalfairuz/lightremote/internal/store"
 	"github.com/google/uuid"
 )
@@ -29,6 +30,7 @@ type Service struct {
 	repository *store.ConnectionRepository
 	folders    *folders.Service
 	vault      *security.Vault
+	keys       *sshkeys.Service
 	cache      *metadataCache
 	directMu   sync.Mutex
 	direct     map[string]directEntry
@@ -43,11 +45,12 @@ type directEntry struct {
 }
 
 // NewService creates saved and temporary connection operations with encrypted credentials.
-func NewService(repository *store.ConnectionRepository, folders *folders.Service, vault *security.Vault) *Service {
+func NewService(repository *store.ConnectionRepository, folders *folders.Service, vault *security.Vault, keys *sshkeys.Service) *Service {
 	return &Service{
 		repository: repository,
 		folders:    folders,
 		vault:      vault,
+		keys:       keys,
 		cache:      newMetadataCache(),
 		direct:     make(map[string]directEntry),
 	}
@@ -134,13 +137,16 @@ func (s *Service) Get(ctx context.Context, ownerID, id string) (model.Connection
 }
 
 // CreateDirect keeps encrypted credentials in memory without adding a saved connection.
-func (s *Service) CreateDirect(ownerID string, input model.ConnectionInput) (model.Connection, error) {
+func (s *Service) CreateDirect(ctx context.Context, ownerID string, input model.ConnectionInput) (model.Connection, error) {
 	input.FolderID = nil
 	input.Name = input.Host
 	if err := validate(input); err != nil {
 		return model.Connection{}, err
 	}
 	if err := validateSecret(input); err != nil {
+		return model.Connection{}, err
+	}
+	if err := s.validateKey(ctx, ownerID, input); err != nil {
 		return model.Connection{}, err
 	}
 	now := time.Now().UTC()
@@ -160,6 +166,16 @@ func (s *Service) CreateDirect(ownerID string, input model.ConnectionInput) (mod
 		VNCFileTransfer: vncFileTransfer(input, true),
 		CreatedAt:       now,
 		UpdatedAt:       now,
+	}
+	if input.SSHKeyID != nil {
+		secret, err := s.keys.Credentials(ctx, ownerID, *input.SSHKeyID)
+		if err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				return model.Connection{}, ErrInvalid
+			}
+			return model.Connection{}, err
+		}
+		input.Secret = &secret
 	}
 	if input.Secret != nil {
 		secret, err := s.vault.SealCredentials(connection.ID, *input.Secret)
@@ -239,6 +255,9 @@ func (s *Service) Create(ctx context.Context, ownerID string, input model.Connec
 	if err := validateSecret(input); err != nil {
 		return model.Connection{}, err
 	}
+	if err := s.validateKey(ctx, ownerID, input); err != nil {
+		return model.Connection{}, err
+	}
 	if err := s.folders.ValidateOwner(ctx, ownerID, input.FolderID); err != nil {
 		return model.Connection{}, err
 	}
@@ -253,6 +272,7 @@ func (s *Service) Create(ctx context.Context, ownerID string, input model.Connec
 		Port:            input.Port,
 		Username:        input.Username,
 		AuthType:        input.AuthType,
+		SSHKeyID:        input.SSHKeyID,
 		FTPTLS:          input.FTPTLS != nil && *input.FTPTLS,
 		VNCEncoding:     vncEncoding(input),
 		VNCReadOnly:     input.VNCReadOnly,
@@ -339,13 +359,19 @@ func (s *Service) Update(ctx context.Context, ownerID, id string, input model.Co
 	if err := validate(input); err != nil {
 		return model.Connection{}, err
 	}
-	if input.Secret == nil && (connection.AuthType != input.AuthType || connection.Kind != input.Kind) {
+	if input.Secret == nil && input.SSHKeyID == nil && (connection.AuthType != input.AuthType || connection.Kind != input.Kind) {
+		return model.Connection{}, ErrInvalid
+	}
+	if input.Secret == nil && input.SSHKeyID == nil && connection.SSHKeyID != nil {
 		return model.Connection{}, ErrInvalid
 	}
 	if input.Secret != nil {
 		if err := validateSecret(input); err != nil {
 			return model.Connection{}, err
 		}
+	}
+	if err := s.validateKey(ctx, ownerID, input); err != nil {
+		return model.Connection{}, err
 	}
 	if err := s.folders.ValidateOwner(ctx, ownerID, input.FolderID); err != nil {
 		return model.Connection{}, err
@@ -360,6 +386,7 @@ func (s *Service) Update(ctx context.Context, ownerID, id string, input model.Co
 	connection.Port = input.Port
 	connection.Username = input.Username
 	connection.AuthType = input.AuthType
+	connection.SSHKeyID = input.SSHKeyID
 	connection.FTPTLS = input.FTPTLS != nil && *input.FTPTLS
 	connection.VNCEncoding = vncEncoding(input)
 	connection.VNCReadOnly = input.VNCReadOnly
@@ -370,6 +397,9 @@ func (s *Service) Update(ctx context.Context, ownerID, id string, input model.Co
 		if err != nil {
 			return model.Connection{}, err
 		}
+	}
+	if input.SSHKeyID != nil {
+		connection.Secret = nil
 	}
 	if err := s.applyProxy(&connection, input.Proxy, true); err != nil {
 		return model.Connection{}, err
@@ -439,14 +469,34 @@ func (s *Service) ApproveHostKey(ctx context.Context, ownerID, id, fingerprint s
 	return nil
 }
 
-// Credentials opens the encrypted remote secret for an authorized connection.
-func (s *Service) Credentials(connection model.Connection) (model.RemoteSecret, error) {
+// Credentials resolves an owned connection's remote secret, including a shared SSH key.
+func (s *Service) Credentials(ctx context.Context, connection model.Connection) (model.RemoteSecret, error) {
 	secret, err := s.vault.OpenCredentials(connection)
 	if err != nil {
 		return secret, err
 	}
+	if connection.SSHKeyID != nil {
+		secret, err = s.keys.Credentials(ctx, connection.UserID, *connection.SSHKeyID)
+		if err != nil {
+			return secret, err
+		}
+	}
 	secret.ProxyPassword, err = s.vault.OpenProxyPassword(connection)
 	return secret, err
+}
+
+func (s *Service) validateKey(ctx context.Context, ownerID string, input model.ConnectionInput) error {
+	if input.SSHKeyID == nil {
+		return nil
+	}
+	if input.AuthType != "private_key" || (input.Kind != "ssh" && input.Kind != "sftp") || input.Secret != nil {
+		return ErrInvalid
+	}
+	_, err := s.keys.Get(ctx, ownerID, *input.SSHKeyID)
+	if errors.Is(err, sql.ErrNoRows) {
+		return ErrInvalid
+	}
+	return err
 }
 
 // applyProxy validates and encrypts the optional proxy for one connection.
@@ -590,6 +640,9 @@ func validHost(host string) bool {
 
 // validateSecret ensures the selected remote authentication has material to use.
 func validateSecret(input model.ConnectionInput) error {
+	if input.SSHKeyID != nil {
+		return nil
+	}
 	if input.Kind == "vnc" && input.AuthType == "none" {
 		return nil
 	}

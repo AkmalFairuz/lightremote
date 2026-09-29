@@ -13,6 +13,7 @@ type Routes struct {
 	Users       *UserHandler
 	Folders     *FolderHandler
 	Connections *ConnectionHandler
+	SSHKeys     *SSHKeyHandler
 	Files       *FileHandler
 	Work        *WorkHandler
 	Middleware  *AuthMiddleware
@@ -53,6 +54,13 @@ func Router(routes Routes) http.Handler {
 			authenticated.Post("/folders", routes.Folders.Create)
 			authenticated.Put("/folders/{folderID}", routes.Folders.Update)
 			authenticated.Delete("/folders/{folderID}", routes.Folders.Delete)
+			if routes.SSHKeys != nil {
+				authenticated.Get("/ssh-keys", routes.SSHKeys.List)
+				authenticated.Post("/ssh-keys", routes.SSHKeys.Create)
+				authenticated.Post("/ssh-keys/generate", routes.SSHKeys.Generate)
+				authenticated.Patch("/ssh-keys/{keyID}", routes.SSHKeys.Rename)
+				authenticated.Delete("/ssh-keys/{keyID}", routes.SSHKeys.Delete)
+			}
 
 			authenticated.Get("/connections", routes.Connections.List)
 			authenticated.Get("/connections/recent", routes.Connections.Recent)

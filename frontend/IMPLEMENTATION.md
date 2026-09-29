@@ -130,11 +130,18 @@ edit, leave a remote secret blank to retain it when the protocol and auth type
 are unchanged. A proxy password can only be retained when its type, host,
 port, and username stay unchanged. The connection menu also renames a row
 inline without closing its open SSH or VNC tabs.
-For SSH and SFTP private key authentication, drop or choose a UTF-8 PEM or
-OpenSSH key file (up to 512 KiB). The file contents are never shown in a text
-field; the filename confirms the selection. The key is sent only when the
-connection form is saved. Password and passphrase fields share a visibility
-toggle.
+For SSH and SFTP private key authentication, select a saved SSH key or add one
+from the connection form. File → SSH keys manages the account's reusable keys.
+Adding a key accepts a UTF-8 PEM or OpenSSH file (up to 512 KiB) and an optional
+passphrase; it remains saved even if the connection form is cancelled. Existing
+connection keys are migrated into reusable entries. Key material is encrypted
+in the database and is not returned by key listing or lookup. A key in use by
+a saved connection cannot be deleted. Password and passphrase fields share a
+visibility toggle.
+The SSH keys dialog can also generate Ed25519, ECDSA P-256, or RSA 4096 key
+pairs in Go. Generation does not save the key. The user can download the private
+and public keys, then choose Store key to save the private key encrypted in the
+database. An optional passphrase protects the downloaded private key.
 
 SSH and SFTP hosts require a pinned fingerprint. The connection menu opens
 the host-key dialog: inspect the observed fingerprint, compare it with a

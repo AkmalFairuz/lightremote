@@ -95,7 +95,7 @@ func (h *ConnectionHandler) CreateDirect(w http.ResponseWriter, r *http.Request)
 	if !readJSON(w, r, &input) {
 		return
 	}
-	connection, err := h.service.CreateDirect(principal(r).User.ID, input)
+	connection, err := h.service.CreateDirect(r.Context(), principal(r).User.ID, input)
 	if errors.Is(err, connections.ErrInvalid) {
 		writeError(w, 400, "invalid_connection", err.Error())
 		return
@@ -223,7 +223,7 @@ func (h *ConnectionHandler) InspectHostKey(w http.ResponseWriter, r *http.Reques
 	if !ok {
 		return
 	}
-	secret, err := h.service.Credentials(connection)
+	secret, err := h.service.Credentials(r.Context(), connection)
 	if err != nil {
 		writeError(w, 500, "internal", "could not decrypt credentials")
 		return
@@ -248,7 +248,7 @@ func (h *ConnectionHandler) ApproveHostKey(w http.ResponseWriter, r *http.Reques
 	if !ok {
 		return
 	}
-	secret, err := h.service.Credentials(connection)
+	secret, err := h.service.Credentials(r.Context(), connection)
 	if err != nil {
 		writeError(w, 500, "internal", "could not decrypt credentials")
 		return

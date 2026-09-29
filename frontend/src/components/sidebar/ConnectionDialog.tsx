@@ -9,12 +9,14 @@ import {
   FormControlLabel,
   InputAdornment,
   MenuItem,
+  PasswordField,
   Switch,
   TextField,
 } from '../../ui'
 import {
   useCreateConnectionMutation,
   useCreateDirectConnectionMutation,
+  useSshKeysQuery,
   useUpdateConnectionMutation,
 } from '../../api/resources'
 import { useAppDispatch } from '../../state/hooks'
@@ -27,6 +29,7 @@ import {
   type ConnectionKind,
   type Folder,
   type ProxyInput,
+  type SSHKey,
   type VncEncoding,
 } from '../../types'
 import { Notice } from '../common/Notice'
@@ -34,7 +37,7 @@ import { Glyph } from '../common/Glyph'
 import { ConnectionTypeStep } from './ConnectionTypeStep'
 import { FolderPickerDialog } from './FolderPickerDialog'
 import { ProxyFields } from './ProxyFields'
-import { RemoteCredentialsFields } from './RemoteCredentialsFields'
+import { SSHKeyCreateDialog } from '../sshkeys/SSHKeyCreateDialog'
 
 interface ConnectionDialogProps {
   connection?: Connection
@@ -85,6 +88,7 @@ export function ConnectionDialog({
   const [createDirectConnection, { isLoading: creatingDirect }] =
     useCreateDirectConnectionMutation()
   const [updateConnection, { isLoading: updating }] = useUpdateConnectionMutation()
+  const { data: sshKeys = [] } = useSshKeysQuery()
   const [name, setName] = useState(connection?.name ?? '')
   const [kind, setKind] = useState<ConnectionKind>(connection?.kind ?? 'ssh')
   const [step, setStep] = useState<'type' | 'details'>(connection ? 'details' : 'type')
@@ -102,9 +106,11 @@ export function ConnectionDialog({
     initialVncAccessMode(connection),
   )
   const [password, setPassword] = useState('')
-  const [privateKey, setPrivateKey] = useState('')
-  const [privateKeyFileName, setPrivateKeyFileName] = useState<string | null>(null)
-  const [passphrase, setPassphrase] = useState('')
+  const [sshKeyId, setSSHKeyId] = useState(connection?.sshKeyId ?? '')
+  const [newSSHKey, setNewSSHKey] = useState<SSHKey | null>(null)
+  const [addSSHKeyOpen, setAddSSHKeyOpen] = useState(false)
+  const availableSSHKeys =
+    newSSHKey && !sshKeys.some((key) => key.id === newSSHKey.id) ? [...sshKeys, newSSHKey] : sshKeys
   const [proxyEnabled, setProxyEnabled] = useState(Boolean(connection?.proxy))
   const [proxy, setProxy] = useState<ProxyInput>({
     type: connection?.proxy?.type ?? 'socks5',
@@ -124,6 +130,7 @@ export function ConnectionDialog({
     setKind(next)
     setPort(String(defaultPorts[next]))
     setAuthType('password')
+    setSSHKeyId('')
     setFtpTls(false)
   }
 
@@ -148,12 +155,8 @@ export function ConnectionDialog({
       setError('Enter a port between 1 and 65535.')
       return
     }
-    if (
-      authType === 'private_key' &&
-      (!connection || connection.authType !== authType || connection.kind !== kind) &&
-      !privateKey
-    ) {
-      setError('Choose a private key file.')
+    if (authType === 'private_key' && !sshKeyId) {
+      setError('Choose or add an SSH key.')
       return
     }
     if (proxyEnabled && proxy.password && !proxy.username) {
@@ -169,6 +172,7 @@ export function ConnectionDialog({
       port: portNumber,
       username,
       authType,
+      sshKeyId: authType === 'private_key' ? sshKeyId : null,
       proxy: proxyEnabled ? { ...proxy } : null,
     }
 
@@ -179,9 +183,7 @@ export function ConnectionDialog({
       input.vncFileTransfer = vncAccessMode !== 'read_only'
     }
     if (input.proxy && !input.proxy.password) delete input.proxy.password
-    if (authType === 'private_key' && privateKey) {
-      input.secret = { privateKey, passphrase }
-    } else if (authType === 'password' && password) {
+    if (authType === 'password' && password) {
       input.secret = { password }
     }
 
@@ -356,17 +358,41 @@ export function ConnectionDialog({
                     label="Explicit FTPS (TLS)"
                   />
                 )}
-                <RemoteCredentialsFields
-                  authType={authType}
-                  editing={Boolean(connection)}
-                  password={password}
-                  privateKeyFileName={privateKeyFileName}
-                  passphrase={passphrase}
-                  onPassword={setPassword}
-                  onPrivateKey={setPrivateKey}
-                  onPrivateKeyFileName={setPrivateKeyFileName}
-                  onPassphrase={setPassphrase}
-                />
+                {authType === 'private_key' && (
+                  <div className="ssh-key-picker">
+                    <TextField
+                      select
+                      label="SSH key"
+                      value={sshKeyId}
+                      onChange={(event) => setSSHKeyId(event.target.value)}
+                      required
+                    >
+                      {availableSSHKeys.length === 0 && (
+                        <MenuItem value="" disabled>
+                          No SSH keys saved
+                        </MenuItem>
+                      )}
+                      {availableSSHKeys.map((key) => (
+                        <MenuItem key={key.id} value={key.id}>
+                          {key.name}
+                        </MenuItem>
+                      ))}
+                    </TextField>
+                    <Button type="button" variant="outlined" onClick={() => setAddSSHKeyOpen(true)}>
+                      Add new key
+                    </Button>
+                  </div>
+                )}
+                {authType === 'password' && (
+                  <PasswordField
+                    label="Remote password"
+                    value={password}
+                    onChange={(event) => setPassword(event.target.value)}
+                    required={!connection}
+                    autoComplete="new-password"
+                    helperText={connection ? 'Leave blank to keep the saved password.' : undefined}
+                  />
+                )}
                 <ProxyFields
                   enabled={proxyEnabled}
                   proxy={proxy}
@@ -409,6 +435,18 @@ export function ConnectionDialog({
           )}
         </form>
       </Dialog>
+      <DialogPresence>
+        {addSSHKeyOpen && (
+          <SSHKeyCreateDialog
+            onClose={() => setAddSSHKeyOpen(false)}
+            onCreated={(key) => {
+              setNewSSHKey(key)
+              setSSHKeyId(key.id)
+              setAddSSHKeyOpen(false)
+            }}
+          />
+        )}
+      </DialogPresence>
       <DialogPresence>
         {!direct && folderPickerOpen && (
           <FolderPickerDialog

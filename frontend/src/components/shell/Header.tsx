@@ -16,6 +16,7 @@ import { ViewMenu, type ViewSection } from './ViewMenu'
 import { FileMenu, type FileSection } from './FileMenu'
 import { HelpMenu } from './HelpMenu'
 import type { Connection } from '../../types'
+import { SSHKeyManagerDialog } from '../sshkeys/SSHKeyManagerDialog'
 
 interface HeaderProps {
   onToggleSidebar: () => void
@@ -44,6 +45,7 @@ export function Header({
   const [viewSection, setViewSection] = useState<ViewSection>('root')
   const [accountAnchor, setAccountAnchor] = useState<HTMLElement | null>(null)
   const [accountDialog, setAccountDialog] = useState<'password' | 'users' | null>(null)
+  const [sshKeysOpen, setSSHKeysOpen] = useState(false)
 
   useEffect(() => {
     function handleShortcut(event: KeyboardEvent) {
@@ -207,6 +209,10 @@ export function Header({
           setFileAnchor(null)
           onNewDirectConnection()
         }}
+        onManageSSHKeys={() => {
+          setFileAnchor(null)
+          setSSHKeysOpen(true)
+        }}
       />
       <ViewMenu
         anchorEl={viewAnchor}
@@ -215,6 +221,9 @@ export function Header({
         onClose={() => setViewAnchor(null)}
       />
       <HelpMenu anchorEl={helpAnchor} onClose={() => setHelpAnchor(null)} />
+      <DialogPresence>
+        {sshKeysOpen && <SSHKeyManagerDialog onClose={() => setSSHKeysOpen(false)} />}
+      </DialogPresence>
       {!localMode && (
         <>
           <AccountPopover

@@ -49,7 +49,7 @@ func TestDuplicateReencryptsConnectionSecrets(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	service := NewService(store.NewConnectionRepository(db), folderService, vault)
+	service := NewService(store.NewConnectionRepository(db), folderService, vault, nil)
 	proxyPassword := "proxy-password"
 	source, err := service.Create(ctx, ownerID, model.ConnectionInput{
 		FolderID: &folder.ID,

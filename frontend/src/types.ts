@@ -43,6 +43,7 @@ export interface ConnectionInput {
   port: number
   username: string
   authType: AuthType
+  sshKeyId?: string | null
   ftpTls?: boolean
   vncEncoding?: VncEncoding
   vncReadOnly?: boolean
@@ -54,12 +55,32 @@ export interface ConnectionInput {
 export interface Connection extends Omit<ConnectionInput, 'secret' | 'proxy'> {
   id: string
   direct: boolean
+  sshKeyId: string | null
   vncReadOnly: boolean
   vncFileTransfer: boolean
   proxy: Proxy | null
   hostKeyFingerprint: string | null
   createdAt: string
   updatedAt: string
+}
+
+export interface SSHKey {
+  id: string
+  name: string
+  createdAt: string
+}
+
+export interface SSHKeyInput {
+  name: string
+  privateKey: string
+  passphrase: string
+}
+
+export type SSHKeyAlgorithm = 'ed25519' | 'ecdsa_p256' | 'rsa4096'
+
+export interface GeneratedSSHKey {
+  privateKey: string
+  publicKey: string
 }
 
 export interface WorkSession {

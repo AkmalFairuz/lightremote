@@ -16,6 +16,7 @@ import (
 	"github.com/akmalfairuz/lightremote/internal/httpapi"
 	"github.com/akmalfairuz/lightremote/internal/model"
 	"github.com/akmalfairuz/lightremote/internal/security"
+	"github.com/akmalfairuz/lightremote/internal/sshkeys"
 	"github.com/akmalfairuz/lightremote/internal/store"
 	"github.com/akmalfairuz/lightremote/internal/store/migrations"
 	"github.com/akmalfairuz/lightremote/internal/work"
@@ -65,9 +66,6 @@ func run() error {
 	if err := migrations.Up(ctx, db); err != nil {
 		return err
 	}
-	if command == "up" {
-		return nil
-	}
 	vault, err := security.NewVault(cfg.EncryptionKey)
 	if err != nil {
 		return err
@@ -77,6 +75,13 @@ func run() error {
 	loginSessions := store.NewLoginSessionRepository(db)
 	folderRepository := store.NewFolderRepository(db)
 	connectionRepository := store.NewConnectionRepository(db)
+	keyService := sshkeys.NewService(db, vault)
+	if err := keyService.MigrateLegacy(ctx); err != nil {
+		return err
+	}
+	if command == "up" {
+		return nil
+	}
 
 	authService := security.NewAuthService(users, loginSessions, cfg.SessionTTL)
 	var localUser model.User
@@ -110,7 +115,7 @@ func run() error {
 		}()
 	}
 	folderService := folders.NewService(folderRepository)
-	connectionService := connections.NewService(connectionRepository, folderService, vault)
+	connectionService := connections.NewService(connectionRepository, folderService, vault, keyService)
 	workSessions := work.NewManager()
 	authMiddleware := httpapi.NewAuthMiddleware(authService, cfg, localUser, localCSRF)
 
@@ -119,6 +124,7 @@ func run() error {
 		Users:       httpapi.NewUserHandler(users, authService, workSessions),
 		Folders:     httpapi.NewFolderHandler(folderService),
 		Connections: httpapi.NewConnectionHandler(connectionService, workSessions, cfg.DialTimeout),
+		SSHKeys:     httpapi.NewSSHKeyHandler(keyService),
 		Files:       httpapi.NewFileHandler(connectionService, workSessions, cfg.DialTimeout, cfg.MaxUploadBytes),
 		Work:        httpapi.NewWorkHandler(connectionService, workSessions, authMiddleware, cfg.DialTimeout),
 		Middleware:  authMiddleware,

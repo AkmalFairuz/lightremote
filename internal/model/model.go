@@ -30,6 +30,7 @@ type Connection struct {
 	Port            int       `db:"port" json:"port"`
 	Username        string    `db:"username" json:"username"`
 	AuthType        string    `db:"auth_type" json:"authType"`
+	SSHKeyID        *string   `db:"ssh_key_id" json:"sshKeyId"`
 	FTPTLS          bool      `db:"ftp_tls" json:"ftpTls"`
 	VNCEncoding     string    `db:"vnc_encoding" json:"vncEncoding"`
 	VNCReadOnly     bool      `db:"vnc_read_only" json:"vncReadOnly"`
@@ -62,6 +63,7 @@ type ConnectionInput struct {
 	Port            int           `json:"port"`
 	Username        string        `json:"username"`
 	AuthType        string        `json:"authType"`
+	SSHKeyID        *string       `json:"sshKeyId"`
 	FTPTLS          *bool         `json:"ftpTls"`
 	VNCEncoding     string        `json:"vncEncoding"`
 	VNCReadOnly     bool          `json:"vncReadOnly"`

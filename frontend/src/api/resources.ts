@@ -1,8 +1,20 @@
 import { api } from './base'
-import type { Connection, ConnectionInput, Folder } from '../types'
+import type { Connection, ConnectionInput, Folder, SSHKey } from '../types'
 
 export const resourcesApi = api.injectEndpoints({
   endpoints: (build) => ({
+    sshKeys: build.query<SSHKey[], void>({
+      query: () => '/ssh-keys',
+      providesTags: ['SSHKeys'],
+    }),
+    renameSSHKey: build.mutation<SSHKey, { id: string; name: string }>({
+      query: ({ id, name }) => ({ url: `/ssh-keys/${id}`, method: 'PATCH', body: { name } }),
+      invalidatesTags: ['SSHKeys'],
+    }),
+    deleteSSHKey: build.mutation<void, string>({
+      query: (id) => ({ url: `/ssh-keys/${id}`, method: 'DELETE' }),
+      invalidatesTags: ['SSHKeys'],
+    }),
     folders: build.query<Folder[], void>({ query: () => '/folders', providesTags: ['Folders'] }),
     createFolder: build.mutation<Folder, { name: string; parentId: string | null }>({
       query: (body) => ({ url: '/folders', method: 'POST', body }),
@@ -88,6 +100,9 @@ export const resourcesApi = api.injectEndpoints({
 })
 
 export const {
+  useSshKeysQuery,
+  useRenameSSHKeyMutation,
+  useDeleteSSHKeyMutation,
   useFoldersQuery,
   useCreateFolderMutation,
   useUpdateFolderMutation,

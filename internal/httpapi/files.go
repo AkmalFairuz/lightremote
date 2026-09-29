@@ -220,7 +220,7 @@ func (h *FileHandler) openClient(w http.ResponseWriter, r *http.Request) (remote
 			return nil, false
 		}
 	}
-	secret, err := h.connections.Credentials(connection)
+	secret, err := h.connections.Credentials(r.Context(), connection)
 	if err != nil {
 		writeError(w, 500, "internal", "could not decrypt credentials")
 		return nil, false

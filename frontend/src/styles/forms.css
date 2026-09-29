@@ -81,6 +81,106 @@
   color: var(--lr-danger);
 }
 
+.ssh-key-picker {
+  display: flex;
+  align-items: stretch;
+  gap: 10px;
+}
+
+.ssh-key-picker .ui-field {
+  flex: 1;
+  min-width: 0;
+}
+
+.ssh-key-picker .ui-button {
+  align-self: stretch;
+  padding-inline: 18px;
+  font-size: 14px;
+}
+
+.ssh-key-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.MuiDialogTitle-root + .ssh-key-manager-content.ui-dialog-content {
+  max-height: min(60dvh, 480px);
+  gap: 4px;
+  overflow-y: auto;
+  padding-top: 8px;
+  padding-bottom: 8px;
+}
+
+.ssh-key-row {
+  display: flex;
+  min-height: 34px;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 4px 2px 8px;
+  border-radius: 4px;
+}
+
+.ssh-key-row:hover {
+  background: var(--lr-hover);
+}
+
+.ssh-key-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ssh-key-row .ui-icon-button {
+  color: var(--lr-muted);
+}
+
+.ssh-key-rename {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  align-items: center;
+  gap: 2px;
+  flex-wrap: wrap;
+}
+
+.ssh-key-rename input {
+  min-width: 0;
+  flex: 1;
+  padding: 4px 6px;
+  border: 1px solid var(--lr-border-strong);
+  border-radius: 4px;
+  background: var(--lr-surface);
+  color: var(--lr-text);
+  font: inherit;
+}
+
+.ssh-key-rename input:focus {
+  outline: 2px solid var(--lr-primary);
+  outline-offset: 1px;
+}
+
+.ssh-key-rename-error {
+  width: 100%;
+  color: var(--lr-danger);
+}
+
+.ssh-key-created-actions.MuiDialogActions-root {
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+@media (max-width: 560px) {
+  .ssh-key-picker {
+    flex-direction: column;
+  }
+
+  .ssh-key-picker .ui-button {
+    align-self: flex-start;
+  }
+}
+
 .users-list.ui-paper {
   overflow: hidden;
 }

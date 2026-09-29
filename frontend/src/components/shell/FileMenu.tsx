@@ -14,6 +14,7 @@ interface FileMenuProps {
   onClose: () => void
   onOpenConnection: () => void
   onNewDirectConnection: () => void
+  onManageSSHKeys: () => void
   recentConnections: Connection[]
   onOpenRecentConnection: (connection: Connection) => void
 }
@@ -27,6 +28,7 @@ export function FileMenu({
   onClose,
   onOpenConnection,
   onNewDirectConnection,
+  onManageSSHKeys,
   recentConnections,
   onOpenRecentConnection,
 }: FileMenuProps) {
@@ -67,6 +69,12 @@ export function FileMenu({
             </ListItemIcon>
             <span>New direct connection</span>
             <span className="file-menu-shortcut">{newDirectConnectionShortcut}</span>
+          </MenuItem>
+          <MenuItem onMouseEnter={() => onSection('root')} onClick={onManageSSHKeys}>
+            <ListItemIcon>
+              <Glyph name="key" size={17} />
+            </ListItemIcon>
+            SSH keys
           </MenuItem>
           <MenuItem
             selected={section === 'recent'}

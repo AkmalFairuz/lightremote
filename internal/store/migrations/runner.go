@@ -18,7 +18,7 @@ type Migration interface {
 	Down(ctx context.Context, conn *sqlx.Conn, driver string) error
 }
 
-var registered = []Migration{initialSchema{}, proxySettings{}, vncDisplaySettings{}, recentConnections{}}
+var registered = []Migration{initialSchema{}, proxySettings{}, vncDisplaySettings{}, recentConnections{}, sshKeys{}}
 
 // Up applies every pending migration in version order.
 func Up(ctx context.Context, db *sqlx.DB) error {
