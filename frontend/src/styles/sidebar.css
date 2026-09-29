@@ -370,6 +370,81 @@
   }
 }
 
+@media (min-width: 761px) {
+  .MuiMenuItem-root.mobile-folder-create {
+    display: none;
+  }
+}
+
+@media (max-width: 760px) {
+  .folder-row,
+  .connection-row {
+    min-height: 40px;
+  }
+
+  .folder-toggle,
+  .connection-open {
+    min-width: 0;
+    min-height: 40px;
+    gap: 7px;
+    padding-inline: 5px;
+    font-size: 15px;
+  }
+
+  .folder-name,
+  .connection-open span {
+    min-width: 0;
+    flex-shrink: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .folder-chevron svg,
+  .connection-open > svg {
+    width: 22px;
+    height: 22px;
+  }
+
+  .sidebar-row-actions {
+    width: 42px;
+    height: 40px;
+    flex: 0 0 42px;
+  }
+
+  .sidebar-row-actions-inner {
+    position: static;
+    height: 100%;
+    justify-content: flex-end;
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .sidebar-row-actions .ui-icon-button {
+    width: 36px;
+    height: 36px;
+    padding: 6px;
+  }
+
+  .sidebar-row-actions svg {
+    width: 21px;
+    height: 21px;
+  }
+
+  .folder-row .folder-add-button {
+    display: none;
+  }
+
+  .folder-children > .folder-branch::before,
+  .folder-children > .connection-row::before {
+    top: 20px;
+  }
+
+  .folder-children > .folder-branch:last-child::after,
+  .folder-children > .connection-row:last-child::after {
+    height: 20px;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .folder-chevron {
     transition: none;

@@ -2,9 +2,11 @@ import { useEffect, useRef, useState } from 'react'
 import type { Connection, Folder } from '../../types'
 import { sidebarIndentPixels } from './sidebarDimensions'
 
-// Measured labels still need room for their chevron or icon and row padding.
-const rowChromePixels = 32
-const fallbackCharacterPixels = 7
+// Measured labels need room for their icon, padding, and visible mobile actions.
+const desktopRowChromePixels = 32
+const mobileRowChromePixels = 84
+const desktopFallbackCharacterPixels = 7
+const mobileFallbackCharacterPixels = 9
 
 /** Measures the visible tree so short names do not create a horizontal scrollbar. */
 function measureContentWidth(
@@ -12,9 +14,14 @@ function measureContentWidth(
   connections: Connection[],
   expanded: Record<string, boolean>,
   search: string,
+  mobile: boolean,
 ): number {
   const context = document.createElement('canvas').getContext('2d')
-  if (context) context.font = '12px Roboto'
+  if (context) context.font = mobile ? '15px Roboto' : '12px Roboto'
+  const rowChromePixels = mobile ? mobileRowChromePixels : desktopRowChromePixels
+  const fallbackCharacterPixels = mobile
+    ? mobileFallbackCharacterPixels
+    : desktopFallbackCharacterPixels
 
   const foldersByParent = new Map<string | null, Folder[]>()
   const connectionsByParent = new Map<string | null, Connection[]>()
@@ -74,9 +81,13 @@ export function useSidebarContentWidth(
     const measure = () => {
       if (disposed) return
       const viewportWidth = tree.clientWidth
+      const mobile = window.matchMedia('(max-width: 760px)').matches
       tree.style.setProperty('--sidebar-viewport-width', `${viewportWidth}px`)
       setContentWidth(
-        Math.max(viewportWidth, measureContentWidth(folders, connections, expanded, search)),
+        Math.max(
+          viewportWidth,
+          measureContentWidth(folders, connections, expanded, search, mobile),
+        ),
       )
     }
     const syncScroll = () => {
@@ -91,6 +102,7 @@ export function useSidebarContentWidth(
     const observer = new ResizeObserver(schedule)
     observer.observe(tree)
     tree.addEventListener('scroll', syncScroll, { passive: true })
+    window.addEventListener('resize', schedule)
     syncScroll()
     schedule()
     void document.fonts.ready.then(schedule)
@@ -99,6 +111,7 @@ export function useSidebarContentWidth(
       disposed = true
       observer.disconnect()
       tree.removeEventListener('scroll', syncScroll)
+      window.removeEventListener('resize', schedule)
       window.cancelAnimationFrame(frame)
     }
   }, [folders, connections, expanded, search])

@@ -132,6 +132,7 @@ export function FolderRow({ folder, open, highlighted, onToggle, onAddItem }: Fo
             <span className="sidebar-row-actions">
               <span className="sidebar-row-actions-inner">
                 <IconButton
+                  className="folder-add-button"
                   aria-label={`Add item to ${folder.name}`}
                   title="Add item"
                   onClick={onAddItem}
@@ -168,6 +169,15 @@ export function FolderRow({ folder, open, highlighted, onToggle, onAddItem }: Fo
           }}
         >
           Rename
+        </MenuItem>
+        <MenuItem
+          className="mobile-folder-create"
+          onClick={() => {
+            setMenuOpen(false)
+            onAddItem()
+          }}
+        >
+          Create
         </MenuItem>
         <MenuItem
           onClick={() => {
