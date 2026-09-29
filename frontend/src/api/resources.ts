@@ -24,6 +24,14 @@ export const resourcesApi = api.injectEndpoints({
       query: () => '/connections',
       providesTags: ['Connections'],
     }),
+    recentConnections: build.query<Connection[], void>({
+      query: () => '/connections/recent',
+      providesTags: ['Connections', 'RecentConnections'],
+    }),
+    recordConnectionOpen: build.mutation<void, string>({
+      query: (id) => ({ url: `/connections/${id}/recent`, method: 'POST' }),
+      invalidatesTags: ['RecentConnections'],
+    }),
     createConnection: build.mutation<Connection, ConnectionInput>({
       query: (body) => ({ url: '/connections', method: 'POST', body }),
       invalidatesTags: ['Connections'],
@@ -86,6 +94,8 @@ export const {
   useDeleteFolderMutation,
   useConnectionsQuery,
   useLazyConnectionsQuery,
+  useRecentConnectionsQuery,
+  useRecordConnectionOpenMutation,
   useCreateConnectionMutation,
   useCreateDirectConnectionMutation,
   useDeleteDirectConnectionMutation,

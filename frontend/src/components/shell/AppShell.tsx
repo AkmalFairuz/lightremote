@@ -7,6 +7,8 @@ import {
   useInspectHostKeyMutation,
   useLazyConnectionsQuery,
   useLazyDirectConnectionQuery,
+  useRecentConnectionsQuery,
+  useRecordConnectionOpenMutation,
 } from '../../api/resources'
 import { useAppDispatch, useAppSelector, useAppStore } from '../../state/hooks'
 import {
@@ -54,6 +56,8 @@ export function AppShell() {
   const [loadConnections] = useLazyConnectionsQuery()
   const [loadDirectConnection] = useLazyDirectConnectionQuery()
   const [deleteDirectConnection] = useDeleteDirectConnectionMutation()
+  const { data: recentConnections = [] } = useRecentConnectionsQuery()
+  const [recordConnectionOpen] = useRecordConnectionOpenMutation()
   const [directDialogOpen, setDirectDialogOpen] = useState(false)
   const [openConnectionDialog, setOpenConnectionDialog] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
@@ -177,6 +181,20 @@ export function AppShell() {
               tab.connectionId === connection.id &&
               (tab.status === 'connecting' || tab.status === 'error'),
           )
+    if (!existing && currentTabs.length + detachedCount() >= maxOpenTabs) {
+      setMessage('Close a tab before opening another connection.')
+      if (connection.direct) {
+        void deleteDirectConnection(connection.id)
+      }
+      return
+    }
+
+    if (!connection.direct) {
+      void recordConnectionOpen(connection.id)
+        .unwrap()
+        .catch(() => setMessage('Could not update recent connections.'))
+    }
+
     if (existing?.status === 'connecting' || existing?.status === 'ready') {
       dispatch(activateTab(existing.id))
       return
@@ -186,14 +204,6 @@ export function AppShell() {
       await reconnectTab(existing.id)
       return
     }
-    if (!existing && currentTabs.length + detachedCount() >= maxOpenTabs) {
-      setMessage('Close a tab before opening another connection.')
-      if (connection.direct) {
-        void deleteDirectConnection(connection.id)
-      }
-      return
-    }
-
     const tabId =
       connection.kind === 'sftp' || connection.kind === 'ftp'
         ? `files-${connection.id}`
@@ -254,6 +264,8 @@ export function AppShell() {
         onToggleSidebar={toggleSidebar}
         onOpenConnection={() => setOpenConnectionDialog(true)}
         onNewDirectConnection={() => setDirectDialogOpen(true)}
+        recentConnections={recentConnections}
+        onOpenRecentConnection={(connection) => void openConnection(connection)}
       />
       <div className="shell-body">
         {mobileSidebar && (
@@ -307,6 +319,8 @@ export function AppShell() {
               layout={layout}
               focusedPaneId={focusedPaneId}
               visible={isWorkspace}
+              recentConnections={recentConnections}
+              onOpenConnection={(connection) => void openConnection(connection)}
               onActivate={(id) => dispatch(activateTab(id))}
               onReorder={(move) => dispatch(moveTab(move))}
               onClose={closeWorkspaceTab}

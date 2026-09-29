@@ -7,6 +7,26 @@
   width: min(290px, calc(100vw - 24px));
 }
 
+.file-recent-name {
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.file-recent-item small {
+  flex-shrink: 0;
+  color: var(--lr-muted);
+  font-size: 10px;
+}
+
+.file-submenu-paper.MuiPaper-root {
+  width: min(240px, calc(100vw - 24px));
+  max-height: min(80dvh, 430px);
+  overflow: auto;
+}
+
 .file-popover .file-menu-shortcut {
   flex-shrink: 0;
   margin-left: auto;
@@ -20,7 +40,8 @@
   }
 }
 
-.view-submenu {
+.view-submenu,
+.file-submenu {
   z-index: 1400;
 }
 
@@ -31,22 +52,26 @@
 }
 
 .file-popover .MuiMenuList-root,
+.file-submenu .MuiMenuList-root,
 .view-popover .MuiMenuList-root,
 .view-submenu .MuiMenuList-root {
   padding-block: 4px;
 }
 
 .file-popover .MuiMenuItem-root,
+.file-submenu .MuiMenuItem-root,
 .view-popover .MuiMenuItem-root,
 .view-submenu .MuiMenuItem-root {
   min-height: 30px;
   font-size: 12px;
 }
 
-.view-popover .MuiMenuItem-root.Mui-selected {
+.view-popover .MuiMenuItem-root.Mui-selected,
+.file-popover .MuiMenuItem-root.Mui-selected {
   background: var(--lr-hover);
 }
 
+.file-popover .MuiMenuItem-root > svg:last-child,
 .view-popover .MuiMenuItem-root > svg:last-child,
 .view-submenu .MuiMenuItem-root > svg:last-child {
   margin-left: auto;

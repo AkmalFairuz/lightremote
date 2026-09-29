@@ -67,6 +67,24 @@ func (s *Service) List(ctx context.Context, ownerID string) ([]model.Connection,
 	return connections, nil
 }
 
+// Recent returns saved connection metadata ordered by the last accepted open.
+func (s *Service) Recent(ctx context.Context, ownerID string) ([]model.Connection, error) {
+	connections, err := s.repository.ListRecent(ctx, ownerID)
+	if err != nil {
+		return nil, err
+	}
+	for index := range connections {
+		connections[index].Secret = nil
+		connections[index].ProxySecret = nil
+	}
+	return connections, nil
+}
+
+// RecordOpen marks a saved connection as recently opened.
+func (s *Service) RecordOpen(ctx context.Context, ownerID, id string) error {
+	return s.repository.RecordOpen(ctx, ownerID, id, time.Now().UTC().UnixMicro())
+}
+
 // Public returns one cached or stored connection without its credentials.
 func (s *Service) Public(ctx context.Context, ownerID, id string) (model.Connection, error) {
 	s.directMu.Lock()

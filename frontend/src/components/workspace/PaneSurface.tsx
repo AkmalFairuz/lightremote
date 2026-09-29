@@ -3,6 +3,7 @@ import { IconButton, Tooltip } from '../../ui'
 import { paneGeometry, type PaneEdge, type PaneNode, type PaneRect } from '../../state/paneLayout'
 import { maxVisiblePanes } from '../../state/workspaceLimits'
 import type { WorkspaceTab } from '../../state/workspaceSlice'
+import type { Connection } from '../../types'
 import { classNames } from '../../utils/classNames'
 import {
   newDirectConnectionShortcut,
@@ -21,6 +22,8 @@ interface PaneSurfaceProps {
   layout: PaneNode
   focusedPaneId: string
   visible: boolean
+  recentConnections: Connection[]
+  onOpenConnection?: (connection: Connection) => void
   onStatus: (id: string, status: WorkspaceTab['status'], error?: string) => void
   onReconnect: (id: string) => void
   onFilePath: (id: string, path: string) => void
@@ -61,6 +64,8 @@ export function PaneSurface({
   layout,
   focusedPaneId,
   visible,
+  recentConnections,
+  onOpenConnection,
   onStatus,
   onReconnect,
   onFilePath,
@@ -97,15 +102,35 @@ export function PaneSurface({
   return (
     <div className="workspace-content" ref={contentRef}>
       {tabs.length === 0 && (
-        <div className="workspace-empty">
-          <h1>Welcome to LightRemote</h1>
-          <div className="workspace-shortcuts" aria-label="Connection keyboard shortcuts">
-            <span>
-              <kbd>{openConnectionShortcut}</kbd> Open connection
-            </span>
-            <span>
-              <kbd>{newDirectConnectionShortcut}</kbd> New direct connection
-            </span>
+        <div className="workspace-empty workspace-empty-with-content">
+          <div className="workspace-empty-content">
+            <h1>Welcome to LightRemote</h1>
+            <div className="workspace-shortcuts" aria-label="Connection keyboard shortcuts">
+              <span>
+                <kbd>{openConnectionShortcut}</kbd> Open connection
+              </span>
+              <span>
+                <kbd>{newDirectConnectionShortcut}</kbd> New direct connection
+              </span>
+            </div>
+            {onOpenConnection && recentConnections.length > 0 && (
+              <section className="workspace-recent" aria-labelledby="workspace-recent-title">
+                <h2 id="workspace-recent-title">Recent connections</h2>
+                <div className="workspace-recent-links">
+                  {recentConnections.map((connection) => (
+                    <button
+                      key={connection.id}
+                      type="button"
+                      className="workspace-recent-link"
+                      title={`${connection.name} · ${connection.kind.toUpperCase()} · ${connection.host}`}
+                      onClick={() => onOpenConnection(connection)}
+                    >
+                      {connection.name} · {connection.kind.toUpperCase()}
+                    </button>
+                  ))}
+                </div>
+              </section>
+            )}
           </div>
         </div>
       )}

@@ -203,13 +203,19 @@ func TestSQLiteRepositoriesAndMigrations(t *testing.T) {
 		t.Fatalf("connection did not survive reopen: %+v", stored)
 	}
 	if err := migrations.Down(ctx, db); err != nil {
-		t.Fatalf("rollback proxy migration: %v", err)
+		t.Fatalf("rollback recent connections migration: %v", err)
 	}
 	if err := migrations.Up(ctx, db); err != nil {
-		t.Fatalf("reapply proxy migration: %v", err)
+		t.Fatalf("reapply recent connections migration: %v", err)
 	}
 	if err := migrations.Down(ctx, db); err != nil {
 		t.Fatal(err)
+	}
+	if err := migrations.Down(ctx, db); err != nil {
+		t.Fatalf("rollback VNC migration: %v", err)
+	}
+	if err := migrations.Down(ctx, db); err != nil {
+		t.Fatalf("rollback proxy migration: %v", err)
 	}
 	if err := migrations.Down(ctx, db); err != nil {
 		t.Fatalf("rollback initial migration: %v", err)

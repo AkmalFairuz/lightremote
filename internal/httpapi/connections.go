@@ -36,6 +36,30 @@ func (h *ConnectionHandler) List(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, 200, items)
 }
 
+// Recent returns the current account's eight most recently opened saved connections.
+func (h *ConnectionHandler) Recent(w http.ResponseWriter, r *http.Request) {
+	items, err := h.service.Recent(r.Context(), principal(r).User.ID)
+	if err != nil {
+		writeError(w, 500, "internal", "could not list recent connections")
+		return
+	}
+	writeJSON(w, 200, items)
+}
+
+// RecordOpen updates recency for an owned saved connection.
+func (h *ConnectionHandler) RecordOpen(w http.ResponseWriter, r *http.Request) {
+	err := h.service.RecordOpen(r.Context(), principal(r).User.ID, chi.URLParam(r, "connectionID"))
+	if errors.Is(err, sql.ErrNoRows) {
+		writeError(w, 404, "not_found", "connection not found")
+		return
+	}
+	if err != nil {
+		writeError(w, 500, "internal", "could not update recent connections")
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
+}
+
 // Get returns one connection without its encrypted credentials.
 func (h *ConnectionHandler) Get(w http.ResponseWriter, r *http.Request) {
 	connection, err := h.service.Public(

@@ -29,6 +29,44 @@ func (r *ConnectionRepository) List(ctx context.Context, ownerID string) ([]mode
 	return connections, err
 }
 
+// ListRecent returns at most eight saved connections, newest open first.
+func (r *ConnectionRepository) ListRecent(ctx context.Context, ownerID string) ([]model.Connection, error) {
+	connections := []model.Connection{}
+	err := r.db.SelectContext(ctx, &connections, `
+		SELECT * FROM connections
+		WHERE user_id = ? AND last_opened_at IS NOT NULL
+		ORDER BY last_opened_at DESC, id
+		LIMIT 8`, ownerID)
+	for index := range connections {
+		connections[index].Proxy = connections[index].PublicProxy()
+	}
+	return connections, err
+}
+
+// RecordOpen updates recency only for a saved connection owned by this account.
+func (r *ConnectionRepository) RecordOpen(ctx context.Context, ownerID, id string, openedAt int64) error {
+	// Repeated opens must still change the row when the clock has the same microsecond.
+	result, err := r.db.ExecContext(ctx,
+		`UPDATE connections
+		 SET last_opened_at = CASE
+		 WHEN last_opened_at >= ? THEN last_opened_at + 1
+		 ELSE ?
+		 END
+		 WHERE user_id = ? AND id = ?`,
+		openedAt, openedAt, ownerID, id)
+	if err != nil {
+		return err
+	}
+	count, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if count == 0 {
+		return sql.ErrNoRows
+	}
+	return nil
+}
+
 // Get loads one owned connection, including its encrypted secret.
 func (r *ConnectionRepository) Get(ctx context.Context, ownerID, id string) (model.Connection, error) {
 	var connection model.Connection

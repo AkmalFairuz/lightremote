@@ -42,6 +42,7 @@ type Connection struct {
 	ProxySecret     []byte    `db:"proxy_secret" json:"-"`
 	Proxy           *Proxy    `db:"-" json:"proxy"`
 	HostKey         *string   `db:"host_key" json:"hostKeyFingerprint"`
+	LastOpenedAt    *int64    `db:"last_opened_at" json:"-"`
 	CreatedAt       time.Time `db:"created_at" json:"createdAt"`
 	UpdatedAt       time.Time `db:"updated_at" json:"updatedAt"`
 }

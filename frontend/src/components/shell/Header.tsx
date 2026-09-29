@@ -13,15 +13,24 @@ import { AccountPopover } from './AccountPopover'
 import { ChangePasswordDialog } from './ChangePasswordDialog'
 import { clearDetachedRegistry } from '../workspace/detachedTabs'
 import { ViewMenu, type ViewSection } from './ViewMenu'
-import { FileMenu } from './FileMenu'
+import { FileMenu, type FileSection } from './FileMenu'
+import type { Connection } from '../../types'
 
 interface HeaderProps {
   onToggleSidebar: () => void
   onOpenConnection: () => void
   onNewDirectConnection: () => void
+  recentConnections: Connection[]
+  onOpenRecentConnection: (connection: Connection) => void
 }
 
-export function Header({ onToggleSidebar, onOpenConnection, onNewDirectConnection }: HeaderProps) {
+export function Header({
+  onToggleSidebar,
+  onOpenConnection,
+  onNewDirectConnection,
+  recentConnections,
+  onOpenRecentConnection,
+}: HeaderProps) {
   const dispatch = useAppDispatch()
   const userId = useAppSelector((state) => state.auth.user?.id ?? '')
   const localMode = useAppSelector((state) => state.auth.localMode)
@@ -29,6 +38,7 @@ export function Header({ onToggleSidebar, onOpenConnection, onNewDirectConnectio
   const [logout] = useLogoutMutation()
   const [viewAnchor, setViewAnchor] = useState<HTMLElement | null>(null)
   const [fileAnchor, setFileAnchor] = useState<HTMLElement | null>(null)
+  const [fileSection, setFileSection] = useState<FileSection>('root')
   const [viewSection, setViewSection] = useState<ViewSection>('root')
   const [accountAnchor, setAccountAnchor] = useState<HTMLElement | null>(null)
   const [accountDialog, setAccountDialog] = useState<'password' | 'users' | null>(null)
@@ -116,6 +126,7 @@ export function Header({ onToggleSidebar, onOpenConnection, onNewDirectConnectio
             onClick={(event) => {
               setViewAnchor(null)
               setAccountAnchor(null)
+              setFileSection('root')
               setFileAnchor(event.currentTarget)
             }}
             endIcon={<Glyph name="keyboard-arrow-down" size={17} />}
@@ -128,6 +139,7 @@ export function Header({ onToggleSidebar, onOpenConnection, onNewDirectConnectio
             aria-expanded={Boolean(viewAnchor)}
             onClick={(event) => {
               setFileAnchor(null)
+              setFileSection('root')
               setAccountAnchor(null)
               setViewSection('root')
               setViewAnchor(event.currentTarget)
@@ -143,6 +155,7 @@ export function Header({ onToggleSidebar, onOpenConnection, onNewDirectConnectio
               aria-expanded={Boolean(accountAnchor)}
               onClick={(event) => {
                 setFileAnchor(null)
+                setFileSection('root')
                 setViewAnchor(null)
                 setViewSection('root')
                 setAccountAnchor(event.currentTarget)
@@ -156,7 +169,14 @@ export function Header({ onToggleSidebar, onOpenConnection, onNewDirectConnectio
       </div>
       <FileMenu
         anchorEl={fileAnchor}
-        onClose={() => setFileAnchor(null)}
+        section={fileSection}
+        onSection={setFileSection}
+        onClose={() => {
+          setFileAnchor(null)
+          setFileSection('root')
+        }}
+        recentConnections={recentConnections}
+        onOpenRecentConnection={onOpenRecentConnection}
         onOpenConnection={() => {
           setFileAnchor(null)
           onOpenConnection()

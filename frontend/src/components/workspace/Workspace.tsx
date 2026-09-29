@@ -1,6 +1,7 @@
 import { useCallback, useState } from 'react'
 import type { PaneEdge, PaneNode } from '../../state/paneLayout'
 import type { TabMove, WorkspaceTab } from '../../state/workspaceSlice'
+import type { Connection } from '../../types'
 import { PaneSurface } from './PaneSurface'
 import { StatusBar } from './StatusBar'
 import { TabStrip } from './TabStrip'
@@ -12,6 +13,8 @@ interface WorkspaceProps {
   layout: PaneNode
   focusedPaneId: string
   visible: boolean
+  recentConnections?: Connection[]
+  onOpenConnection?: (connection: Connection) => void
   onActivate: (id: string) => void
   onReorder: (move: TabMove) => void
   onClose?: (id: string) => void
@@ -37,6 +40,8 @@ export function Workspace({
   layout,
   focusedPaneId,
   visible,
+  recentConnections = [],
+  onOpenConnection,
   onActivate,
   onReorder,
   onClose,
@@ -84,6 +89,8 @@ export function Workspace({
         layout={layout}
         focusedPaneId={focusedPaneId}
         visible={visible}
+        recentConnections={recentConnections}
+        onOpenConnection={onOpenConnection}
         onStatus={onStatus}
         onReconnect={onReconnect}
         onFilePath={onFilePath}
