@@ -115,7 +115,7 @@
   z-index: 5;
   width: 1px;
   flex: 0 0 1px;
-  background: var(--lr-border-strong);
+  background: var(--lr-border);
   cursor: col-resize;
   touch-action: none;
   transition:

@@ -374,7 +374,7 @@
   justify-content: space-between;
   gap: 10px;
   padding: 0 8px;
-  border-top: 1px solid var(--lr-border-strong);
+  border-top: 1px solid var(--lr-border);
   background: var(--lr-surface);
   box-shadow: 0 -1.2px 4.2px var(--lr-divider-shadow);
   color: var(--lr-muted);
