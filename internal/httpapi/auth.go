@@ -6,19 +6,26 @@ import (
 	"net/http"
 
 	"github.com/akmalfairuz/lightremote/internal/config"
+	"github.com/akmalfairuz/lightremote/internal/connections"
 	"github.com/akmalfairuz/lightremote/internal/security"
 	"github.com/akmalfairuz/lightremote/internal/work"
 )
 
 type AuthHandler struct {
-	service  *security.AuthService
-	cfg      config.Config
-	sessions *work.Manager
+	service     *security.AuthService
+	cfg         config.Config
+	sessions    *work.Manager
+	connections *connections.Service
 }
 
 // NewAuthHandler wires account login and self-service endpoints.
-func NewAuthHandler(service *security.AuthService, sessions *work.Manager, cfg config.Config) *AuthHandler {
-	return &AuthHandler{service: service, sessions: sessions, cfg: cfg}
+func NewAuthHandler(service *security.AuthService, sessions *work.Manager, connections *connections.Service, cfg config.Config) *AuthHandler {
+	return &AuthHandler{
+		service:     service,
+		sessions:    sessions,
+		connections: connections,
+		cfg:         cfg,
+	}
 }
 
 // Login creates a database-backed browser session.
@@ -81,6 +88,7 @@ func (h *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	h.sessions.CloseUser(principal(r).User.ID)
+	h.connections.DeleteDirectOwner(principal(r).User.ID)
 	http.SetCookie(w, &http.Cookie{
 		Name:     "lr_session",
 		Path:     "/",
@@ -111,5 +119,6 @@ func (h *AuthHandler) ChangePassword(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	h.sessions.CloseUser(principal(r).User.ID)
+	h.connections.DeleteDirectOwner(principal(r).User.ID)
 	w.WriteHeader(http.StatusNoContent)
 }

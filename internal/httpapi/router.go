@@ -56,6 +56,8 @@ func Router(routes Routes) http.Handler {
 
 			authenticated.Get("/connections", routes.Connections.List)
 			authenticated.Post("/connections", routes.Connections.Create)
+			authenticated.Post("/direct-connections", routes.Connections.CreateDirect)
+			authenticated.Delete("/direct-connections/{connectionID}", routes.Connections.DeleteDirect)
 			authenticated.Get("/connections/{connectionID}", routes.Connections.Get)
 			authenticated.Put("/connections/{connectionID}", routes.Connections.Update)
 			authenticated.Post("/connections/{connectionID}/duplicate", routes.Connections.Duplicate)

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef } from 'react'
 import { flushSync } from 'react-dom'
 import { useCreateSessionMutation, useDeleteSessionMutation } from '../../api/sessions'
+import { useDeleteDirectConnectionMutation } from '../../api/resources'
 import { useAppDispatch, useAppStore } from '../../state/hooks'
 import {
   closeTab,
@@ -34,6 +35,7 @@ export function useDetachedTabs(userId: string, onNotice: (message: string) => v
   const store = useAppStore()
   const [createSession] = useCreateSessionMutation()
   const [deleteSession] = useDeleteSessionMutation()
+  const [deleteDirectConnection] = useDeleteDirectConnectionMutation()
   const entries = useRef(new Map<string, DetachedEntry>())
   const storageKey = `lightremote.detached.registry.${userId}`
 
@@ -86,6 +88,10 @@ export function useDetachedTabs(userId: string, onNotice: (message: string) => v
         accepted: boolean
       }[]
       for (const item of stored) {
+        if (item.tab.direct) {
+          void deleteDirectConnection(item.tab.connectionId)
+          continue
+        }
         entries.current.set(item.id, {
           tab: item.tab,
           accepted: item.accepted,
@@ -93,6 +99,7 @@ export function useDetachedTabs(userId: string, onNotice: (message: string) => v
           lastSeen: Date.now(),
         })
       }
+      persist()
     } catch {
       sessionStorage.removeItem(storageKey)
     }
@@ -102,7 +109,10 @@ export function useDetachedTabs(userId: string, onNotice: (message: string) => v
       const message = event.data
       const entry = entries.current.get(message.transferId)
       if (!entry) return
-      if (message.type === 'ready') {
+      if (message.type === 'closed') {
+        entries.current.delete(message.transferId)
+        persist()
+      } else if (message.type === 'ready') {
         current.postMessage({
           type: 'transfer',
           transferId: message.transferId,
@@ -153,7 +163,7 @@ export function useDetachedTabs(userId: string, onNotice: (message: string) => v
       window.clearInterval(timer)
       current.close()
     }
-  }, [deleteSession, dispatch, persist, restore, storageKey, userId])
+  }, [deleteDirectConnection, deleteSession, dispatch, persist, restore, storageKey, userId])
 
   const detach = useCallback(
     (tab: WorkspaceTab) => {

@@ -53,6 +53,7 @@ export interface ConnectionInput {
 
 export interface Connection extends Omit<ConnectionInput, 'secret' | 'proxy'> {
   id: string
+  direct: boolean
   vncReadOnly: boolean
   vncFileTransfer: boolean
   proxy: Proxy | null

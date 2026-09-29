@@ -3,6 +3,10 @@
   max-height: min(80dvh, 430px);
 }
 
+.file-popover.MuiPaper-root {
+  width: min(220px, calc(100vw - 24px));
+}
+
 .view-submenu {
   z-index: 1400;
 }
@@ -13,11 +17,13 @@
   overflow: auto;
 }
 
+.file-popover .MuiMenuList-root,
 .view-popover .MuiMenuList-root,
 .view-submenu .MuiMenuList-root {
   padding-block: 4px;
 }
 
+.file-popover .MuiMenuItem-root,
 .view-popover .MuiMenuItem-root,
 .view-submenu .MuiMenuItem-root {
   min-height: 30px;

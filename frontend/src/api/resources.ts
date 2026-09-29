@@ -28,6 +28,15 @@ export const resourcesApi = api.injectEndpoints({
       query: (body) => ({ url: '/connections', method: 'POST', body }),
       invalidatesTags: ['Connections'],
     }),
+    createDirectConnection: build.mutation<Connection, ConnectionInput>({
+      query: (body) => ({ url: '/direct-connections', method: 'POST', body }),
+    }),
+    deleteDirectConnection: build.mutation<void, string>({
+      query: (id) => ({ url: `/direct-connections/${id}`, method: 'DELETE' }),
+    }),
+    directConnection: build.query<Connection, string>({
+      query: (id) => `/connections/${id}`,
+    }),
     duplicateConnection: build.mutation<Connection, string>({
       query: (id) => ({ url: `/connections/${id}/duplicate`, method: 'POST' }),
       invalidatesTags: ['Connections'],
@@ -78,6 +87,9 @@ export const {
   useConnectionsQuery,
   useLazyConnectionsQuery,
   useCreateConnectionMutation,
+  useCreateDirectConnectionMutation,
+  useDeleteDirectConnectionMutation,
+  useLazyDirectConnectionQuery,
   useDuplicateConnectionMutation,
   useUpdateConnectionMutation,
   useMoveConnectionFolderMutation,

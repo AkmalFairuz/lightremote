@@ -115,7 +115,7 @@ func run() error {
 	authMiddleware := httpapi.NewAuthMiddleware(authService, cfg, localUser, localCSRF)
 
 	handler := httpapi.Router(httpapi.Routes{
-		Auth:        httpapi.NewAuthHandler(authService, workSessions, cfg),
+		Auth:        httpapi.NewAuthHandler(authService, workSessions, connectionService, cfg),
 		Users:       httpapi.NewUserHandler(users, authService, workSessions),
 		Folders:     httpapi.NewFolderHandler(folderService),
 		Connections: httpapi.NewConnectionHandler(connectionService, workSessions, cfg.DialTimeout),

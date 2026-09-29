@@ -5,7 +5,7 @@ export const detachedAcceptedTimeoutMs = 30_000
 export const detachedPendingTimeoutMs = 60_000
 
 export type DetachedMessage =
-  | { type: 'ready' | 'accepted' | 'released'; transferId: string }
+  | { type: 'ready' | 'accepted' | 'released' | 'closed'; transferId: string }
   | { type: 'heartbeat'; transferId: string; tab?: WorkspaceTab }
   | { type: 'transfer'; transferId: string; tab: WorkspaceTab }
 

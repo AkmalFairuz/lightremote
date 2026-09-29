@@ -1150,6 +1150,60 @@
           }
         }
       }
+    },
+    "/api/direct-connections": {
+      "post": {
+        "summary": "Create a temporary direct connection",
+        "description": "Keeps encrypted credentials in process memory. The returned connection has direct=true and is not listed or saved in a folder. Orphaned entries expire after 24 hours without access.",
+        "security": [
+          {
+            "cookieAuth": [],
+            "csrfHeader": []
+          }
+        ],
+        "requestBody": {
+          "$ref": "#/components/requestBodies/DirectConnectionInput"
+        },
+        "responses": {
+          "201": {
+            "description": "Temporary connection without credentials",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Connection"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/direct-connections/{connectionID}": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/ConnectionID"
+        }
+      ],
+      "delete": {
+        "summary": "Delete an owned temporary connection and close its work sessions",
+        "security": [
+          {
+            "cookieAuth": [],
+            "csrfHeader": []
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Temporary connection deleted"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
     }
   },
   "components": {
@@ -1267,6 +1321,16 @@
                   "pattern": "^(/|[A-Za-z]:/)"
                 }
               }
+            }
+          }
+        }
+      },
+      "DirectConnectionInput": {
+        "required": true,
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/DirectConnectionInput"
             }
           }
         }
@@ -1612,6 +1676,10 @@
               "updatedAt": {
                 "type": "string",
                 "format": "date-time"
+              },
+              "direct": {
+                "type": "boolean",
+                "description": "True for a temporary direct connection."
               }
             }
           }
@@ -1707,6 +1775,86 @@
           "modTime": {
             "type": "string",
             "format": "date-time"
+          }
+        }
+      },
+      "DirectConnectionInput": {
+        "type": "object",
+        "required": [
+          "kind",
+          "host",
+          "port",
+          "authType"
+        ],
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "ssh",
+              "vnc",
+              "sftp",
+              "ftp"
+            ]
+          },
+          "host": {
+            "type": "string"
+          },
+          "port": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 65535
+          },
+          "username": {
+            "type": "string"
+          },
+          "authType": {
+            "type": "string",
+            "enum": [
+              "none",
+              "password",
+              "private_key"
+            ]
+          },
+          "ftpTls": {
+            "type": "boolean",
+            "description": "Required for FTP. True enables explicit FTPS; false explicitly chooses plain FTP."
+          },
+          "vncEncoding": {
+            "type": "string",
+            "enum": [
+              "auto",
+              "copyrect",
+              "tight",
+              "zlib",
+              "hextile",
+              "zrle",
+              "raw"
+            ],
+            "default": "auto",
+            "description": "VNC framebuffer encoding preference. Unsupported choices fall back to Raw."
+          },
+          "vncReadOnly": {
+            "type": "boolean",
+            "default": false,
+            "description": "Disable VNC keyboard and clipboard input."
+          },
+          "vncFileTransfer": {
+            "type": "boolean",
+            "default": true,
+            "description": "Allow VNC file operations. False requires vncReadOnly to be true."
+          },
+          "secret": {
+            "$ref": "#/components/schemas/RemoteSecret"
+          },
+          "proxy": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ProxyInput"
+              }
+            ]
           }
         }
       }

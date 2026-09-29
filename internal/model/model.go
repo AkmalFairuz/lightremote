@@ -21,6 +21,7 @@ type Folder struct {
 
 type Connection struct {
 	ID              string    `db:"id" json:"id"`
+	Direct          bool      `db:"-" json:"direct"`
 	UserID          string    `db:"user_id" json:"-"`
 	FolderID        *string   `db:"folder_id" json:"folderId"`
 	Name            string    `db:"name" json:"name"`

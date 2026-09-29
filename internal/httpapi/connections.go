@@ -21,7 +21,7 @@ type ConnectionHandler struct {
 	timeout  time.Duration
 }
 
-// NewConnectionHandler wires saved connection management and SSH trust approval.
+// NewConnectionHandler wires connection management and SSH trust approval.
 func NewConnectionHandler(service *connections.Service, sessions *work.Manager, timeout time.Duration) *ConnectionHandler {
 	return &ConnectionHandler{service: service, sessions: sessions, timeout: timeout}
 }
@@ -63,6 +63,35 @@ func (h *ConnectionHandler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, 201, connection)
+}
+
+// CreateDirect opens a temporary connection without storing it in the database.
+func (h *ConnectionHandler) CreateDirect(w http.ResponseWriter, r *http.Request) {
+	var input model.ConnectionInput
+	if !readJSON(w, r, &input) {
+		return
+	}
+	connection, err := h.service.CreateDirect(principal(r).User.ID, input)
+	if errors.Is(err, connections.ErrInvalid) {
+		writeError(w, 400, "invalid_connection", err.Error())
+		return
+	}
+	if err != nil {
+		writeError(w, 500, "internal", "could not create direct connection")
+		return
+	}
+	writeJSON(w, 201, connection)
+}
+
+// DeleteDirect removes temporary credentials and closes associated work sessions.
+func (h *ConnectionHandler) DeleteDirect(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "connectionID")
+	if !h.service.DeleteDirect(principal(r).User.ID, id) {
+		writeError(w, 404, "not_found", "direct connection not found")
+		return
+	}
+	h.sessions.CloseConnection(id)
+	w.WriteHeader(http.StatusNoContent)
 }
 
 // Duplicate creates a new owned connection with separately encrypted credentials.

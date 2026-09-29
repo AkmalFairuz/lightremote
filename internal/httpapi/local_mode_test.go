@@ -15,7 +15,7 @@ func TestLocalModeRemovesAccountRoutesAndRequiresCSRF(t *testing.T) {
 	user := model.User{ID: "local-id", Email: "local@lightremote.invalid", Role: "user"}
 	middleware := NewAuthMiddleware(nil, cfg, user, "local-csrf")
 	handler := Router(Routes{
-		Auth:       NewAuthHandler(nil, nil, cfg),
+		Auth:       NewAuthHandler(nil, nil, nil, cfg),
 		Middleware: middleware,
 	})
 

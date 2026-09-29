@@ -1,7 +1,12 @@
 import { useEffect, useRef, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { useCreateSessionMutation, useDeleteSessionMutation } from '../../api/sessions'
-import { useInspectHostKeyMutation, useLazyConnectionsQuery } from '../../api/resources'
+import {
+  useDeleteDirectConnectionMutation,
+  useInspectHostKeyMutation,
+  useLazyConnectionsQuery,
+  useLazyDirectConnectionQuery,
+} from '../../api/resources'
 import { DialogPresence } from '../../ui'
 import { useAppDispatch, useAppSelector, useAppStore } from '../../state/hooks'
 import {
@@ -43,6 +48,8 @@ export function DetachedWorkspacePage() {
   const [deleteSession] = useDeleteSessionMutation()
   const [inspectHostKey] = useInspectHostKeyMutation()
   const [loadConnections] = useLazyConnectionsQuery()
+  const [loadDirectConnection] = useLazyDirectConnectionQuery()
+  const [deleteDirectConnection] = useDeleteDirectConnectionMutation()
   const [hostKeyPrompt, setHostKeyPrompt] = useState<{
     connection: Connection
     tabId: string
@@ -55,6 +62,18 @@ export function DetachedWorkspacePage() {
   const titleTab = tabs.find((tab) => tab.id === activeId) ?? tabs[0]
   const titleName = titleTab?.name
   const titleKind = titleTab?.kind
+  const directConnectionId = titleTab?.direct ? titleTab.connectionId : null
+
+  useEffect(() => {
+    if (!directConnectionId) return
+    const timer = window.setInterval(
+      () => {
+        void loadDirectConnection(directConnectionId, false)
+      },
+      60 * 60 * 1000,
+    )
+    return () => window.clearInterval(timer)
+  }, [directConnectionId, loadDirectConnection])
 
   function publishTabState() {
     const tab = store.getState().workspace.tabs[0]
@@ -97,8 +116,11 @@ export function DetachedWorkspacePage() {
     if (store.getState().workspace.tabs.find((item) => item.id === id)?.status !== 'connecting')
       return
     try {
-      const connections = await loadConnections(undefined, false).unwrap()
-      const connection = connections.find((entry) => entry.id === tab.connectionId)
+      const connection = tab.direct
+        ? await loadDirectConnection(tab.connectionId, false).unwrap()
+        : (await loadConnections(undefined, false).unwrap()).find(
+            (entry) => entry.id === tab.connectionId,
+          )
       if (!connection) {
         dispatch(connectionFailure(tab.id, tab.kind, 'Connection not found.'))
         return
@@ -154,7 +176,13 @@ export function DetachedWorkspacePage() {
     if (saved) {
       try {
         const savedTab = JSON.parse(saved) as WorkspaceTab
-        if (sessionStorage.getItem(pendingKey)) pendingTab.current = savedTab
+        if (savedTab.direct) {
+          sessionStorage.removeItem(storageKey)
+          sessionStorage.removeItem(pendingKey)
+          void deleteDirectConnection(savedTab.connectionId)
+          channel.postMessage({ type: 'closed', transferId })
+          needsTransfer = false
+        } else if (sessionStorage.getItem(pendingKey)) pendingTab.current = savedTab
         else {
           needsTransfer = false
           if (savedTab.kind === 'vnc') {
@@ -212,7 +240,17 @@ export function DetachedWorkspacePage() {
       channel.close()
       channelRef.current = null
     }
-  }, [createSession, deleteSession, dispatch, pendingKey, storageKey, store, transferId, userId])
+  }, [
+    createSession,
+    deleteDirectConnection,
+    deleteSession,
+    dispatch,
+    pendingKey,
+    storageKey,
+    store,
+    transferId,
+    userId,
+  ])
 
   return (
     <div className="detached-workspace">

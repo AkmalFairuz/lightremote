@@ -2,10 +2,12 @@ package connections
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"net"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 	"unicode/utf8"
 
@@ -28,15 +30,26 @@ type Service struct {
 	folders    *folders.Service
 	vault      *security.Vault
 	cache      *metadataCache
+	directMu   sync.Mutex
+	direct     map[string]directEntry
 }
 
-// NewService creates saved-connection operations with encrypted credentials.
+const directIdleTTL = 24 * time.Hour
+
+type directEntry struct {
+	connection model.Connection
+	lastUsed   time.Time
+	timer      *time.Timer
+}
+
+// NewService creates saved and temporary connection operations with encrypted credentials.
 func NewService(repository *store.ConnectionRepository, folders *folders.Service, vault *security.Vault) *Service {
 	return &Service{
 		repository: repository,
 		folders:    folders,
 		vault:      vault,
 		cache:      newMetadataCache(),
+		direct:     make(map[string]directEntry),
 	}
 }
 
@@ -56,6 +69,15 @@ func (s *Service) List(ctx context.Context, ownerID string) ([]model.Connection,
 
 // Public returns one cached or stored connection without its credentials.
 func (s *Service) Public(ctx context.Context, ownerID, id string) (model.Connection, error) {
+	s.directMu.Lock()
+	_, direct := s.direct[id]
+	s.directMu.Unlock()
+	if direct {
+		connection, err := s.Get(ctx, ownerID, id)
+		connection.Secret = nil
+		connection.ProxySecret = nil
+		return connection, err
+	}
 	if connection, ok := s.cache.get(id); ok && connection.UserID == ownerID {
 		return connection, nil
 	}
@@ -71,7 +93,124 @@ func (s *Service) Public(ctx context.Context, ownerID, id string) (model.Connect
 
 // Get returns an owned connection including its encrypted credential envelope.
 func (s *Service) Get(ctx context.Context, ownerID, id string) (model.Connection, error) {
+	s.directMu.Lock()
+	entry, ok := s.direct[id]
+	if ok {
+		if entry.connection.UserID != ownerID {
+			s.directMu.Unlock()
+			return model.Connection{}, sql.ErrNoRows
+		}
+		if time.Since(entry.lastUsed) > directIdleTTL {
+			entry.timer.Stop()
+			delete(s.direct, id)
+			s.directMu.Unlock()
+			return model.Connection{}, sql.ErrNoRows
+		}
+		entry.lastUsed = time.Now()
+		s.direct[id] = entry
+		s.directMu.Unlock()
+		return entry.connection, nil
+	}
+	s.directMu.Unlock()
 	return s.repository.Get(ctx, ownerID, id)
+}
+
+// CreateDirect keeps encrypted credentials in memory without adding a saved connection.
+func (s *Service) CreateDirect(ownerID string, input model.ConnectionInput) (model.Connection, error) {
+	input.FolderID = nil
+	input.Name = input.Host
+	if err := validate(input); err != nil {
+		return model.Connection{}, err
+	}
+	if err := validateSecret(input); err != nil {
+		return model.Connection{}, err
+	}
+	now := time.Now().UTC()
+	connection := model.Connection{
+		ID:              uuid.NewString(),
+		Direct:          true,
+		UserID:          ownerID,
+		Name:            input.Name,
+		Kind:            input.Kind,
+		Host:            input.Host,
+		Port:            input.Port,
+		Username:        input.Username,
+		AuthType:        input.AuthType,
+		FTPTLS:          input.FTPTLS != nil && *input.FTPTLS,
+		VNCEncoding:     vncEncoding(input),
+		VNCReadOnly:     input.VNCReadOnly,
+		VNCFileTransfer: vncFileTransfer(input, true),
+		CreatedAt:       now,
+		UpdatedAt:       now,
+	}
+	if input.Secret != nil {
+		secret, err := s.vault.SealCredentials(connection.ID, *input.Secret)
+		if err != nil {
+			return model.Connection{}, err
+		}
+		connection.Secret = secret
+	}
+	if err := s.applyProxy(&connection, input.Proxy, false); err != nil {
+		return model.Connection{}, err
+	}
+	directID := connection.ID
+	s.directMu.Lock()
+	s.direct[directID] = directEntry{
+		connection: connection,
+		lastUsed:   now,
+		timer: time.AfterFunc(directIdleTTL, func() {
+			s.expireDirect(directID)
+		}),
+	}
+	s.directMu.Unlock()
+	connection.Secret = nil
+	connection.ProxySecret = nil
+	return connection, nil
+}
+
+// DeleteDirect removes only a temporary connection owned by the caller.
+func (s *Service) DeleteDirect(ownerID, id string) bool {
+	s.directMu.Lock()
+	defer s.directMu.Unlock()
+	entry, ok := s.direct[id]
+	if !ok || entry.connection.UserID != ownerID {
+		return false
+	}
+	entry.timer.Stop()
+	delete(s.direct, id)
+	return true
+}
+
+// DeleteDirectOwner discards all of an account's temporary connections.
+func (s *Service) DeleteDirectOwner(ownerID string) {
+	s.directMu.Lock()
+	defer s.directMu.Unlock()
+	for id, entry := range s.direct {
+		if entry.connection.UserID != ownerID {
+			continue
+		}
+		entry.timer.Stop()
+		delete(s.direct, id)
+	}
+}
+
+// expireDirect reschedules an entry that was used since its last timer began.
+func (s *Service) expireDirect(id string) {
+	s.directMu.Lock()
+	defer s.directMu.Unlock()
+	entry, ok := s.direct[id]
+	if !ok {
+		return
+	}
+	remaining := directIdleTTL - time.Since(entry.lastUsed)
+	if remaining <= 0 {
+		delete(s.direct, id)
+		return
+	}
+	entry.timer = time.AfterFunc(remaining, func() {
+		s.expireDirect(id)
+	})
+	s.direct[id] = entry
 }
 
 // Create validates and stores an owned remote connection.
@@ -261,6 +400,20 @@ func (s *Service) Delete(ctx context.Context, ownerID, id string) (bool, error) 
 
 // ApproveHostKey pins the fingerprint confirmed for an SSH or SFTP server.
 func (s *Service) ApproveHostKey(ctx context.Context, ownerID, id, fingerprint string) error {
+	s.directMu.Lock()
+	entry, ok := s.direct[id]
+	if ok {
+		if entry.connection.UserID != ownerID || time.Since(entry.lastUsed) > directIdleTTL {
+			s.directMu.Unlock()
+			return sql.ErrNoRows
+		}
+		entry.connection.HostKey = &fingerprint
+		entry.lastUsed = time.Now()
+		s.direct[id] = entry
+		s.directMu.Unlock()
+		return nil
+	}
+	s.directMu.Unlock()
 	if err := s.repository.SetHostKey(ctx, ownerID, id, fingerprint); err != nil {
 		return err
 	}

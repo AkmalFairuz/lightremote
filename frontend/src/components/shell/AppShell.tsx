@@ -1,8 +1,13 @@
-import { useState, type CSSProperties } from 'react'
+import { useEffect, useState, type CSSProperties } from 'react'
 import { Alert, DialogPresence, Snackbar } from '../../ui'
 import { Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useCreateSessionMutation, useDeleteSessionMutation } from '../../api/sessions'
-import { useInspectHostKeyMutation, useLazyConnectionsQuery } from '../../api/resources'
+import {
+  useDeleteDirectConnectionMutation,
+  useInspectHostKeyMutation,
+  useLazyConnectionsQuery,
+  useLazyDirectConnectionQuery,
+} from '../../api/resources'
 import { useAppDispatch, useAppSelector, useAppStore } from '../../state/hooks'
 import {
   activateTab,
@@ -29,6 +34,7 @@ import type { Connection } from '../../types'
 import { classNames } from '../../utils/classNames'
 import { Sidebar } from '../sidebar/Sidebar'
 import { HostKeyDialog } from '../sidebar/HostKeyDialog'
+import { ConnectionDialog } from '../sidebar/ConnectionDialog'
 import { Workspace } from '../workspace/Workspace'
 import { useDetachedTabs } from '../workspace/useDetachedTabs'
 import { Header } from './Header'
@@ -45,6 +51,9 @@ export function AppShell() {
   const [deleteSession] = useDeleteSessionMutation()
   const [inspectHostKey] = useInspectHostKeyMutation()
   const [loadConnections] = useLazyConnectionsQuery()
+  const [loadDirectConnection] = useLazyDirectConnectionQuery()
+  const [deleteDirectConnection] = useDeleteDirectConnectionMutation()
+  const [directDialogOpen, setDirectDialogOpen] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
   const userId = useAppSelector((state) => state.auth.user?.id ?? '')
   const { detach, detachedCount } = useDetachedTabs(userId, setMessage)
@@ -57,6 +66,24 @@ export function AppShell() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [sidebarResizing, setSidebarResizing] = useState(false)
   const isWorkspace = location.pathname === '/'
+  const directConnectionIds = tabs
+    .filter((tab) => tab.direct)
+    .map((tab) => tab.connectionId)
+    .join(',')
+
+  useEffect(() => {
+    if (!directConnectionIds) return
+    const ids = directConnectionIds.split(',')
+    const timer = window.setInterval(
+      () => {
+        for (const id of ids) {
+          void loadDirectConnection(id, false)
+        }
+      },
+      60 * 60 * 1000,
+    )
+    return () => window.clearInterval(timer)
+  }, [directConnectionIds, loadDirectConnection])
 
   function toggleSidebar() {
     if (window.matchMedia('(max-width: 760px)').matches) {
@@ -120,8 +147,11 @@ export function AppShell() {
     }
     if (currentTab(id)?.status !== 'connecting') return
     try {
-      const connections = await loadConnections(undefined, false).unwrap()
-      const connection = connections.find((entry) => entry.id === tab.connectionId)
+      const connection = tab.direct
+        ? await loadDirectConnection(tab.connectionId, false).unwrap()
+        : (await loadConnections(undefined, false).unwrap()).find(
+            (entry) => entry.id === tab.connectionId,
+          )
       if (!connection) {
         dispatch(connectionFailure(id, tab.kind, 'Connection not found.'))
         return
@@ -156,6 +186,9 @@ export function AppShell() {
     }
     if (!existing && currentTabs.length + detachedCount() >= maxOpenTabs) {
       setMessage('Close a tab before opening another connection.')
+      if (connection.direct) {
+        void deleteDirectConnection(connection.id)
+      }
       return
     }
 
@@ -163,11 +196,17 @@ export function AppShell() {
       connection.kind === 'sftp' || connection.kind === 'ftp'
         ? `files-${connection.id}`
         : `pending-${crypto.randomUUID()}`
+    let protocol = connection.kind.toUpperCase()
+    if (connection.kind === 'ftp') {
+      protocol = connection.ftpTls ? 'FTPS' : 'FTP'
+    }
+    const tabName = connection.direct ? `${connection.host} · ${protocol}` : connection.name
     dispatch(
       openTab({
         id: tabId,
         connectionId: connection.id,
-        name: connection.name,
+        direct: connection.direct,
+        name: tabName,
         kind: connection.kind,
         status: 'connecting',
         vncReadOnly: connection.kind === 'vnc' ? connection.vncReadOnly : undefined,
@@ -192,7 +231,11 @@ export function AppShell() {
     const tab = tabs.find((item) => item.id === id)
     dispatch(closeTab(id))
     setHostKeyPrompt((prompt) => (prompt?.tabId === id ? null : prompt))
-    if (tab?.sessionId) void deleteSession(tab.sessionId)
+    if (tab?.direct) {
+      void deleteDirectConnection(tab.connectionId)
+    } else if (tab?.sessionId) {
+      void deleteSession(tab.sessionId)
+    }
   }
 
   function splitWorkspaceTab(tabId: string, paneId: string, edge: PaneEdge) {
@@ -209,7 +252,10 @@ export function AppShell() {
 
   return (
     <div className="app-shell">
-      <Header onToggleSidebar={toggleSidebar} />
+      <Header
+        onToggleSidebar={toggleSidebar}
+        onNewDirectConnection={() => setDirectDialogOpen(true)}
+      />
       <div className="shell-body">
         <aside
           id="connections-sidebar"
@@ -286,6 +332,17 @@ export function AppShell() {
           {message}
         </Alert>
       </Snackbar>
+      <DialogPresence>
+        {directDialogOpen && (
+          <ConnectionDialog
+            direct
+            folders={[]}
+            onClose={() => setDirectDialogOpen(false)}
+            onNotice={setMessage}
+            onDirectCreated={(connection) => void openConnection(connection)}
+          />
+        )}
+      </DialogPresence>
       <DialogPresence>
         {hostKeyPrompt && (
           <HostKeyDialog

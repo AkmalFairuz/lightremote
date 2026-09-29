@@ -12,7 +12,11 @@ import {
   Switch,
   TextField,
 } from '../../ui'
-import { useCreateConnectionMutation, useUpdateConnectionMutation } from '../../api/resources'
+import {
+  useCreateConnectionMutation,
+  useCreateDirectConnectionMutation,
+  useUpdateConnectionMutation,
+} from '../../api/resources'
 import { useAppDispatch } from '../../state/hooks'
 import { closeConnectionTabs } from '../../state/workspaceSlice'
 import {
@@ -34,10 +38,12 @@ import { RemoteCredentialsFields } from './RemoteCredentialsFields'
 
 interface ConnectionDialogProps {
   connection?: Connection
+  direct?: boolean
   initialFolderId?: string | null
   folders: Folder[]
   onClose: () => void
   onNotice: (message: string) => void
+  onDirectCreated?: (connection: Connection) => void
 }
 
 const defaultPorts: Record<ConnectionKind, number> = { ssh: 22, sftp: 22, ftp: 21, vnc: 5900 }
@@ -65,13 +71,17 @@ function folderPath(folders: Folder[], folderId: string): string[] {
 
 export function ConnectionDialog({
   connection,
+  direct = false,
   initialFolderId,
   folders,
   onClose,
   onNotice,
+  onDirectCreated,
 }: ConnectionDialogProps) {
   const dispatch = useAppDispatch()
   const [createConnection, { isLoading: creating }] = useCreateConnectionMutation()
+  const [createDirectConnection, { isLoading: creatingDirect }] =
+    useCreateDirectConnectionMutation()
   const [updateConnection, { isLoading: updating }] = useUpdateConnectionMutation()
   const [name, setName] = useState(connection?.name ?? '')
   const [kind, setKind] = useState<ConnectionKind>(connection?.kind ?? 'ssh')
@@ -115,6 +125,15 @@ export function ConnectionDialog({
     setFtpTls(false)
   }
 
+  function dialogTitle() {
+    if (connection) return 'Edit connection'
+    if (step === 'type') {
+      return direct ? 'New direct connection · Choose type' : 'New connection · Choose type'
+    }
+    const protocol = kind === 'ftp' ? 'FTP / FTPS' : kind.toUpperCase()
+    return direct ? `Direct ${protocol} connection` : `New ${protocol} connection`
+  }
+
   async function save(event: FormEvent) {
     event.preventDefault()
     if (step === 'type') return
@@ -138,9 +157,9 @@ export function ConnectionDialog({
     }
 
     const input: ConnectionInput = {
-      name,
+      name: direct ? host : name,
       kind,
-      folderId: folderId || null,
+      folderId: direct ? null : folderId || null,
       host,
       port: portNumber,
       username,
@@ -162,6 +181,12 @@ export function ConnectionDialog({
     }
 
     try {
+      if (direct) {
+        const created = await createDirectConnection(input).unwrap()
+        onClose()
+        onDirectCreated?.(created)
+        return
+      }
       if (connection) {
         await updateConnection({ id: connection.id, input }).unwrap()
         dispatch(closeConnectionTabs(connection.id))
@@ -186,13 +211,7 @@ export function ConnectionDialog({
         initialFocus={step === 'type' ? 'dialog' : 'first'}
       >
         <form onSubmit={save}>
-          <DialogTitle>
-            {connection
-              ? 'Edit connection'
-              : step === 'type'
-                ? 'New connection · Choose type'
-                : `New ${kind === 'ftp' ? 'FTP / FTPS' : kind.toUpperCase()} connection`}
-          </DialogTitle>
+          <DialogTitle>{dialogTitle()}</DialogTitle>
           <DialogContent className={step === 'type' ? 'connection-type-content' : 'dialog-fields'}>
             {step === 'type' ? (
               <ConnectionTypeStep
@@ -205,12 +224,14 @@ export function ConnectionDialog({
               <>
                 <Notice message={error} />
                 <div className="form-grid">
-                  <TextField
-                    label="Display name"
-                    value={name}
-                    onChange={(event) => setName(event.target.value)}
-                    required
-                  />
+                  {!direct && (
+                    <TextField
+                      label="Display name"
+                      value={name}
+                      onChange={(event) => setName(event.target.value)}
+                      required
+                    />
+                  )}
                   {connection && (
                     <TextField
                       select
@@ -258,40 +279,42 @@ export function ConnectionDialog({
                       <MenuItem value="private_key">Private key</MenuItem>
                     )}
                   </TextField>
-                  <TextField
-                    className="connection-folder-field"
-                    label="Folder"
-                    value=""
-                    onClick={() => setFolderPickerOpen(true)}
-                    onKeyDown={(event) => {
-                      if (event.key === 'Enter' || event.key === ' ') {
-                        event.preventDefault()
-                        setFolderPickerOpen(true)
-                      }
-                    }}
-                    slotProps={{
-                      inputLabel: { shrink: true },
-                      input: {
-                        startAdornment: (
-                          <InputAdornment position="start" className="connection-folder-path">
-                            <span className="connection-folder-path-content" ref={folderPathRef}>
-                              {folderSegments.map((segment, index) => (
-                                <span className="connection-folder-segment" key={index}>
-                                  {index > 0 && <Glyph name="chevron-right" size={17} />}
-                                  <span className="connection-folder-name">{segment}</span>
-                                </span>
-                              ))}
-                            </span>
-                          </InputAdornment>
-                        ),
-                      },
-                      htmlInput: {
-                        readOnly: true,
-                        'aria-label': 'Choose folder',
-                        'aria-haspopup': 'dialog',
-                      },
-                    }}
-                  />
+                  {!direct && (
+                    <TextField
+                      className="connection-folder-field"
+                      label="Folder"
+                      value=""
+                      onClick={() => setFolderPickerOpen(true)}
+                      onKeyDown={(event) => {
+                        if (event.key === 'Enter' || event.key === ' ') {
+                          event.preventDefault()
+                          setFolderPickerOpen(true)
+                        }
+                      }}
+                      slotProps={{
+                        inputLabel: { shrink: true },
+                        input: {
+                          startAdornment: (
+                            <InputAdornment position="start" className="connection-folder-path">
+                              <span className="connection-folder-path-content" ref={folderPathRef}>
+                                {folderSegments.map((segment, index) => (
+                                  <span className="connection-folder-segment" key={index}>
+                                    {index > 0 && <Glyph name="chevron-right" size={17} />}
+                                    <span className="connection-folder-name">{segment}</span>
+                                  </span>
+                                ))}
+                              </span>
+                            </InputAdornment>
+                          ),
+                        },
+                        htmlInput: {
+                          readOnly: true,
+                          'aria-label': 'Choose folder',
+                          'aria-haspopup': 'dialog',
+                        },
+                      }}
+                    />
+                  )}
                   {kind === 'vnc' && (
                     <TextField
                       select
@@ -356,15 +379,19 @@ export function ConnectionDialog({
           {step === 'details' && (
             <DialogActions>
               {!connection && <Button onClick={() => setStep('type')}>Back</Button>}
-              <Button variant="contained" type="submit" disabled={creating || updating}>
-                Save connection
+              <Button
+                variant="contained"
+                type="submit"
+                disabled={creating || creatingDirect || updating}
+              >
+                {direct ? 'Connect' : 'Save connection'}
               </Button>
             </DialogActions>
           )}
         </form>
       </Dialog>
       <DialogPresence>
-        {folderPickerOpen && (
+        {!direct && folderPickerOpen && (
           <FolderPickerDialog
             folders={folders}
             selectedId={folderId}

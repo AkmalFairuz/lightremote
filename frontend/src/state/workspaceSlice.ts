@@ -22,6 +22,7 @@ import {
 export interface WorkspaceTab {
   id: string
   connectionId: string
+  direct: boolean
   name: string
   kind: ConnectionKind
   status: 'connecting' | 'ready' | 'error'

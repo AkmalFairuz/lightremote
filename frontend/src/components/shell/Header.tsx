@@ -13,14 +13,21 @@ import { AccountPopover } from './AccountPopover'
 import { ChangePasswordDialog } from './ChangePasswordDialog'
 import { clearDetachedRegistry } from '../workspace/detachedTabs'
 import { ViewMenu, type ViewSection } from './ViewMenu'
+import { FileMenu } from './FileMenu'
 
-export function Header({ onToggleSidebar }: { onToggleSidebar: () => void }) {
+interface HeaderProps {
+  onToggleSidebar: () => void
+  onNewDirectConnection: () => void
+}
+
+export function Header({ onToggleSidebar, onNewDirectConnection }: HeaderProps) {
   const dispatch = useAppDispatch()
   const userId = useAppSelector((state) => state.auth.user?.id ?? '')
   const localMode = useAppSelector((state) => state.auth.localMode)
   const navigate = useNavigate()
   const [logout] = useLogoutMutation()
   const [viewAnchor, setViewAnchor] = useState<HTMLElement | null>(null)
+  const [fileAnchor, setFileAnchor] = useState<HTMLElement | null>(null)
   const [viewSection, setViewSection] = useState<ViewSection>('root')
   const [accountAnchor, setAccountAnchor] = useState<HTMLElement | null>(null)
   const [accountDialog, setAccountDialog] = useState<'password' | 'users' | null>(null)
@@ -58,12 +65,26 @@ export function Header({ onToggleSidebar }: { onToggleSidebar: () => void }) {
         <Link to="/" className="brand-link">
           LightRemote
         </Link>
-        <nav className="header-menus" aria-label="View and account">
+        <nav className="header-menus" aria-label="File, view, and account">
+          <Button
+            aria-label="Open file actions"
+            aria-haspopup="menu"
+            aria-expanded={Boolean(fileAnchor)}
+            onClick={(event) => {
+              setViewAnchor(null)
+              setAccountAnchor(null)
+              setFileAnchor(event.currentTarget)
+            }}
+            endIcon={<Glyph name="keyboard-arrow-down" size={17} />}
+          >
+            File
+          </Button>
           <Button
             aria-label="Open view settings"
             aria-haspopup="menu"
             aria-expanded={Boolean(viewAnchor)}
             onClick={(event) => {
+              setFileAnchor(null)
               setAccountAnchor(null)
               setViewSection('root')
               setViewAnchor(event.currentTarget)
@@ -78,6 +99,7 @@ export function Header({ onToggleSidebar }: { onToggleSidebar: () => void }) {
               aria-haspopup="menu"
               aria-expanded={Boolean(accountAnchor)}
               onClick={(event) => {
+                setFileAnchor(null)
                 setViewAnchor(null)
                 setViewSection('root')
                 setAccountAnchor(event.currentTarget)
@@ -89,6 +111,14 @@ export function Header({ onToggleSidebar }: { onToggleSidebar: () => void }) {
           )}
         </nav>
       </div>
+      <FileMenu
+        anchorEl={fileAnchor}
+        onClose={() => setFileAnchor(null)}
+        onNewDirectConnection={() => {
+          setFileAnchor(null)
+          onNewDirectConnection()
+        }}
+      />
       <ViewMenu
         anchorEl={viewAnchor}
         section={viewSection}
