@@ -1,7 +1,10 @@
 .env
+.DS_Store
 .env.*
 !.env.example
 bin/
+frontend/bindings/
+.task/
 coverage.out
 *.db
 *.db-journal

@@ -9,6 +9,9 @@ import { FileToolbar } from './FileToolbar'
 import { sortFileEntries, type FileSort, type FileSortField } from './fileSort'
 import { joinRemotePath, normalizeRemotePath, parentRemotePath } from '../../utils/remoteFilePath'
 import { useRemoteDirectory } from './useRemoteDirectory'
+import { saveRemoteFile } from '../../desktop/actions'
+import { isDesktop } from '../../desktop/viewerSocket'
+import { errorMessage } from '../../types'
 
 export function FileManager({
   connectionId,
@@ -102,6 +105,12 @@ export function FileManager({
   }
 
   function download(entry: FileEntry) {
+    if (isDesktop) {
+      void saveRemoteFile(connectionId, entry.path, entry.name).catch((cause) =>
+        setError(errorMessage(cause)),
+      )
+      return
+    }
     const link = document.createElement('a')
     link.href = files.downloadURL(connectionId, entry.path)
     link.download = entry.name

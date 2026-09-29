@@ -4,12 +4,14 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"net"
 	"net/http"
 	"strings"
 	"time"
 	"unicode/utf8"
 
 	"github.com/akmalfairuz/lightremote/internal/connections"
+	"github.com/akmalfairuz/lightremote/internal/model"
 	"github.com/akmalfairuz/lightremote/internal/work"
 	"github.com/coder/websocket"
 	"github.com/go-chi/chi/v5"
@@ -20,6 +22,22 @@ type WorkHandler struct {
 	sessions    *work.Manager
 	auth        *AuthMiddleware
 	dialTimeout time.Duration
+}
+
+// ViewerTransport carries the existing SSH and VNC protocols over either
+// browser WebSockets or an in-process desktop stream.
+type ViewerTransport interface {
+	Read(context.Context) (websocket.MessageType, []byte, error)
+	Write(context.Context, websocket.MessageType, []byte) error
+	Close(websocket.StatusCode, string) error
+	CloseNow() error
+	BinaryConn(context.Context) net.Conn
+}
+
+type webViewer struct{ *websocket.Conn }
+
+func (v webViewer) BinaryConn(ctx context.Context) net.Conn {
+	return websocket.NetConn(ctx, v.Conn, websocket.MessageBinary)
 }
 
 // NewWorkHandler wires SSH and VNC work-session endpoints.
@@ -110,6 +128,34 @@ func (h *WorkHandler) WebSocket(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		return
 	}
+	h.serveViewer(r.Context(), session, connection, secret, webViewer{socket}, principal(r).ExpiresAt)
+}
+
+// ServeLocalViewer attaches a Wails stream to a local-mode work session.
+func (h *WorkHandler) ServeLocalViewer(ctx context.Context, sessionID string, socket ViewerTransport) {
+	if !h.auth.LocalMode() {
+		_ = socket.Close(websocket.StatusPolicyViolation, "desktop viewer requires local mode")
+		return
+	}
+	session, ok := h.sessions.Get(h.auth.localUser.ID, sessionID)
+	if !ok {
+		_ = socket.Close(websocket.StatusPolicyViolation, "work session not found")
+		return
+	}
+	connection, err := h.connections.Get(ctx, h.auth.localUser.ID, session.ConnectionID)
+	if err != nil {
+		_ = socket.Close(websocket.StatusPolicyViolation, "connection not found")
+		return
+	}
+	secret, err := h.connections.Credentials(ctx, connection)
+	if err != nil {
+		_ = socket.Close(websocket.StatusInternalError, "could not decrypt credentials")
+		return
+	}
+	h.serveViewer(ctx, session, connection, secret, socket, time.Time{})
+}
+
+func (h *WorkHandler) serveViewer(requestCtx context.Context, session *work.Session, connection model.Connection, secret model.RemoteSecret, socket ViewerTransport, expiresAt time.Time) {
 	defer socket.CloseNow()
 	viewerCtx, finish, err := session.Attach(func() { _ = socket.CloseNow() }, func() {
 		h.sessions.DeleteDetached(session.UserID, session.ID)
@@ -120,15 +166,15 @@ func (h *WorkHandler) WebSocket(w http.ResponseWriter, r *http.Request) {
 	}
 	defer finish()
 
-	ctx := viewerCtx
-	cancel := func() {}
+	ctx, cancel := context.WithCancel(viewerCtx)
 	if !h.auth.LocalMode() {
-		ctx, cancel = context.WithDeadline(viewerCtx, principal(r).ExpiresAt)
+		cancel()
+		ctx, cancel = context.WithDeadline(viewerCtx, expiresAt)
 	}
 	defer cancel()
 	go func() {
 		select {
-		case <-r.Context().Done():
+		case <-requestCtx.Done():
 			cancel()
 		case <-ctx.Done():
 		}
@@ -148,14 +194,14 @@ func (h *WorkHandler) WebSocket(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		defer session.SetFiles(nil)
-		_ = bridge.Serve(ctx, socket, session.RecordReceived, session.RecordSent, func() {
+		_ = bridge.Serve(ctx, socket.BinaryConn(ctx), session.RecordReceived, session.RecordSent, func() {
 			session.SetFiles(bridge.Files(false))
 		})
 	}
 }
 
 // serveSSHViewer bridges one browser attachment to a preserved shell.
-func (h *WorkHandler) serveSSHViewer(ctx context.Context, socket *websocket.Conn, workSession *work.Session, runtime *work.SSHRuntime) {
+func (h *WorkHandler) serveSSHViewer(ctx context.Context, socket ViewerTransport, workSession *work.Session, runtime *work.SSHRuntime) {
 	sendControl(ctx, socket, "ready", "")
 	go func() {
 		var sequence uint64
@@ -217,7 +263,7 @@ func vncCloseReason(err error) string {
 }
 
 // sendControl reports SSH readiness or a setup error over a text WebSocket message.
-func sendControl(ctx context.Context, socket *websocket.Conn, kind, message string) {
+func sendControl(ctx context.Context, socket ViewerTransport, kind, message string) {
 	payload, _ := json.Marshal(map[string]string{"type": kind, "message": message})
 	_ = socket.Write(ctx, websocket.MessageText, payload)
 }

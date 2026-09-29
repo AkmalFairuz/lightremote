@@ -1,5 +1,6 @@
 import { ListItemIcon, MenuItem, MenuList, Popover } from '@mui/material'
 import { Glyph } from '../common/Glyph'
+import { desktopRuntime } from '../../desktop/runtime'
 
 interface HelpMenuProps {
   anchorEl: HTMLElement | null
@@ -22,7 +23,13 @@ export function HelpMenu({ anchorEl, onClose }: HelpMenuProps) {
           href="https://github.com/AkmalFairuz/lightremote"
           target="_blank"
           rel="noopener noreferrer"
-          onClick={onClose}
+          onClick={(event) => {
+            onClose()
+            if (desktopRuntime) {
+              event.preventDefault()
+              void desktopRuntime.Browser.OpenURL('https://github.com/AkmalFairuz/lightremote')
+            }
+          }}
         >
           <ListItemIcon>
             <Glyph name="code" size={17} />

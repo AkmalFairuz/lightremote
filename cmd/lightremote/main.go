@@ -10,16 +10,13 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/akmalfairuz/lightremote/internal/bootstrap"
 	"github.com/akmalfairuz/lightremote/internal/config"
-	"github.com/akmalfairuz/lightremote/internal/connections"
-	"github.com/akmalfairuz/lightremote/internal/folders"
 	"github.com/akmalfairuz/lightremote/internal/httpapi"
-	"github.com/akmalfairuz/lightremote/internal/model"
 	"github.com/akmalfairuz/lightremote/internal/security"
 	"github.com/akmalfairuz/lightremote/internal/sshkeys"
 	"github.com/akmalfairuz/lightremote/internal/store"
 	"github.com/akmalfairuz/lightremote/internal/store/migrations"
-	"github.com/akmalfairuz/lightremote/internal/work"
 )
 
 // main logs startup failures and exits with a nonzero status.
@@ -45,6 +42,36 @@ func run() error {
 	}
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
+	if command != "serve" {
+		return migrate(ctx, cfg, command)
+	}
+
+	runtime, err := bootstrap.New(ctx, cfg)
+	if err != nil {
+		return err
+	}
+	defer runtime.Close()
+	server := &http.Server{
+		Addr:              cfg.ListenAddr,
+		Handler:           httpapi.Router(runtime.Routes),
+		ReadHeaderTimeout: 10 * time.Second,
+	}
+	go func() {
+		<-ctx.Done()
+		shutdown, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+		_ = server.Shutdown(shutdown)
+	}()
+
+	log.Printf("lightremote listening on %s", cfg.ListenAddr)
+	err = server.ListenAndServe()
+	if err == http.ErrServerClosed {
+		return nil
+	}
+	return err
+}
+
+func migrate(ctx context.Context, cfg config.Config, command string) error {
 	db, err := store.Open(ctx, store.DatabaseSettings{
 		Driver:     cfg.DatabaseDriver,
 		SQLitePath: cfg.SQLitePath,
@@ -70,82 +97,5 @@ func run() error {
 	if err != nil {
 		return err
 	}
-
-	users := store.NewUserRepository(db)
-	loginSessions := store.NewLoginSessionRepository(db)
-	folderRepository := store.NewFolderRepository(db)
-	connectionRepository := store.NewConnectionRepository(db)
-	keyService := sshkeys.NewService(db, vault)
-	if err := keyService.MigrateLegacy(ctx); err != nil {
-		return err
-	}
-	if command == "up" {
-		return nil
-	}
-
-	authService := security.NewAuthService(users, loginSessions, cfg.SessionTTL)
-	var localUser model.User
-	var localCSRF string
-	if cfg.LocalMode {
-		localUser, err = security.BootstrapLocalUser(ctx, users)
-		if err != nil {
-			return err
-		}
-		localCSRF, err = security.RandomToken()
-		if err != nil {
-			return err
-		}
-	} else {
-		if err := authService.BootstrapAdmin(ctx, cfg.AdminEmail, cfg.AdminPassword); err != nil {
-			return err
-		}
-		go func() {
-			ticker := time.NewTicker(time.Hour)
-			defer ticker.Stop()
-			for {
-				select {
-				case <-ctx.Done():
-					return
-				case <-ticker.C:
-					cleanup, cancel := context.WithTimeout(ctx, 10*time.Second)
-					_ = loginSessions.DeleteExpired(cleanup)
-					cancel()
-				}
-			}
-		}()
-	}
-	folderService := folders.NewService(folderRepository)
-	connectionService := connections.NewService(connectionRepository, folderService, vault, keyService)
-	workSessions := work.NewManager()
-	authMiddleware := httpapi.NewAuthMiddleware(authService, cfg, localUser, localCSRF)
-
-	handler := httpapi.Router(httpapi.Routes{
-		Auth:        httpapi.NewAuthHandler(authService, workSessions, connectionService, cfg),
-		Users:       httpapi.NewUserHandler(users, authService, workSessions),
-		Folders:     httpapi.NewFolderHandler(folderService),
-		Connections: httpapi.NewConnectionHandler(connectionService, workSessions, cfg.DialTimeout),
-		SSHKeys:     httpapi.NewSSHKeyHandler(keyService),
-		Files:       httpapi.NewFileHandler(connectionService, workSessions, cfg.DialTimeout, cfg.MaxUploadBytes),
-		Work:        httpapi.NewWorkHandler(connectionService, workSessions, authMiddleware, cfg.DialTimeout),
-		Middleware:  authMiddleware,
-		Database:    db,
-	})
-	server := &http.Server{
-		Addr:              cfg.ListenAddr,
-		Handler:           handler,
-		ReadHeaderTimeout: 10 * time.Second,
-	}
-	go func() {
-		<-ctx.Done()
-		shutdown, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-		defer cancel()
-		_ = server.Shutdown(shutdown)
-	}()
-
-	log.Printf("lightremote listening on %s", cfg.ListenAddr)
-	err = server.ListenAndServe()
-	if err == http.ErrServerClosed {
-		return nil
-	}
-	return err
+	return sshkeys.NewService(db, vault).MigrateLegacy(ctx)
 }

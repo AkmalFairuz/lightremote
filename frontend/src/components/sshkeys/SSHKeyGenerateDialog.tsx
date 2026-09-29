@@ -15,6 +15,8 @@ import {
 } from '../../ui'
 import { Notice } from '../common/Notice'
 import { Glyph } from '../common/Glyph'
+import { saveTextFile } from '../../desktop/actions'
+import { isDesktop } from '../../desktop/viewerSocket'
 
 interface Props {
   onClose: () => void
@@ -86,6 +88,14 @@ export function SSHKeyGenerateDialog({ onClose }: Props) {
 
   const filename = keyFilename(name)
 
+  function saveKey(content: string, name: string) {
+    if (isDesktop) {
+      void saveTextFile(name, content).catch((cause) => setError(errorMessage(cause)))
+    } else {
+      downloadKey(content, name)
+    }
+  }
+
   return (
     <Dialog open onClose={close} fullWidth maxWidth="xs">
       {generated ? (
@@ -104,7 +114,7 @@ export function SSHKeyGenerateDialog({ onClose }: Props) {
               type="button"
               variant="outlined"
               startIcon={<Glyph name="download" size={18} />}
-              onClick={() => downloadKey(generated.privateKey, filename)}
+              onClick={() => saveKey(generated.privateKey, filename)}
             >
               Private key
             </Button>
@@ -112,7 +122,7 @@ export function SSHKeyGenerateDialog({ onClose }: Props) {
               type="button"
               variant="outlined"
               startIcon={<Glyph name="download" size={18} />}
-              onClick={() => downloadKey(generated.publicKey, `${filename}.pub`)}
+              onClick={() => saveKey(generated.publicKey, `${filename}.pub`)}
             >
               Public key
             </Button>

@@ -15,6 +15,30 @@ backend contract is documented in the [OpenAPI specification](api/openapi.json).
 2. Run `go run ./cmd/lightremote`. The backend creates its tables and the first
    admin account on startup. After that, `ADMIN_PASSWORD` can be removed.
 
+## Desktop app
+
+The Wails v3 desktop app uses the same workspace and REST API in local mode.
+It runs without a separate HTTP server or login. Its SSH and VNC viewers use
+Wails streams; the browser version continues to use WebSockets.
+
+Install Go 1.26, Node.js, the [platform dependencies](https://v3.wails.io/getting-started/installation/),
+and the pinned CLI:
+
+```sh
+go install github.com/wailsapp/wails/v3/cmd/wails3@v3.0.0-beta.26
+cd frontend && npm ci && cd ..
+wails3 build
+```
+
+`wails3 dev` starts the desktop development build. The compiled executable
+is written under `bin/`. The desktop app creates its own SQLite database and
+vault key in `~/Library/Application Support/LightRemote` on macOS,
+`%LOCALAPPDATA%\LightRemote` on Windows, or
+`${XDG_DATA_HOME:-~/.local/share}/lightremote` on Linux. Keep both files when
+backing up data; losing the key makes saved credentials unreadable. Desktop
+data is separate from the web server's database and ignores the server's
+`.env` settings.
+
 For a single-person installation without login, set `LOCAL_MODE=true` and
 `LISTEN_ADDR=127.0.0.1:8080`. Keep `ENCRYPTION_KEY` set so saved remote
 credentials remain readable across restarts. Local mode creates one stable

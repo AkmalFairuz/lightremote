@@ -1,0 +1,15 @@
+{
+	"fixed": {
+		"file_version": "0.1.0"
+	},
+	"info": {
+		"0000": {
+			"ProductVersion": "0.1.0",
+			"CompanyName": "AkmalFairuz",
+			"FileDescription": "Remote desktop and file workspace",
+			"LegalCopyright": "© 2026, AkmalFairuz",
+			"ProductName": "LightRemote",
+			"Comments": "LightRemote desktop app"
+		}
+	}
+}

@@ -4,6 +4,7 @@ import { Terminal } from '@xterm/xterm'
 import { FitAddon } from '@xterm/addon-fit'
 import { resolveTerminalTheme } from './terminalTheme'
 import { useTerminalThemePreference } from './terminalThemePreference'
+import { openViewerSocket } from '../../desktop/viewerSocket'
 
 const baseTerminalFontPixels = 13
 const percentageScale = 100
@@ -96,9 +97,7 @@ export function SshTerminal({
     lastSentSize.current = null
     const initialFit = requestAnimationFrame(fitAndResize)
 
-    const url = new URL(`/api/sessions/${sessionId}/ws`, window.location.href)
-    url.protocol = url.protocol === 'https:' ? 'wss:' : 'ws:'
-    const ws = new WebSocket(url)
+    const ws = openViewerSocket('ssh', sessionId)
     ws.binaryType = 'arraybuffer'
     socket.current = ws
     let settled = false
