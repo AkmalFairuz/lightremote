@@ -35,6 +35,7 @@ export function StatusBar({
   })
   const previous = useRef<{ received: number; sent: number; at: number } | null>(null)
   const [rates, setRates] = useState({ received: 0, sent: 0 })
+  const showBandwidth = Boolean(tab?.status === 'ready' && tab.sessionId && data)
 
   useEffect(() => {
     previous.current = null
@@ -112,8 +113,8 @@ export function StatusBar({
       {tab && (tab.kind === 'ssh' || tab.kind === 'vnc') && (
         <ZoomControls kind={tab.kind} zoom={tab.zoom ?? defaultZoom} onChange={onZoom} />
       )}
-      <div className="status-metrics">
-        {tab?.status === 'ready' && tab.sessionId && data ? (
+      <div className={showBandwidth ? 'status-metrics status-bandwidth' : 'status-metrics'}>
+        {showBandwidth && data ? (
           <>
             <span title="Browser to remote">
               <Glyph name="arrow-upward" size={14} /> {formatBytes(data.metrics.bytesReceived)} ·{' '}

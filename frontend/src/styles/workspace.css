@@ -4,6 +4,7 @@
   height: 100%;
   min-width: 0;
   min-height: 0;
+  container-type: inline-size;
   grid-template-columns: minmax(0, 1fr);
   grid-template-rows: 30px minmax(0, 1fr) 26px;
 }
@@ -365,6 +366,12 @@
   min-width: 0;
   gap: 18px;
   overflow-x: auto;
+}
+
+@container (max-width: 700px) {
+  .status-bandwidth {
+    display: none;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
