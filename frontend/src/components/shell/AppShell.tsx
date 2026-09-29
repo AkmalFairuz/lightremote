@@ -253,6 +253,14 @@ export function AppShell() {
         onNewDirectConnection={() => setDirectDialogOpen(true)}
       />
       <div className="shell-body">
+        {mobileSidebar && (
+          <button
+            type="button"
+            className="mobile-sidebar-backdrop"
+            aria-label="Close connections sidebar"
+            onClick={() => setMobileSidebar(false)}
+          />
+        )}
         <aside
           id="connections-sidebar"
           className={classNames(

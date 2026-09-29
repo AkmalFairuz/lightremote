@@ -1,4 +1,5 @@
 .app-shell {
+  position: relative;
   display: flex;
   width: 100%;
   height: 100dvh;
@@ -96,6 +97,10 @@
   background: transparent;
 }
 
+.mobile-sidebar-backdrop {
+  display: none;
+}
+
 .workspace-route,
 .settings-route {
   height: 100%;
@@ -170,6 +175,17 @@
 @media (max-width: 760px) {
   .app-shell {
     min-height: 0;
+  }
+
+  .mobile-sidebar-backdrop {
+    position: absolute;
+    z-index: 3;
+    inset: 38px 0 0;
+    display: block;
+    padding: 0;
+    border: 0;
+    background: rgb(0 0 0 / 40%);
+    cursor: pointer;
   }
 
   .sidebar-resizer {
