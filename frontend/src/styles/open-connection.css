@@ -1,0 +1,84 @@
+.open-connection-dialog .MuiDialog-container {
+  align-items: flex-start;
+}
+
+.open-connection-dialog .MuiDialog-paper.ui-dialog {
+  margin-top: min(16dvh, 120px);
+  border-radius: 12px;
+}
+
+.open-connection-dialog .open-connection-content.MuiDialogContent-root {
+  padding: 12px 16px 16px;
+}
+
+.open-connection-content .ui-field .MuiInputBase-root {
+  min-height: 48px;
+  font-size: 16px;
+}
+
+.open-connection-results {
+  max-height: min(50dvh, 400px);
+  margin-top: 10px;
+  overflow-y: auto;
+}
+
+.open-connection-result {
+  display: flex;
+  width: 100%;
+  min-height: 58px;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--lr-text);
+  text-align: left;
+}
+
+.open-connection-result > svg {
+  flex-shrink: 0;
+  color: var(--lr-muted);
+}
+
+.open-connection-result:hover,
+.open-connection-result-selected {
+  background: var(--lr-primary-soft);
+}
+
+.open-connection-result-details {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.open-connection-result-details strong,
+.open-connection-result-details small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.open-connection-result-details strong {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.open-connection-result-details small {
+  color: var(--lr-muted);
+  font-size: 12px;
+}
+
+.open-connection-message {
+  margin: 0;
+  padding: 20px 12px;
+  color: var(--lr-muted);
+  text-align: center;
+}
+
+@media (max-width: 760px) {
+  .open-connection-dialog .MuiDialog-paper.ui-dialog {
+    margin-top: 56px;
+  }
+}

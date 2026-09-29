@@ -203,13 +203,7 @@ export function ConnectionDialog({
 
   return (
     <>
-      <Dialog
-        open
-        onClose={onClose}
-        fullWidth
-        maxWidth="sm"
-        initialFocus={step === 'type' ? 'dialog' : 'first'}
-      >
+      <Dialog open onClose={onClose} fullWidth maxWidth="sm">
         <form onSubmit={save}>
           <DialogTitle>{dialogTitle()}</DialogTitle>
           <DialogContent className={step === 'type' ? 'connection-type-content' : 'dialog-fields'}>

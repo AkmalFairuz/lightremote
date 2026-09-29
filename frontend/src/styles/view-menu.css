@@ -4,7 +4,20 @@
 }
 
 .file-popover.MuiPaper-root {
-  width: min(220px, calc(100vw - 24px));
+  width: min(290px, calc(100vw - 24px));
+}
+
+.file-popover .file-menu-shortcut {
+  flex-shrink: 0;
+  margin-left: auto;
+  color: var(--lr-muted);
+  font-size: 11px;
+}
+
+@media (max-width: 420px) {
+  .file-popover .file-menu-shortcut {
+    display: none;
+  }
 }
 
 .view-submenu {

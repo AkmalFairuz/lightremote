@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useLogoutMutation } from '../../api/auth'
 import { api } from '../../api/base'
@@ -17,10 +17,11 @@ import { FileMenu } from './FileMenu'
 
 interface HeaderProps {
   onToggleSidebar: () => void
+  onOpenConnection: () => void
   onNewDirectConnection: () => void
 }
 
-export function Header({ onToggleSidebar, onNewDirectConnection }: HeaderProps) {
+export function Header({ onToggleSidebar, onOpenConnection, onNewDirectConnection }: HeaderProps) {
   const dispatch = useAppDispatch()
   const userId = useAppSelector((state) => state.auth.user?.id ?? '')
   const localMode = useAppSelector((state) => state.auth.localMode)
@@ -31,6 +32,48 @@ export function Header({ onToggleSidebar, onNewDirectConnection }: HeaderProps) 
   const [viewSection, setViewSection] = useState<ViewSection>('root')
   const [accountAnchor, setAccountAnchor] = useState<HTMLElement | null>(null)
   const [accountDialog, setAccountDialog] = useState<'password' | 'users' | null>(null)
+
+  useEffect(() => {
+    function handleShortcut(event: KeyboardEvent) {
+      if (
+        event.defaultPrevented ||
+        (!event.metaKey && !event.ctrlKey) ||
+        event.altKey ||
+        event.repeat ||
+        event.isComposing
+      ) {
+        return
+      }
+      if (event.key.toLowerCase() !== 'k') return
+
+      // Text fields and remote viewers need their own keyboard commands.
+      const target = event.target
+      if (
+        target instanceof HTMLElement &&
+        (target.isContentEditable ||
+          target.closest(
+            'input, textarea, select, [contenteditable], .terminal-view, .vnc-workspace',
+          ))
+      ) {
+        return
+      }
+      if (document.querySelector('[role="dialog"][aria-modal="true"]')) return
+
+      event.preventDefault()
+      setFileAnchor(null)
+      setViewAnchor(null)
+      setAccountAnchor(null)
+
+      if (event.shiftKey) {
+        onNewDirectConnection()
+      } else {
+        onOpenConnection()
+      }
+    }
+
+    window.addEventListener('keydown', handleShortcut)
+    return () => window.removeEventListener('keydown', handleShortcut)
+  }, [onNewDirectConnection, onOpenConnection])
 
   /** Opens an account action after closing the navbar menu. */
   function openAccountDialog(dialog: 'password' | 'users') {
@@ -114,6 +157,10 @@ export function Header({ onToggleSidebar, onNewDirectConnection }: HeaderProps) 
       <FileMenu
         anchorEl={fileAnchor}
         onClose={() => setFileAnchor(null)}
+        onOpenConnection={() => {
+          setFileAnchor(null)
+          onOpenConnection()
+        }}
         onNewDirectConnection={() => {
           setFileAnchor(null)
           onNewDirectConnection()

@@ -1,0 +1,136 @@
+import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react'
+import { useConnectionsQuery } from '../../api/resources'
+import type { Connection } from '../../types'
+import { Dialog, DialogContent, DialogTitle, InputAdornment, TextField } from '../../ui'
+import { Glyph } from '../common/Glyph'
+
+interface OpenConnectionDialogProps {
+  onClose: () => void
+  onOpen: (connection: Connection) => void
+}
+
+const kindIcons = {
+  ssh: 'terminal',
+  vnc: 'desktop-windows-outline',
+  sftp: 'folder-shared-outline',
+  ftp: 'folder-outline',
+}
+
+/** Finds saved connections without depending on the sidebar's current filter or expanded folders. */
+export function OpenConnectionDialog({ onClose, onOpen }: OpenConnectionDialogProps) {
+  const { data: connections, isLoading, isError } = useConnectionsQuery()
+  const [search, setSearch] = useState('')
+  const [highlightedIndex, setHighlightedIndex] = useState(0)
+  const resultsRef = useRef<HTMLDivElement>(null)
+  const matches = useMemo(() => {
+    const query = search.trim().toLowerCase()
+    return (connections ?? [])
+      .filter((connection) =>
+        `${connection.name} ${connection.host} ${connection.kind} ${connection.username}`
+          .toLowerCase()
+          .includes(query),
+      )
+      .sort(
+        (left, right) => left.name.localeCompare(right.name) || left.host.localeCompare(right.host),
+      )
+  }, [connections, search])
+  const selectedIndex = Math.min(highlightedIndex, matches.length - 1)
+
+  useEffect(() => {
+    if (selectedIndex < 0) return
+    resultsRef.current?.children.item(selectedIndex)?.scrollIntoView({ block: 'nearest' })
+  }, [selectedIndex, matches])
+
+  function handleSearchKeyDown(event: KeyboardEvent<HTMLInputElement>) {
+    if (event.key === 'ArrowDown') {
+      event.preventDefault()
+      setHighlightedIndex((current) =>
+        matches.length > 0 ? Math.min(current + 1, matches.length - 1) : 0,
+      )
+    } else if (event.key === 'ArrowUp') {
+      event.preventDefault()
+      setHighlightedIndex((current) => Math.max(current - 1, 0))
+    } else if (event.key === 'Enter' && selectedIndex >= 0) {
+      event.preventDefault()
+      onOpen(matches[selectedIndex])
+    }
+  }
+
+  return (
+    <Dialog open onClose={onClose} className="open-connection-dialog" maxWidth="sm" fullWidth>
+      <DialogTitle>Open connection</DialogTitle>
+      <DialogContent className="open-connection-content">
+        <TextField
+          autoFocus
+          placeholder="Search connections"
+          aria-label="Search connections"
+          value={search}
+          onChange={(event) => {
+            setSearch(event.target.value)
+            setHighlightedIndex(0)
+          }}
+          onKeyDown={handleSearchKeyDown}
+          slotProps={{
+            input: {
+              startAdornment: (
+                <InputAdornment position="start">
+                  <Glyph name="search" size={21} />
+                </InputAdornment>
+              ),
+            },
+            htmlInput: {
+              role: 'combobox',
+              'aria-autocomplete': 'list',
+              'aria-expanded': true,
+              'aria-controls': 'open-connection-results',
+              'aria-activedescendant':
+                selectedIndex >= 0
+                  ? `open-connection-result-${matches[selectedIndex].id}`
+                  : undefined,
+            },
+          }}
+        />
+        <div
+          id="open-connection-results"
+          ref={resultsRef}
+          className="open-connection-results"
+          role="listbox"
+          aria-label="Connections"
+        >
+          {isLoading ? (
+            <p className="open-connection-message">Loading connections…</p>
+          ) : isError ? (
+            <p className="open-connection-message">Could not load connections.</p>
+          ) : matches.length === 0 ? (
+            <p className="open-connection-message">
+              {search.trim() ? 'No matching connections.' : 'No saved connections.'}
+            </p>
+          ) : (
+            matches.map((connection, index) => (
+              <button
+                key={connection.id}
+                id={`open-connection-result-${connection.id}`}
+                type="button"
+                className={`open-connection-result ${index === selectedIndex ? 'open-connection-result-selected' : ''}`}
+                role="option"
+                aria-selected={index === selectedIndex}
+                tabIndex={-1}
+                onMouseEnter={() => setHighlightedIndex(index)}
+                onMouseDown={(event) => event.preventDefault()}
+                onClick={() => onOpen(connection)}
+              >
+                <Glyph name={kindIcons[connection.kind]} size={22} />
+                <span className="open-connection-result-details">
+                  <strong>{connection.name}</strong>
+                  <small>
+                    {connection.host} · {connection.kind.toUpperCase()}
+                  </small>
+                </span>
+              </button>
+            ))
+          )}
+        </div>
+      </DialogContent>
+    </Dialog>
+  )
+}

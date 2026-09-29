@@ -117,7 +117,7 @@ export function FolderPickerDialog({
   }
 
   return (
-    <Dialog open onClose={onClose} maxWidth="xs" fullWidth initialFocus="dialog">
+    <Dialog open onClose={onClose} maxWidth="xs" fullWidth>
       <DialogTitle>Choose folder</DialogTitle>
       <DialogContent className="folder-picker-content">
         <div role="tree" aria-label="Choose connection folder">

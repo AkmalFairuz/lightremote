@@ -17,7 +17,7 @@ export function AddItemDialog({
   onClose,
 }: AddItemDialogProps) {
   return (
-    <Dialog open onClose={onClose} fullWidth maxWidth="xs" initialFocus="dialog">
+    <Dialog open onClose={onClose} fullWidth maxWidth="xs">
       <DialogTitle>Add to {folderName}</DialogTitle>
       <DialogContent className="folder-add-content">
         <div className="folder-add-options">

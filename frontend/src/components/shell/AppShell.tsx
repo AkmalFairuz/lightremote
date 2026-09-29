@@ -35,6 +35,7 @@ import { classNames } from '../../utils/classNames'
 import { Sidebar } from '../sidebar/Sidebar'
 import { HostKeyDialog } from '../sidebar/HostKeyDialog'
 import { ConnectionDialog } from '../sidebar/ConnectionDialog'
+import { OpenConnectionDialog } from './OpenConnectionDialog'
 import { Workspace } from '../workspace/Workspace'
 import { useDetachedTabs } from '../workspace/useDetachedTabs'
 import { Header } from './Header'
@@ -54,6 +55,7 @@ export function AppShell() {
   const [loadDirectConnection] = useLazyDirectConnectionQuery()
   const [deleteDirectConnection] = useDeleteDirectConnectionMutation()
   const [directDialogOpen, setDirectDialogOpen] = useState(false)
+  const [openConnectionDialog, setOpenConnectionDialog] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
   const userId = useAppSelector((state) => state.auth.user?.id ?? '')
   const { detach, detachedCount } = useDetachedTabs(userId, setMessage)
@@ -250,6 +252,7 @@ export function AppShell() {
     <div className="app-shell">
       <Header
         onToggleSidebar={toggleSidebar}
+        onOpenConnection={() => setOpenConnectionDialog(true)}
         onNewDirectConnection={() => setDirectDialogOpen(true)}
       />
       <div className="shell-body">
@@ -336,6 +339,17 @@ export function AppShell() {
           {message}
         </Alert>
       </Snackbar>
+      <DialogPresence>
+        {openConnectionDialog && (
+          <OpenConnectionDialog
+            onClose={() => setOpenConnectionDialog(false)}
+            onOpen={(connection) => {
+              setOpenConnectionDialog(false)
+              void openConnection(connection)
+            }}
+          />
+        )}
+      </DialogPresence>
       <DialogPresence>
         {directDialogOpen && (
           <ConnectionDialog

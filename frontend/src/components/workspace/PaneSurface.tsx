@@ -4,6 +4,10 @@ import { paneGeometry, type PaneEdge, type PaneNode, type PaneRect } from '../..
 import { maxVisiblePanes } from '../../state/workspaceLimits'
 import type { WorkspaceTab } from '../../state/workspaceSlice'
 import { classNames } from '../../utils/classNames'
+import {
+  newDirectConnectionShortcut,
+  openConnectionShortcut,
+} from '../../utils/connectionShortcuts'
 import { Glyph } from '../common/Glyph'
 import { PaneView } from './PaneView'
 import type { VncControls } from './vncControls'
@@ -95,6 +99,14 @@ export function PaneSurface({
       {tabs.length === 0 && (
         <div className="workspace-empty">
           <h1>Welcome to LightRemote</h1>
+          <div className="workspace-shortcuts" aria-label="Connection keyboard shortcuts">
+            <span>
+              <kbd>{openConnectionShortcut}</kbd> Open connection
+            </span>
+            <span>
+              <kbd>{newDirectConnectionShortcut}</kbd> New direct connection
+            </span>
+          </div>
         </div>
       )}
       {tabs.length > 0 &&

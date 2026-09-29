@@ -188,6 +188,31 @@
   font-weight: 500;
 }
 
+.workspace-shortcuts {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px 20px;
+  margin-top: 18px;
+  font-size: 12px;
+}
+
+.workspace-shortcuts span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.workspace-shortcuts kbd {
+  padding: 4px 6px;
+  border: 1px solid var(--lr-border);
+  border-radius: 5px;
+  background: var(--lr-surface-muted);
+  color: var(--lr-text);
+  font: inherit;
+  white-space: nowrap;
+}
+
 .terminal-view {
   width: 100%;
   height: 100%;

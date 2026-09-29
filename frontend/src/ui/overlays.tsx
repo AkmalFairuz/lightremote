@@ -21,9 +21,9 @@ import type {
 interface DialogProps {
   open: boolean
   onClose: () => void
+  className?: string
   fullWidth?: boolean
   maxWidth?: 'xs' | 'sm'
-  initialFocus?: 'first' | 'dialog'
   children: ReactNode
 }
 
@@ -53,7 +53,7 @@ export function DialogPresence({ children }: { children: ReactNode }) {
 }
 
 /** Displays a Material UI modal for forms and confirmations. */
-export function Dialog({ onClose, initialFocus, ...props }: DialogProps) {
+export function Dialog({ onClose, ...props }: DialogProps) {
   const presence = useContext(DialogPresenceContext)
   return (
     <DialogCloseContext.Provider value={onClose}>
@@ -61,7 +61,6 @@ export function Dialog({ onClose, initialFocus, ...props }: DialogProps) {
         {...props}
         open={props.open && (presence?.open ?? true)}
         onClose={onClose}
-        disableAutoFocus={initialFocus === 'dialog'}
         slotProps={{
           paper: { className: 'ui-dialog' },
           transition: { onExited: presence?.onExited },
