@@ -11,10 +11,10 @@
   width: min(290px, calc(100vw - 24px));
 }
 
-body.windows-desktop .file-popover.MuiPaper-root,
-body.windows-desktop .view-popover.MuiPaper-root,
-body.windows-desktop .help-popover.MuiPaper-root,
-body.windows-desktop .account-popover.MuiPaper-root {
+body.desktop-app .file-popover.MuiPaper-root,
+body.desktop-app .view-popover.MuiPaper-root,
+body.desktop-app .help-popover.MuiPaper-root,
+body.desktop-app .account-popover.MuiPaper-root {
   margin-top: 6px;
 }
 

@@ -29,7 +29,7 @@ import {
 } from '../../state/workspaceSlice'
 import { errorMessage, type Connection } from '../../types'
 import { HostKeyDialog } from '../sidebar/HostKeyDialog'
-import { isWindowsDesktop } from '../../desktop/runtime'
+import { isDesktop } from '../../desktop/runtime'
 import { WindowControls, WindowDragRegion } from '../shell/WindowControls'
 import { toggleWindowOnTitlebarDoubleClick } from '../../desktop/titlebar'
 import {
@@ -257,11 +257,9 @@ export function DetachedWorkspacePage() {
 
   return (
     <div
-      className={
-        isWindowsDesktop ? 'detached-workspace windows-detached-workspace' : 'detached-workspace'
-      }
+      className={isDesktop ? 'detached-workspace desktop-detached-workspace' : 'detached-workspace'}
     >
-      {isWindowsDesktop && (
+      {isDesktop && (
         <header
           className="app-header detached-app-header"
           onDoubleClick={toggleWindowOnTitlebarDoubleClick}

@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react'
-import { desktopRuntime, isWindowsDesktop } from '../../desktop/runtime'
+import { desktopRuntime, isDesktop } from '../../desktop/runtime'
 
 export function WindowDragRegion({ title }: { title?: string }) {
-  if (!isWindowsDesktop) return null
+  if (!isDesktop) return null
 
   return (
     <div className="window-drag-region">
@@ -11,12 +11,12 @@ export function WindowDragRegion({ title }: { title?: string }) {
   )
 }
 
-/** Replaces the native caption buttons in frameless Windows windows. */
+/** Provides caption buttons for frameless desktop windows. */
 export function WindowControls() {
   const [maximized, setMaximized] = useState(false)
 
   useEffect(() => {
-    if (!isWindowsDesktop || !desktopRuntime) return
+    if (!isDesktop || !desktopRuntime) return
     let disposed = false
 
     async function refreshMaximized() {
@@ -37,7 +37,7 @@ export function WindowControls() {
     }
   }, [])
 
-  if (!isWindowsDesktop || !desktopRuntime) return null
+  if (!isDesktop || !desktopRuntime) return null
 
   async function toggleMaximized() {
     if (!desktopRuntime) return

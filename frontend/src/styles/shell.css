@@ -29,7 +29,7 @@ body.windows-desktop {
   --wails-resize: all;
 }
 
-body.windows-desktop .app-header {
+body.desktop-app .app-header {
   z-index: 1400;
   overflow: visible;
   padding-right: 0;
@@ -77,11 +77,16 @@ body.windows-desktop .app-header {
 }
 
 .window-control-button svg {
-  width: 13px;
-  height: 13px;
+  width: 16px;
+  height: 16px;
   fill: none;
   stroke: currentColor;
-  stroke-width: 1.2;
+  stroke-width: 1.4;
+}
+
+body.windows-desktop .window-control-button svg {
+  width: 20px;
+  height: 20px;
 }
 
 .window-control-button:hover {
@@ -98,7 +103,7 @@ body.windows-desktop .app-header {
   color: #fff;
 }
 
-body.windows-desktop .locked-session-check {
+body.desktop-app .locked-session-check {
   pointer-events: none;
 }
 

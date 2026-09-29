@@ -1,9 +1,9 @@
 import type { MouseEvent } from 'react'
-import { desktopRuntime, isWindowsDesktop } from './runtime'
+import { desktopRuntime, isDesktop, isMacDesktop } from './runtime'
 
-/** Treats empty header space like a native Windows title bar. */
+/** Treats empty header space like a title bar outside macOS's native gesture. */
 export function toggleWindowOnTitlebarDoubleClick(event: MouseEvent<HTMLElement>) {
-  if (!isWindowsDesktop || !desktopRuntime) return
+  if (!isDesktop || isMacDesktop || !desktopRuntime) return
   const target = event.target
   if (
     target instanceof Element &&

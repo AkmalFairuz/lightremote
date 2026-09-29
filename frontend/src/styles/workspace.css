@@ -18,12 +18,12 @@
   height: 100dvh;
 }
 
-.windows-detached-workspace {
+.desktop-detached-workspace {
   display: flex;
   flex-direction: column;
 }
 
-.windows-detached-workspace > .workspace {
+.desktop-detached-workspace > .workspace {
   height: auto;
   flex: 1;
 }

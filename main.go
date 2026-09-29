@@ -13,7 +13,6 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-	goruntime "runtime"
 	"strings"
 	"sync"
 	"time"
@@ -47,7 +46,7 @@ func (s *DesktopService) OpenDetached(transferID string) error {
 		Width:     1100,
 		Height:    750,
 		URL:       "/detached/" + transferID,
-		Frameless: goruntime.GOOS == "windows",
+		Frameless: true,
 	})
 	window.OnWindowEvent(events.Common.WindowClosing, func(*application.WindowEvent) {
 		time.AfterFunc(500*time.Millisecond, func() {
@@ -268,7 +267,7 @@ func runDesktop(wailsLogger *slog.Logger) error {
 		MinWidth:  800,
 		MinHeight: 600,
 		URL:       "/",
-		Frameless: goruntime.GOOS == "windows",
+		Frameless: true,
 	})
 	mainWindow.Show()
 	log.Print("opening desktop window")
