@@ -14,6 +14,7 @@ import { ChangePasswordDialog } from './ChangePasswordDialog'
 import { clearDetachedRegistry } from '../workspace/detachedTabs'
 import { ViewMenu, type ViewSection } from './ViewMenu'
 import { FileMenu, type FileSection } from './FileMenu'
+import { HelpMenu } from './HelpMenu'
 import type { Connection } from '../../types'
 
 interface HeaderProps {
@@ -37,6 +38,7 @@ export function Header({
   const navigate = useNavigate()
   const [logout] = useLogoutMutation()
   const [viewAnchor, setViewAnchor] = useState<HTMLElement | null>(null)
+  const [helpAnchor, setHelpAnchor] = useState<HTMLElement | null>(null)
   const [fileAnchor, setFileAnchor] = useState<HTMLElement | null>(null)
   const [fileSection, setFileSection] = useState<FileSection>('root')
   const [viewSection, setViewSection] = useState<ViewSection>('root')
@@ -72,6 +74,7 @@ export function Header({
       event.preventDefault()
       setFileAnchor(null)
       setViewAnchor(null)
+      setHelpAnchor(null)
       setAccountAnchor(null)
 
       if (event.shiftKey) {
@@ -118,13 +121,14 @@ export function Header({
         <Link to="/" className="brand-link">
           LightRemote
         </Link>
-        <nav className="header-menus" aria-label="File, view, and account">
+        <nav className="header-menus" aria-label="Application menus">
           <Button
             aria-label="Open file actions"
             aria-haspopup="menu"
             aria-expanded={Boolean(fileAnchor)}
             onClick={(event) => {
               setViewAnchor(null)
+              setHelpAnchor(null)
               setAccountAnchor(null)
               setFileSection('root')
               setFileAnchor(event.currentTarget)
@@ -140,6 +144,7 @@ export function Header({
             onClick={(event) => {
               setFileAnchor(null)
               setFileSection('root')
+              setHelpAnchor(null)
               setAccountAnchor(null)
               setViewSection('root')
               setViewAnchor(event.currentTarget)
@@ -147,6 +152,22 @@ export function Header({
             endIcon={<Glyph name="keyboard-arrow-down" size={17} />}
           >
             View
+          </Button>
+          <Button
+            aria-label="Open help"
+            aria-haspopup="menu"
+            aria-expanded={Boolean(helpAnchor)}
+            onClick={(event) => {
+              setFileAnchor(null)
+              setFileSection('root')
+              setViewAnchor(null)
+              setViewSection('root')
+              setAccountAnchor(null)
+              setHelpAnchor(event.currentTarget)
+            }}
+            endIcon={<Glyph name="keyboard-arrow-down" size={17} />}
+          >
+            Help
           </Button>
           {!localMode && (
             <Button
@@ -158,6 +179,7 @@ export function Header({
                 setFileSection('root')
                 setViewAnchor(null)
                 setViewSection('root')
+                setHelpAnchor(null)
                 setAccountAnchor(event.currentTarget)
               }}
               endIcon={<Glyph name="keyboard-arrow-down" size={17} />}
@@ -192,6 +214,7 @@ export function Header({
         onSection={setViewSection}
         onClose={() => setViewAnchor(null)}
       />
+      <HelpMenu anchorEl={helpAnchor} onClose={() => setHelpAnchor(null)} />
       {!localMode && (
         <>
           <AccountPopover

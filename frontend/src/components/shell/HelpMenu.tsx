@@ -1,0 +1,35 @@
+import { ListItemIcon, MenuItem, MenuList, Popover } from '@mui/material'
+import { Glyph } from '../common/Glyph'
+
+interface HelpMenuProps {
+  anchorEl: HTMLElement | null
+  onClose: () => void
+}
+
+export function HelpMenu({ anchorEl, onClose }: HelpMenuProps) {
+  return (
+    <Popover
+      open={Boolean(anchorEl)}
+      anchorEl={anchorEl}
+      onClose={onClose}
+      anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+      transformOrigin={{ vertical: 'top', horizontal: 'left' }}
+      slotProps={{ paper: { className: 'help-popover' } }}
+    >
+      <MenuList dense aria-label="Help links">
+        <MenuItem
+          component="a"
+          href="https://github.com/AkmalFairuz/lightremote"
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={onClose}
+        >
+          <ListItemIcon>
+            <Glyph name="code" size={17} />
+          </ListItemIcon>
+          Source Code
+        </MenuItem>
+      </MenuList>
+    </Popover>
+  )
+}
