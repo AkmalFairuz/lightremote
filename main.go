@@ -13,6 +13,7 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/akmalfairuz/lightremote/internal/bootstrap"
 	"github.com/akmalfairuz/lightremote/internal/desktop"
@@ -38,11 +39,16 @@ func (s *DesktopService) OpenDetached(transferID string) error {
 	}
 	name := "detached-" + transferID
 	window := s.app.Window.NewWithOptions(application.WebviewWindowOptions{
-		Name: name, Title: "LightRemote", Width: 1100, Height: 750,
-		URL: "/detached/" + transferID,
+		Name:   name,
+		Title:  "LightRemote",
+		Width:  1100,
+		Height: 750,
+		URL:    "/detached/" + transferID,
 	})
 	window.OnWindowEvent(events.Common.WindowClosing, func(*application.WindowEvent) {
-		s.app.Event.Emit("lightremote:detached-closed", transferID)
+		time.AfterFunc(500*time.Millisecond, func() {
+			s.app.Event.Emit("lightremote:detached-closed", transferID)
+		})
 	})
 	window.Show()
 	return nil
@@ -188,8 +194,13 @@ func runDesktop() error {
 		desktop.ServeViewer(conn, runtime.Routes.Work)
 	})
 	mainWindow = app.Window.NewWithOptions(application.WebviewWindowOptions{
-		Name: "main", Title: "LightRemote", Width: 1280, Height: 800,
-		MinWidth: 800, MinHeight: 600, URL: "/",
+		Name:      "main",
+		Title:     "LightRemote",
+		Width:     1280,
+		Height:    800,
+		MinWidth:  800,
+		MinHeight: 600,
+		URL:       "/",
 	})
 	mainWindow.Show()
 	return app.Run()

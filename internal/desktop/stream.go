@@ -160,8 +160,13 @@ func (c *streamNetConn) SetWriteDeadline(time.Time) error {
 
 type streamAddr struct{}
 
-func (streamAddr) Network() string { return "wails" }
-func (streamAddr) String() string  { return "local" }
+func (streamAddr) Network() string {
+	return "wails"
+}
+
+func (streamAddr) String() string {
+	return "local"
+}
 
 var _ httpapi.ViewerTransport = (*streamViewer)(nil)
 var _ net.Conn = (*streamNetConn)(nil)

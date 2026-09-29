@@ -43,3 +43,18 @@ jobs:
         run: go install github.com/wailsapp/wails/v3/cmd/wails3@v3.0.0-beta.26
       - name: Build desktop app
         run: wails3 build ARCH=${{ matrix.arch }}
+      - name: Archive compiled app
+        shell: bash
+        run: |
+          binary=lightremote-desktop
+          if [[ "$RUNNER_OS" == "Windows" ]]; then
+            binary=lightremote-desktop.exe
+          fi
+          tar -czf "lightremote-${{ matrix.os }}-${{ matrix.arch }}.tar.gz" -C bin "$binary"
+      - name: Upload compiled app
+        uses: actions/upload-artifact@v4
+        with:
+          name: lightremote-${{ matrix.os }}-${{ matrix.arch }}
+          path: lightremote-${{ matrix.os }}-${{ matrix.arch }}.tar.gz
+          if-no-files-found: error
+          retention-days: 14

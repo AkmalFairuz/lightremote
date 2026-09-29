@@ -178,9 +178,10 @@ export function useDetachedTabs(userId: string, onNotice: (message: string) => v
     (tab: WorkspaceTab) => {
       if (tab.status === 'connecting') return
       const transferId = crypto.randomUUID()
-      const popup = isDesktop
-        ? null
-        : window.open(`/detached/${transferId}`, '_blank', detachedWindowFeatures)
+      let popup: Window | null = null
+      if (!isDesktop) {
+        popup = window.open(`/detached/${transferId}`, '_blank', detachedWindowFeatures)
+      }
       if (!isDesktop && !popup) {
         onNotice('The browser blocked the detached window. Allow popups and try again.')
         return

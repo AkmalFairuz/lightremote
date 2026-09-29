@@ -31,8 +31,10 @@ wails3 build
 ```
 
 `wails3 dev` starts the desktop development build. The compiled executable
-is written under `bin/`. The desktop app creates its own SQLite database and
-vault key in `~/Library/Application Support/LightRemote` on macOS,
+is written under `bin/`. GitHub Actions builds amd64 and arm64 on native
+macOS, Windows, and Linux runners and uploads each compiled app as an artifact.
+The desktop app creates its own SQLite database and vault key in
+`~/Library/Application Support/LightRemote` on macOS,
 `%LOCALAPPDATA%\LightRemote` on Windows, or
 `${XDG_DATA_HOME:-~/.local/share}/lightremote` on Linux. Keep both files when
 backing up data; losing the key makes saved credentials unreadable. Desktop

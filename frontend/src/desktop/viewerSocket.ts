@@ -85,9 +85,10 @@ class DesktopViewerSocket extends EventTarget {
   }
 
   get readyState(): number {
-    return !this.attached && this.stream.readyState === WebSocket.OPEN
-      ? WebSocket.CONNECTING
-      : this.stream.readyState
+    if (!this.attached && this.stream.readyState === WebSocket.OPEN) {
+      return WebSocket.CONNECTING
+    }
+    return this.stream.readyState
   }
 
   get bufferedAmount(): number {
@@ -101,12 +102,14 @@ class DesktopViewerSocket extends EventTarget {
       void data.arrayBuffer().then((buffer) => this.send(buffer))
       return
     }
-    const payload =
-      typeof data === 'string'
-        ? encoder.encode(data)
-        : ArrayBuffer.isView(data)
-          ? new Uint8Array(data.buffer, data.byteOffset, data.byteLength)
-          : new Uint8Array(data)
+    let payload: Uint8Array
+    if (typeof data === 'string') {
+      payload = encoder.encode(data)
+    } else if (ArrayBuffer.isView(data)) {
+      payload = new Uint8Array(data.buffer, data.byteOffset, data.byteLength)
+    } else {
+      payload = new Uint8Array(data)
+    }
     const frame = new Uint8Array(payload.byteLength + 1)
     frame[0] = header
     frame.set(payload, 1)

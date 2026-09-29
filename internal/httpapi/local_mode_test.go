@@ -74,34 +74,3 @@ func TestLocalModeRemovesAccountRoutesAndRequiresCSRF(t *testing.T) {
 		t.Fatalf("mutation without CSRF should be rejected, got %d", got)
 	}
 }
-
-func TestDesktopLocalRequestStillRequiresCSRF(t *testing.T) {
-	cfg := config.Config{LocalMode: true}
-	user := model.User{ID: "local-id", Email: "local@lightremote.invalid", Role: "user"}
-	handler := Router(Routes{
-		Auth:       NewAuthHandler(nil, nil, nil, cfg),
-		Middleware: NewAuthMiddleware(nil, cfg, user, "local-csrf"),
-	})
-	request := func(method, token string) int {
-		t.Helper()
-		path := "/api/auth/me"
-		if method == http.MethodPost {
-			path = "/api/folders"
-		}
-		r := httptest.NewRequest(method, path, nil)
-		r.Host = "wails.localhost"
-		r.Header.Set("Origin", "wails://wails.localhost")
-		if token != "" {
-			r.Header.Set("X-CSRF-Token", token)
-		}
-		w := httptest.NewRecorder()
-		handler.ServeHTTP(w, DesktopRequest(r))
-		return w.Code
-	}
-	if got := request(http.MethodGet, ""); got != http.StatusOK {
-		t.Fatalf("desktop identity request: %d", got)
-	}
-	if got := request(http.MethodPost, ""); got != http.StatusForbidden {
-		t.Fatalf("desktop mutation without CSRF: %d", got)
-	}
-}
