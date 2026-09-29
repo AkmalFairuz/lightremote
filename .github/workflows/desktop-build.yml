@@ -7,10 +7,23 @@ on:
 
 jobs:
   build:
+    name: ${{ matrix.os }} / ${{ matrix.arch }}
     strategy:
       fail-fast: false
       matrix:
-        os: [macos-latest, windows-latest, ubuntu-24.04]
+        include:
+          - os: macos-15-intel
+            arch: amd64
+          - os: macos-15
+            arch: arm64
+          - os: windows-2025
+            arch: amd64
+          - os: windows-11-arm
+            arch: arm64
+          - os: ubuntu-24.04
+            arch: amd64
+          - os: ubuntu-24.04-arm
+            arch: arm64
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
@@ -29,4 +42,4 @@ jobs:
       - name: Install pinned Wails CLI
         run: go install github.com/wailsapp/wails/v3/cmd/wails3@v3.0.0-beta.26
       - name: Build desktop app
-        run: wails3 build
+        run: wails3 build ARCH=${{ matrix.arch }}
