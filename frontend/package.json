@@ -16,6 +16,8 @@
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
     "@fontsource/roboto": "^5.2.10",
+    "@iconify-icons/material-symbols": "2.0.4",
+    "@iconify-icons/material-symbols-light": "2.0.5",
     "@iconify/react": "^6.0.2",
     "@mui/material": "^9.4.0",
     "@novnc/novnc": "^1.7.0",

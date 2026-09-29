@@ -20,6 +20,8 @@ backend contract is documented in the [OpenAPI specification](api/openapi.json).
 The Wails v3 desktop app uses the same workspace and REST API in local mode.
 It runs without a separate HTTP server or login. Its SSH and VNC viewers use
 Wails streams; the browser version continues to use WebSockets.
+On Windows, the desktop header replaces the native title bar with in-app
+window controls. All desktop windows follow the React page title.
 
 Install Go 1.26, Node.js, the [platform dependencies](https://v3.wails.io/getting-started/installation/),
 and the pinned CLI:

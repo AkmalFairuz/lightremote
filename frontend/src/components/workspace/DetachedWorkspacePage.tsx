@@ -29,6 +29,8 @@ import {
 } from '../../state/workspaceSlice'
 import { errorMessage, type Connection } from '../../types'
 import { HostKeyDialog } from '../sidebar/HostKeyDialog'
+import { isWindowsDesktop } from '../../desktop/runtime'
+import { WindowControls, WindowDragRegion } from '../shell/WindowControls'
 import {
   detachedChannel,
   detachedHeartbeatMs,
@@ -253,7 +255,17 @@ export function DetachedWorkspacePage() {
   ])
 
   return (
-    <div className="detached-workspace">
+    <div
+      className={
+        isWindowsDesktop ? 'detached-workspace windows-detached-workspace' : 'detached-workspace'
+      }
+    >
+      {isWindowsDesktop && (
+        <header className="app-header detached-app-header">
+          <WindowDragRegion title={titleName ? `${titleName} — LightRemote` : 'LightRemote'} />
+          <WindowControls />
+        </header>
+      )}
       <Workspace
         tabs={tabs}
         activeId={activeId}

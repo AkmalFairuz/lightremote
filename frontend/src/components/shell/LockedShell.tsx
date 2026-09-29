@@ -2,6 +2,7 @@ import type { CSSProperties, ReactNode } from 'react'
 import { CircularProgress, IconButton, TextField } from '../../ui'
 import { useAppSelector } from '../../state/hooks'
 import { Glyph } from '../common/Glyph'
+import { WindowControls, WindowDragRegion } from './WindowControls'
 
 /** Shows the application frame without mounting private workspace content. */
 export function LockedShell({
@@ -22,6 +23,8 @@ export function LockedShell({
           </IconButton>
           <span className="brand-link">LightRemote</span>
         </div>
+        <WindowDragRegion />
+        <WindowControls />
       </header>
       <div className="shell-body">
         <aside

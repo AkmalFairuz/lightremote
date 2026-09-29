@@ -7,7 +7,6 @@ tasks:
   build:
     summary: Builds the native macOS desktop app
     deps:
-      - task: common:go:mod:tidy
       - task: common:generate:icons
       - task: common:build:frontend
     cmds:

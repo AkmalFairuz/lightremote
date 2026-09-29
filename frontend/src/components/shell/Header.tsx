@@ -18,6 +18,7 @@ import { HelpMenu } from './HelpMenu'
 import type { Connection } from '../../types'
 import { errorMessage } from '../../types'
 import { SSHKeyManagerDialog } from '../sshkeys/SSHKeyManagerDialog'
+import { WindowControls, WindowDragRegion } from './WindowControls'
 
 interface HeaderProps {
   onToggleSidebar: () => void
@@ -195,6 +196,8 @@ export function Header({
           )}
         </nav>
       </div>
+      <WindowDragRegion />
+      <WindowControls />
       <FileMenu
         anchorEl={fileAnchor}
         section={fileSection}

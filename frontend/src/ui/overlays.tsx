@@ -10,7 +10,7 @@ import {
   MenuItem as MuiMenuItem,
   Snackbar as MuiSnackbar,
 } from '@mui/material'
-import { Icon } from '@iconify/react'
+import { LocalIcon } from './localIcons'
 import type {
   DialogActionsProps,
   DialogContentProps,
@@ -80,7 +80,7 @@ export function DialogTitle({ children, className = '', ...props }: DialogTitleP
       <span className="ui-dialog-title-text">{children}</span>
       {onClose && (
         <MuiIconButton type="button" size="small" aria-label="Close dialog" onClick={onClose}>
-          <Icon icon="material-symbols:close" width={20} height={20} aria-hidden="true" />
+          <LocalIcon name="close" size={20} />
         </MuiIconButton>
       )}
     </MuiDialogTitle>

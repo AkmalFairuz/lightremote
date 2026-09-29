@@ -25,6 +25,83 @@
   scrollbar-width: thin;
 }
 
+body.windows-desktop {
+  --wails-resize: all;
+}
+
+body.windows-desktop .app-header {
+  z-index: 1400;
+  overflow: visible;
+  padding-right: 0;
+}
+
+.window-drag-region {
+  --wails-draggable: drag;
+  display: flex;
+  height: 100%;
+  min-width: 24px;
+  flex: 1;
+  align-items: center;
+  overflow: hidden;
+  user-select: none;
+}
+
+.window-drag-title {
+  overflow: hidden;
+  padding-left: 12px;
+  color: var(--lr-text);
+  font-size: 13px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.window-controls {
+  --wails-draggable: no-drag;
+  display: flex;
+  height: 100%;
+  flex-shrink: 0;
+}
+
+.window-control-button {
+  --wails-draggable: no-drag;
+  display: grid;
+  width: 46px;
+  height: 100%;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--lr-text);
+  cursor: default;
+}
+
+.window-control-button svg {
+  width: 13px;
+  height: 13px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.2;
+}
+
+.window-control-button:hover {
+  background: var(--lr-hover);
+}
+
+.window-control-button:focus-visible {
+  outline: 2px solid var(--lr-focus);
+  outline-offset: -3px;
+}
+
+.window-control-close:hover {
+  background: #c42b1c;
+  color: #fff;
+}
+
+body.windows-desktop .locked-session-check {
+  pointer-events: none;
+}
+
 .header-left,
 .header-menus {
   display: flex;

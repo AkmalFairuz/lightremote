@@ -1,12 +1,6 @@
 version: '3'
 
 tasks:
-  go:mod:tidy:
-    internal: true
-    run: once
-    cmds:
-      - go mod tidy
-
   install:frontend:deps:
     dir: frontend
     sources:
