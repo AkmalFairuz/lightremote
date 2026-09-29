@@ -196,11 +196,7 @@ export function AppShell() {
       connection.kind === 'sftp' || connection.kind === 'ftp'
         ? `files-${connection.id}`
         : `pending-${crypto.randomUUID()}`
-    let protocol = connection.kind.toUpperCase()
-    if (connection.kind === 'ftp') {
-      protocol = connection.ftpTls ? 'FTPS' : 'FTP'
-    }
-    const tabName = connection.direct ? `${connection.host} · ${protocol}` : connection.name
+    const tabName = connection.direct ? connection.host : connection.name
     dispatch(
       openTab({
         id: tabId,
