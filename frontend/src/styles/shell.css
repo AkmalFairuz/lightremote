@@ -15,10 +15,13 @@
   min-height: 38px;
   align-items: center;
   justify-content: space-between;
+  overflow-x: auto;
+  overflow-y: hidden;
   padding: 0 8px 0 10px;
   border-bottom: 1px solid var(--lr-border);
   background: var(--lr-surface);
   box-shadow: 0 1.2px 4.2px var(--lr-divider-shadow);
+  scrollbar-width: thin;
 }
 
 .header-left,
@@ -28,6 +31,7 @@
 }
 
 .header-left {
+  flex-shrink: 0;
   gap: 6px;
 }
 
@@ -54,6 +58,7 @@
 }
 
 .header-menus .ui-button {
+  flex-shrink: 0;
   color: var(--lr-action-text);
 }
 
