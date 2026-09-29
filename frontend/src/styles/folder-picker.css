@@ -1,0 +1,101 @@
+.folder-picker-content.MuiDialogContent-root {
+  max-height: min(65dvh, 420px);
+  padding: 12px 16px;
+  overflow: auto;
+}
+
+.folder-picker-row {
+  display: flex;
+  width: 100%;
+  min-height: 25px;
+  align-items: center;
+}
+
+.folder-picker-row:hover,
+.folder-picker-row:focus-within {
+  background: var(--lr-hover);
+}
+
+.folder-picker-row.folder-picker-selected,
+.folder-picker-row.folder-picker-selected:hover,
+.folder-picker-row.folder-picker-selected:focus-within {
+  background: var(--lr-primary-soft);
+}
+
+.folder-picker-toggle {
+  display: grid;
+  width: 23px;
+  height: 25px;
+  flex: 0 0 23px;
+  place-items: center;
+  border: 0;
+  background: transparent;
+  color: var(--lr-muted);
+}
+
+.folder-picker-chevron {
+  display: inline-flex;
+  transform: rotate(0);
+  transition: transform 180ms ease;
+}
+
+.folder-picker-chevron-open {
+  transform: rotate(90deg);
+}
+
+.folder-picker-choice {
+  min-width: 0;
+  min-height: 25px;
+  flex: 1;
+  overflow: hidden;
+  padding: 0 5px;
+  border: 0;
+  background: transparent;
+  color: var(--lr-text);
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.folder-picker-children-collapse.MuiCollapse-root {
+  width: 100%;
+}
+
+.folder-picker-children {
+  min-height: 0;
+  margin-left: 13px;
+  padding-left: 9px;
+}
+
+.folder-picker-children > .folder-picker-branch {
+  position: relative;
+}
+
+.folder-picker-children > .folder-picker-branch::before {
+  position: absolute;
+  top: 12px;
+  left: -9px;
+  width: 9px;
+  border-top: 1px solid var(--lr-border-strong);
+  content: '';
+}
+
+.folder-picker-children > .folder-picker-branch::after {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -9px;
+  border-left: 1px solid var(--lr-border-strong);
+  content: '';
+}
+
+.folder-picker-children > .folder-picker-branch:last-child::after {
+  bottom: auto;
+  height: 12px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .folder-picker-chevron {
+    transition: none;
+  }
+}

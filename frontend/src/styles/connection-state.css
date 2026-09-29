@@ -1,0 +1,26 @@
+.connection-state-panel {
+  position: absolute;
+  z-index: 2;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 11px;
+  padding: 20px;
+  background: var(--lr-surface);
+  color: var(--lr-muted);
+  text-align: center;
+}
+
+.connection-state-panel strong {
+  color: var(--lr-text);
+  font-size: 15px;
+  font-weight: 500;
+}
+
+.connection-state-panel span {
+  max-width: 440px;
+  overflow-wrap: anywhere;
+  font-size: 12px;
+}

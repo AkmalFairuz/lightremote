@@ -1,0 +1,34 @@
+.view-popover.MuiPaper-root {
+  width: min(180px, calc(100vw - 24px));
+  max-height: min(80dvh, 430px);
+}
+
+.view-submenu {
+  z-index: 1400;
+}
+
+.view-submenu-paper.MuiPaper-root {
+  width: min(200px, calc(100vw - 24px));
+  max-height: min(80dvh, 430px);
+  overflow: auto;
+}
+
+.view-popover .MuiMenuList-root,
+.view-submenu .MuiMenuList-root {
+  padding-block: 4px;
+}
+
+.view-popover .MuiMenuItem-root,
+.view-submenu .MuiMenuItem-root {
+  min-height: 30px;
+  font-size: 12px;
+}
+
+.view-popover .MuiMenuItem-root.Mui-selected {
+  background: var(--lr-hover);
+}
+
+.view-popover .MuiMenuItem-root > svg:last-child,
+.view-submenu .MuiMenuItem-root > svg:last-child {
+  margin-left: auto;
+}

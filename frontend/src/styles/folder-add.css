@@ -1,0 +1,36 @@
+.MuiDialogTitle-root + .folder-add-content.MuiDialogContent-root {
+  padding-top: 10px;
+}
+
+.folder-add-options {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.folder-add-options .MuiCard-root {
+  border-color: var(--lr-border-strong);
+}
+
+.folder-add-option.MuiCardActionArea-root {
+  display: flex;
+  min-height: 120px;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  color: var(--lr-action-text);
+}
+
+.folder-add-option span {
+  color: var(--lr-muted);
+  font-size: 12px;
+  text-align: center;
+}
+
+@media (max-width: 420px) {
+  .folder-add-options {
+    grid-template-columns: 1fr;
+  }
+}

@@ -1,0 +1,15 @@
+.env
+.env.*
+!.env.example
+bin/
+coverage.out
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+*.sqlite
+*.sqlite3
+*.pem
+*.key
+*.p12
+*.pfx

@@ -1,0 +1,19 @@
+.account-popover.MuiPaper-root {
+  width: min(220px, calc(100vw - 24px));
+  padding: 2px 0;
+}
+
+.account-popover-heading {
+  display: flex;
+  flex-direction: column;
+  padding: 7px 12px 8px;
+}
+
+.account-popover .MuiMenuList-root {
+  padding-block: 4px;
+}
+
+.account-popover .MuiMenuItem-root {
+  min-height: 32px;
+  font-size: 12px;
+}

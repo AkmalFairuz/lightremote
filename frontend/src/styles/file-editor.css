@@ -1,0 +1,62 @@
+.file-editor {
+  display: flex;
+  height: 100%;
+  min-height: 0;
+  flex-direction: column;
+  background: var(--lr-surface);
+}
+
+.file-editor-toolbar {
+  display: flex;
+  min-height: 37px;
+  align-items: center;
+  gap: 8px;
+  padding: 3px 8px;
+  border-bottom: 1px solid var(--lr-border);
+}
+
+.file-editor-path {
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  color: var(--lr-text);
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.file-editor-size {
+  color: var(--lr-muted);
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.file-editor-input {
+  width: 100%;
+  min-height: 0;
+  flex: 1;
+  resize: none;
+  padding: 12px;
+  border: 0;
+  outline: none;
+  background: var(--lr-surface);
+  color: var(--lr-text);
+  font:
+    13px/1.5 ui-monospace,
+    SFMono-Regular,
+    Consolas,
+    monospace;
+  tab-size: 2;
+}
+
+.file-editor-input:focus {
+  box-shadow: inset 0 0 0 1px var(--lr-focus);
+}
+
+.file-editor-saved {
+  padding: 5px 12px;
+  border-bottom: 1px solid var(--lr-border);
+  background: var(--lr-success-soft);
+  color: var(--lr-success);
+  font-size: 12px;
+}

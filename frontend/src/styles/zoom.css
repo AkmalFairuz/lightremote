@@ -1,0 +1,28 @@
+.status-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.status-zoom {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 2px;
+  margin-left: auto;
+  white-space: nowrap;
+}
+
+.status-zoom .ui-icon-button {
+  width: 24px;
+  height: 24px;
+  padding: 1px;
+  color: var(--lr-muted);
+}
+
+.status-zoom-value {
+  min-width: 38px;
+  color: var(--lr-muted);
+  font-size: 11px;
+  text-align: center;
+}

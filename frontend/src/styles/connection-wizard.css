@@ -1,0 +1,107 @@
+.MuiDialogTitle-root + .connection-type-content.MuiDialogContent-root {
+  padding: 16px 24px 24px;
+}
+
+.connection-type-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 9px;
+}
+
+.connection-type-card.MuiCard-root {
+  border-color: var(--lr-border-strong);
+}
+
+.connection-type-card .connection-type-option {
+  display: flex;
+  min-height: 136px;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 9px;
+  padding: 10px 9px;
+  color: var(--lr-action-text);
+}
+
+.connection-type-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--lr-action-text);
+}
+
+.connection-type-card .connection-type-option:hover {
+  background: var(--lr-hover);
+}
+
+.connection-type-card .connection-type-option.Mui-focusVisible {
+  box-shadow: inset 0 0 0 2px var(--lr-primary);
+}
+
+.connection-folder-field .MuiInputBase-root {
+  cursor: pointer;
+}
+
+.connection-folder-field .MuiInputBase-input {
+  width: 0;
+  min-width: 0;
+  flex: 0 0 0;
+  padding-left: 0;
+}
+
+.connection-folder-path.MuiInputAdornment-root {
+  display: flex;
+  min-width: 0;
+  max-width: none;
+  flex: 1 1 auto;
+  margin-right: 0;
+  color: var(--lr-text);
+}
+
+.connection-folder-path-content {
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.connection-folder-segment {
+  display: inline-flex;
+  align-items: center;
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+.connection-folder-segment svg {
+  flex: 0 0 auto;
+  color: var(--lr-muted);
+}
+
+.connection-folder-name {
+  flex: 0 0 auto;
+}
+
+.connection-type-copy {
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  gap: 5px;
+  text-align: center;
+}
+
+.connection-type-copy strong {
+  color: var(--lr-text);
+  font-size: 15px;
+}
+
+.connection-type-copy small {
+  color: var(--lr-muted);
+  font-size: 12px;
+}
+
+@media (max-width: 420px) {
+  .connection-type-grid {
+    grid-template-columns: 1fr;
+  }
+}

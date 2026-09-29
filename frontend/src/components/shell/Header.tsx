@@ -1,0 +1,119 @@
+import { useState } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
+import { useLogoutMutation } from '../../api/auth'
+import { api } from '../../api/base'
+import { files } from '../../api/files'
+import { clearAuth } from '../../state/authSlice'
+import { useAppDispatch, useAppSelector } from '../../state/hooks'
+import { resetWorkspace } from '../../state/workspaceSlice'
+import { Button, DialogPresence, IconButton } from '../../ui'
+import { Glyph } from '../common/Glyph'
+import { UsersDialog } from '../users/UsersDialog'
+import { AccountPopover } from './AccountPopover'
+import { ChangePasswordDialog } from './ChangePasswordDialog'
+import { clearDetachedRegistry } from '../workspace/detachedTabs'
+import { ViewMenu, type ViewSection } from './ViewMenu'
+
+export function Header({ onToggleSidebar }: { onToggleSidebar: () => void }) {
+  const dispatch = useAppDispatch()
+  const userId = useAppSelector((state) => state.auth.user?.id ?? '')
+  const localMode = useAppSelector((state) => state.auth.localMode)
+  const navigate = useNavigate()
+  const [logout] = useLogoutMutation()
+  const [viewAnchor, setViewAnchor] = useState<HTMLElement | null>(null)
+  const [viewSection, setViewSection] = useState<ViewSection>('root')
+  const [accountAnchor, setAccountAnchor] = useState<HTMLElement | null>(null)
+  const [accountDialog, setAccountDialog] = useState<'password' | 'users' | null>(null)
+
+  /** Opens an account action after closing the navbar menu. */
+  function openAccountDialog(dialog: 'password' | 'users') {
+    setAccountAnchor(null)
+    setAccountDialog(dialog)
+  }
+
+  async function signOut() {
+    try {
+      await logout().unwrap()
+    } catch {
+      // Clear local state even when the server has already expired the session.
+    }
+    dispatch(clearAuth())
+    clearDetachedRegistry(userId)
+    files.clearCache()
+    dispatch(resetWorkspace())
+    dispatch(api.util.resetApiState())
+    navigate('/', { replace: true })
+  }
+
+  return (
+    <header className="app-header">
+      <div className="header-left">
+        <IconButton
+          aria-label="Toggle connections sidebar"
+          aria-controls="connections-sidebar"
+          onClick={onToggleSidebar}
+        >
+          <Glyph name="menu" size={16} />
+        </IconButton>
+        <Link to="/" className="brand-link">
+          LightRemote
+        </Link>
+        <nav className="header-menus" aria-label="View and account">
+          <Button
+            aria-label="Open view settings"
+            aria-haspopup="menu"
+            aria-expanded={Boolean(viewAnchor)}
+            onClick={(event) => {
+              setAccountAnchor(null)
+              setViewSection('root')
+              setViewAnchor(event.currentTarget)
+            }}
+            endIcon={<Glyph name="keyboard-arrow-down" size={17} />}
+          >
+            View
+          </Button>
+          {!localMode && (
+            <Button
+              aria-label="Open account"
+              aria-haspopup="menu"
+              aria-expanded={Boolean(accountAnchor)}
+              onClick={(event) => {
+                setViewAnchor(null)
+                setViewSection('root')
+                setAccountAnchor(event.currentTarget)
+              }}
+              endIcon={<Glyph name="keyboard-arrow-down" size={17} />}
+            >
+              Account
+            </Button>
+          )}
+        </nav>
+      </div>
+      <ViewMenu
+        anchorEl={viewAnchor}
+        section={viewSection}
+        onSection={setViewSection}
+        onClose={() => setViewAnchor(null)}
+      />
+      {!localMode && (
+        <>
+          <AccountPopover
+            anchorEl={accountAnchor}
+            onClose={() => setAccountAnchor(null)}
+            onChangePassword={() => openAccountDialog('password')}
+            onManageUsers={() => openAccountDialog('users')}
+            onSignOut={() => void signOut()}
+          />
+          <DialogPresence>
+            {accountDialog === 'password' && (
+              <ChangePasswordDialog onClose={() => setAccountDialog(null)} />
+            )}
+          </DialogPresence>
+          <DialogPresence>
+            {accountDialog === 'users' && <UsersDialog onClose={() => setAccountDialog(null)} />}
+          </DialogPresence>
+        </>
+      )}
+    </header>
+  )
+}

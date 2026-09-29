@@ -1,0 +1,49 @@
+.ui-button {
+  white-space: nowrap;
+}
+
+.ui-icon-button {
+  flex-shrink: 0;
+}
+
+.ui-paper {
+  background: var(--lr-surface);
+}
+
+.ui-dialog-content {
+  min-width: 0;
+}
+
+.MuiDialog-paper.ui-dialog {
+  max-height: min(90dvh, 850px);
+}
+
+.ui-dialog .MuiDialogTitle-root {
+  padding-bottom: 4px;
+}
+
+.ui-dialog-title.MuiDialogTitle-root {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.ui-dialog-title-text {
+  min-width: 0;
+}
+
+.ui-dialog-title .MuiIconButton-root {
+  flex-shrink: 0;
+  color: var(--lr-muted);
+}
+
+.MuiMenu-paper .MuiMenuItem-root {
+  min-height: 32px;
+  font-size: 13px;
+}
+
+.MuiInputBase-input,
+.MuiSelect-select {
+  font-family: Roboto, Arial, sans-serif;
+}

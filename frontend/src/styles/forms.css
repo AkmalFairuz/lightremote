@@ -1,0 +1,150 @@
+.login-dialog-content.ui-dialog-content {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  padding: 28px 28px 12px;
+}
+
+.login-dialog-content h1 {
+  margin: 0 0 4px;
+  font-weight: 500;
+}
+
+.login-dialog-actions.MuiDialogActions-root {
+  padding: 8px 28px 28px;
+}
+
+.MuiDialogTitle-root + .dialog-fields.ui-dialog-content {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding-top: 10px;
+}
+
+.dialog-fields p {
+  margin: 0;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 14px;
+}
+
+.form-section {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  padding-top: 9px;
+  border-top: 1px solid var(--lr-border);
+}
+
+.private-key-drop-target {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px;
+  border: 1px dashed var(--lr-border-strong);
+  background: var(--lr-surface-muted);
+}
+
+.private-key-drop-active {
+  border-color: var(--lr-primary);
+  background: var(--lr-primary-soft);
+}
+
+.private-key-file-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  color: var(--lr-muted);
+  font-size: 12px;
+}
+
+.private-key-drop-hint {
+  color: var(--lr-muted);
+}
+
+.private-key-loaded-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.private-key-loaded {
+  color: var(--lr-action-text);
+}
+
+.private-key-error {
+  color: var(--lr-danger);
+}
+
+.users-list.ui-paper {
+  overflow: hidden;
+}
+
+.MuiDialogTitle-root + .users-dialog-content.MuiDialogContent-root {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-top: 10px;
+}
+
+.users-dialog-content > .ui-button {
+  align-self: flex-start;
+}
+
+.users-dialog-list {
+  max-height: 360px;
+  overflow-y: auto;
+}
+
+.user-row {
+  display: flex;
+  min-height: 61px;
+  align-items: center;
+  gap: 12px;
+  padding: 9px 14px;
+  border-bottom: 1px solid var(--lr-border);
+}
+
+.user-row:last-child {
+  border-bottom: 0;
+}
+
+.user-avatar {
+  display: grid;
+  width: 29px;
+  height: 29px;
+  place-items: center;
+  border-radius: 4px;
+  background: var(--lr-surface-muted);
+  color: var(--lr-primary);
+}
+
+.user-identity {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+}
+
+.user-identity span,
+.user-self {
+  color: var(--lr-muted);
+  font-size: 11px;
+}
+
+.users-loading {
+  display: grid;
+  padding: 24px;
+  place-items: center;
+}
+
+@media (max-width: 560px) {
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+}

@@ -1,0 +1,34 @@
+.host-key-content.MuiDialogContent-root {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 12px;
+  padding-top: 12px;
+}
+
+.host-key-message {
+  margin: 0;
+  color: var(--lr-text);
+  font-size: 14px;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+
+.host-key-address {
+  color: var(--lr-primary);
+  font-weight: 500;
+}
+
+.host-key-fingerprint {
+  color: var(--lr-file-purple);
+  font-size: 13px;
+  user-select: text;
+}
+
+.host-key-pending {
+  color: var(--lr-muted);
+}
+
+.host-key-warning {
+  color: var(--lr-warning);
+}

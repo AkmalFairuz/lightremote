@@ -1,0 +1,377 @@
+.sidebar {
+  position: relative;
+  z-index: 4;
+  width: var(--sidebar-width);
+  height: 100%;
+  min-width: 0;
+  flex-shrink: 0;
+  background: var(--lr-sidebar);
+}
+
+.sidebar-clip {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.sidebar::after {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 100%;
+  width: 9.6px;
+  background: linear-gradient(to right, var(--lr-divider-shadow), transparent);
+  content: '';
+  pointer-events: none;
+}
+
+.sidebar-content {
+  display: flex;
+  width: var(--sidebar-width);
+  height: 100%;
+  min-height: 0;
+  flex-direction: column;
+}
+
+.sidebar-toolbar {
+  display: flex;
+  min-height: 32px;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 5px;
+  border-bottom: 1px solid var(--lr-border);
+}
+
+.sidebar-tools {
+  display: flex;
+  align-items: center;
+  gap: 1px;
+}
+
+.sidebar-tools .ui-icon-button {
+  width: 25px;
+  height: 25px;
+  color: var(--lr-action-text);
+}
+
+.sidebar-filter {
+  min-width: 0;
+  flex: 1;
+}
+
+.sidebar-filter .MuiInputBase-root {
+  height: 25px;
+}
+
+.sidebar-filter .MuiOutlinedInput-root {
+  padding-left: 6px;
+}
+
+.sidebar-filter .MuiInputBase-input {
+  height: 25px;
+  padding: 3px 5px 3px 0;
+  font-size: 12px;
+}
+
+.sidebar-filter .MuiInputAdornment-root {
+  margin-right: 4px;
+  margin-left: 0;
+}
+
+.sidebar-tree {
+  min-height: 0;
+  flex: 1;
+  overflow-x: auto;
+  overflow-y: auto;
+  padding: 0;
+  scrollbar-width: thin;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+.sidebar-tree-content {
+  min-width: 100%;
+}
+
+.folder-branch {
+  width: 100%;
+}
+
+.sidebar-loading {
+  display: grid;
+  padding: 20px;
+  place-items: center;
+}
+
+.sidebar-empty {
+  margin: 7px 4px;
+  color: var(--lr-soft);
+  font-size: 11px;
+}
+
+.folder-row,
+.connection-row {
+  display: flex;
+  min-height: 25px;
+  width: 100%;
+  min-width: 0;
+  align-items: center;
+}
+
+.folder-row:hover,
+.connection-row:hover,
+.folder-row.menu-open,
+.connection-row.menu-open,
+.folder-row.add-open {
+  background: var(--lr-hover);
+}
+
+.folder-row[draggable='true'],
+.connection-row[draggable='true'] {
+  cursor: grab;
+}
+
+.sidebar-dragging {
+  opacity: 0.45;
+}
+
+.sidebar-drop-before {
+  box-shadow: inset 0 2px var(--lr-primary);
+}
+
+.sidebar-drop-after {
+  box-shadow: inset 0 -2px var(--lr-primary);
+}
+
+.sidebar-drop-inside,
+.sidebar-root-active {
+  background: var(--lr-primary-soft);
+  outline: 1px solid var(--lr-primary);
+}
+
+.sidebar-root-drop {
+  margin: 5px 3px;
+  padding: 5px 7px;
+  border: 1px dashed var(--lr-primary);
+  color: var(--lr-action-text);
+  font-size: 11px;
+  text-align: center;
+}
+
+.folder-toggle,
+.connection-open {
+  display: flex;
+  min-width: max-content;
+  min-height: 25px;
+  flex: 1;
+  align-items: center;
+  gap: 5px;
+  padding: 0 3px;
+  border: 0;
+  background: transparent;
+  color: var(--lr-action-text);
+  font-size: 12px;
+  text-align: left;
+}
+
+.folder-name,
+.connection-open span {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.connection-open > svg {
+  flex-shrink: 0;
+}
+
+.folder-chevron {
+  display: inline-flex;
+  flex-shrink: 0;
+  transform: rotate(0);
+  transition: transform 180ms ease;
+}
+
+.folder-chevron-open {
+  transform: rotate(90deg);
+}
+
+.sidebar-row-actions {
+  position: sticky;
+  z-index: 2;
+  right: 0;
+  width: 0;
+  height: 24px;
+  flex: 0 0 0;
+  align-self: center;
+  margin-left: auto;
+}
+
+.sidebar-row-actions-inner {
+  position: absolute;
+  top: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  gap: 1px;
+  padding: 2px;
+  background: var(--lr-sidebar);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.folder-row:hover .sidebar-row-actions-inner,
+.connection-row:hover .sidebar-row-actions-inner,
+.folder-row.menu-open .sidebar-row-actions-inner,
+.connection-row.menu-open .sidebar-row-actions-inner,
+.folder-row.add-open .sidebar-row-actions-inner {
+  background: var(--lr-hover);
+}
+
+.folder-row:hover .sidebar-row-actions-inner,
+.connection-row:hover .sidebar-row-actions-inner,
+.folder-row:focus-within .sidebar-row-actions-inner,
+.connection-row:focus-within .sidebar-row-actions-inner,
+.folder-row.menu-open .sidebar-row-actions-inner,
+.connection-row.menu-open .sidebar-row-actions-inner,
+.folder-row.add-open .sidebar-row-actions-inner {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.sidebar-row-actions .ui-icon-button {
+  width: 20px;
+  height: 20px;
+  padding: 2px;
+  color: var(--lr-soft);
+}
+
+.folder-children-collapse.MuiCollapse-root {
+  width: 100%;
+}
+
+.folder-children {
+  min-height: 0;
+  margin-left: 13px;
+  padding-left: 9px;
+}
+
+.folder-children > .folder-branch,
+.folder-children > .connection-row {
+  position: relative;
+}
+
+.folder-children > .folder-branch::before,
+.folder-children > .connection-row::before {
+  position: absolute;
+  top: 12px;
+  left: -9px;
+  width: 9px;
+  border-top: 1px solid var(--lr-border-strong);
+  content: '';
+}
+
+.folder-children > .folder-branch::after,
+.folder-children > .connection-row::after {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -9px;
+  border-left: 1px solid var(--lr-border-strong);
+  content: '';
+}
+
+.folder-children > .folder-branch:last-child::after,
+.folder-children > .connection-row:last-child::after {
+  bottom: auto;
+  height: 12px;
+}
+
+.connection-open:hover {
+  color: var(--lr-primary);
+}
+
+.connection-rename,
+.folder-rename {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  align-items: center;
+  gap: 2px;
+  flex-wrap: wrap;
+  padding: 0 3px;
+  font-size: 12px;
+}
+
+.connection-rename > svg,
+.folder-rename .folder-chevron {
+  flex-shrink: 0;
+  color: var(--lr-action-text);
+}
+
+.connection-rename input,
+.folder-rename input {
+  min-width: 0;
+  width: max(
+    24px,
+    calc(
+      var(--sidebar-viewport-width, 240px) + var(--sidebar-scroll-left, 0px) -
+        var(--sidebar-indent, 0px) - 72px
+    )
+  );
+  height: 21px;
+  flex: 0 0 auto;
+  padding: 1px 3px;
+  border: 1px solid var(--lr-primary);
+  background: var(--lr-surface);
+  color: var(--lr-text);
+  font: inherit;
+}
+
+.connection-rename input:focus,
+.folder-rename input:focus {
+  outline: 2px solid var(--lr-primary);
+  outline-offset: -2px;
+}
+
+.sidebar-rename-actions {
+  position: sticky;
+  z-index: 2;
+  right: 0;
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 1px;
+  margin-left: auto;
+  padding: 1px 2px;
+  background: var(--lr-sidebar);
+}
+
+.folder-row:hover .sidebar-rename-actions,
+.connection-row:hover .sidebar-rename-actions {
+  background: var(--lr-hover);
+}
+
+.sidebar-rename-actions .ui-icon-button {
+  width: 20px;
+  height: 20px;
+  padding: 2px;
+}
+
+.connection-rename-error,
+.folder-rename-error {
+  width: 100%;
+  color: var(--lr-danger);
+}
+
+@media (hover: none) {
+  .sidebar-row-actions-inner {
+    opacity: 1;
+    pointer-events: auto;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .folder-chevron {
+    transition: none;
+  }
+}

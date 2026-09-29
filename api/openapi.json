@@ -1,0 +1,1715 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "LightRemote API",
+    "version": "0.1.0",
+    "description": "Browser-facing API for SSH, VNC, SFTP, FTP, and FTPS connections. With LOCAL_MODE=true, the server uses one local owner and does not register login, logout, password, or user-management endpoints."
+  },
+  "servers": [
+    {
+      "url": "/"
+    }
+  ],
+  "security": [
+    {
+      "cookieAuth": []
+    }
+  ],
+  "paths": {
+    "/healthz": {
+      "get": {
+        "summary": "Check database availability",
+        "security": [],
+        "responses": {
+          "204": {
+            "description": "Healthy"
+          },
+          "503": {
+            "description": "Database unavailable"
+          }
+        }
+      }
+    },
+    "/api/auth/login": {
+      "post": {
+        "summary": "Log in",
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "email",
+                  "password"
+                ],
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "format": "email"
+                  },
+                  "password": {
+                    "type": "string",
+                    "format": "password"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Login cookie, account, and CSRF token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoginResult"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/auth/me": {
+      "get": {
+        "summary": "Read the current account and CSRF token",
+        "responses": {
+          "200": {
+            "description": "Current account",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoginResult"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/auth/logout": {
+      "post": {
+        "summary": "Invalidate the current login session",
+        "security": [
+          {
+            "cookieAuth": [],
+            "csrfHeader": []
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Logged out"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/auth/password": {
+      "put": {
+        "summary": "Change the current account password",
+        "security": [
+          {
+            "cookieAuth": [],
+            "csrfHeader": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "currentPassword",
+                  "newPassword"
+                ],
+                "properties": {
+                  "currentPassword": {
+                    "type": "string",
+                    "format": "password"
+                  },
+                  "newPassword": {
+                    "type": "string",
+                    "format": "password",
+                    "minLength": 6
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Password changed"
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/users": {
+      "get": {
+        "summary": "List accounts (admin)",
+        "responses": {
+          "200": {
+            "description": "Accounts",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/User"
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      },
+      "post": {
+        "summary": "Create an account (admin)",
+        "security": [
+          {
+            "cookieAuth": [],
+            "csrfHeader": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "email",
+                  "password",
+                  "role"
+                ],
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "format": "email"
+                  },
+                  "password": {
+                    "type": "string",
+                    "format": "password",
+                    "minLength": 6
+                  },
+                  "role": {
+                    "type": "string",
+                    "enum": [
+                      "admin",
+                      "user"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created account",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/User"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/users/{userID}": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/UserID"
+        }
+      ],
+      "patch": {
+        "summary": "Change an account's email, role, disabled state, or password (admin only)",
+        "security": [
+          {
+            "cookieAuth": [],
+            "csrfHeader": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "format": "email"
+                  },
+                  "role": {
+                    "type": "string",
+                    "enum": [
+                      "admin",
+                      "user"
+                    ]
+                  },
+                  "disabled": {
+                    "type": "boolean"
+                  },
+                  "password": {
+                    "type": "string",
+                    "format": "password",
+                    "minLength": 6
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated account",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/User"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/folders": {
+      "get": {
+        "summary": "List owned folders",
+        "responses": {
+          "200": {
+            "description": "Folders",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Folder"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Create a folder",
+        "security": [
+          {
+            "cookieAuth": [],
+            "csrfHeader": []
+          }
+        ],
+        "requestBody": {
+          "$ref": "#/components/requestBodies/FolderInput"
+        },
+        "responses": {
+          "201": {
+            "description": "Created folder",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Folder"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/folders/{folderID}": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/FolderID"
+        }
+      ],
+      "put": {
+        "summary": "Rename or move a folder",
+        "security": [
+          {
+            "cookieAuth": [],
+            "csrfHeader": []
+          }
+        ],
+        "requestBody": {
+          "$ref": "#/components/requestBodies/FolderInput"
+        },
+        "responses": {
+          "200": {
+            "description": "Updated folder",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Folder"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      },
+      "delete": {
+        "summary": "Delete an empty folder",
+        "security": [
+          {
+            "cookieAuth": [],
+            "csrfHeader": []
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Deleted"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/connections": {
+      "get": {
+        "summary": "List owned connections",
+        "responses": {
+          "200": {
+            "description": "Connections without credentials",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Connection"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Save a connection",
+        "security": [
+          {
+            "cookieAuth": [],
+            "csrfHeader": []
+          }
+        ],
+        "requestBody": {
+          "$ref": "#/components/requestBodies/ConnectionInput"
+        },
+        "responses": {
+          "201": {
+            "description": "Saved connection",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Connection"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/connections/{connectionID}": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/ConnectionID"
+        }
+      ],
+      "get": {
+        "summary": "Read one owned connection",
+        "responses": {
+          "200": {
+            "description": "Connection without credentials",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Connection"
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      },
+      "put": {
+        "summary": "Replace connection settings",
+        "description": "Omit secret to retain saved credentials when kind and authType stay the same. Omit proxy or set it to null for a direct connection. Omit proxy.password to retain it only when type, host, port, and username are unchanged.",
+        "security": [
+          {
+            "cookieAuth": [],
+            "csrfHeader": []
+          }
+        ],
+        "requestBody": {
+          "$ref": "#/components/requestBodies/ConnectionInput"
+        },
+        "responses": {
+          "200": {
+            "description": "Updated connection",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Connection"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      },
+      "delete": {
+        "summary": "Delete a connection and close its work sessions",
+        "security": [
+          {
+            "cookieAuth": [],
+            "csrfHeader": []
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Deleted"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/connections/{connectionID}/duplicate": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/ConnectionID"
+        }
+      ],
+      "post": {
+        "summary": "Duplicate an owned connection, including its encrypted credentials",
+        "description": "The backend decrypts and re-encrypts saved remote and proxy secrets for a new connection ID. The copy keeps its folder, remote settings, and approved SSH host key. Secrets are never returned in the response.",
+        "security": [
+          {
+            "cookieAuth": [],
+            "csrfHeader": []
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Duplicated connection without credentials",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Connection"
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/connections/{connectionID}/folder": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/ConnectionID"
+        }
+      ],
+      "patch": {
+        "summary": "Move a connection into a folder or the root without closing its work sessions",
+        "security": [
+          {
+            "cookieAuth": [],
+            "csrfHeader": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "folderId"
+                ],
+                "properties": {
+                  "folderId": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "format": "uuid"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated connection",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Connection"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/connections/{connectionID}/name": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/ConnectionID"
+        }
+      ],
+      "patch": {
+        "summary": "Rename a connection without closing its work sessions",
+        "security": [
+          {
+            "cookieAuth": [],
+            "csrfHeader": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "name"
+                ],
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 255
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated connection",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Connection"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/connections/{connectionID}/host-key/inspect": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/ConnectionID"
+        }
+      ],
+      "post": {
+        "summary": "Inspect an SSH or SFTP host key without trusting it",
+        "security": [
+          {
+            "cookieAuth": [],
+            "csrfHeader": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Observed fingerprint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Fingerprint"
+                }
+              }
+            }
+          },
+          "502": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/connections/{connectionID}/host-key/approve": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/ConnectionID"
+        }
+      ],
+      "post": {
+        "summary": "Approve the currently observed SSH or SFTP fingerprint",
+        "description": "The server inspects the host key again and rejects approval if its SHA-256 fingerprint differs from the one submitted by the browser.",
+        "security": [
+          {
+            "cookieAuth": [],
+            "csrfHeader": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Fingerprint"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Fingerprint pinned"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "502": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/connections/{connectionID}/sessions": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/ConnectionID"
+        }
+      ],
+      "post": {
+        "summary": "Reserve an SSH or VNC work session",
+        "description": "A user may reserve up to 32 SSH or VNC work sessions.",
+        "security": [
+          {
+            "cookieAuth": [],
+            "csrfHeader": []
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Session reservation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkSession"
+                }
+              }
+            }
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/sessions": {
+      "get": {
+        "summary": "List active work sessions",
+        "responses": {
+          "200": {
+            "description": "Sessions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/WorkSession"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/sessions/{sessionID}": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/SessionID"
+        }
+      ],
+      "get": {
+        "summary": "Read a work session and traffic counters",
+        "responses": {
+          "200": {
+            "description": "Session and metrics",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "session",
+                    "metrics"
+                  ],
+                  "properties": {
+                    "session": {
+                      "$ref": "#/components/schemas/WorkSession"
+                    },
+                    "metrics": {
+                      "$ref": "#/components/schemas/Metrics"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      },
+      "delete": {
+        "summary": "Close a work session",
+        "security": [
+          {
+            "cookieAuth": [],
+            "csrfHeader": []
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Closed"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/sessions/{sessionID}/ws": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/SessionID"
+        }
+      ],
+      "get": {
+        "summary": "Upgrade to an SSH or VNC WebSocket",
+        "description": "The browser Origin must match PUBLIC_ORIGIN, or the request host when unset. A new attachment replaces the previous browser viewer while preserving the remote session. Unattached sessions expire after two minutes.",
+        "responses": {
+          "101": {
+            "description": "WebSocket upgrade"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          }
+        },
+        "x-websocket-messages": {
+          "ssh": {
+            "browserBinary": "Raw terminal input bytes",
+            "serverBinary": "Raw terminal output bytes",
+            "browserText": "{\"type\":\"resize\",\"rows\":24,\"cols\":80}",
+            "serverText": "{\"type\":\"ready\",\"message\":\"\"} or {\"type\":\"error\",\"message\":\"...\"}"
+          },
+          "vnc": {
+            "browserBinary": "Standard RFB client stream",
+            "serverBinary": "Standard RFB server stream",
+            "serverClose": "1011 with a UTF-8 reason when upstream connection setup fails"
+          }
+        }
+      }
+    },
+    "/api/connections/{connectionID}/files": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/ConnectionID"
+        }
+      ],
+      "get": {
+        "summary": "List a remote directory",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/RemotePath"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Directory entries",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/FileEntry"
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "502": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      },
+      "delete": {
+        "summary": "Delete a remote file or empty directory",
+        "security": [
+          {
+            "cookieAuth": [],
+            "csrfHeader": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/RemotePath"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Deleted"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "502": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/connections/{connectionID}/files/home": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/ConnectionID"
+        }
+      ],
+      "get": {
+        "summary": "Read the remote starting directory",
+        "responses": {
+          "200": {
+            "description": "Initial directory reported by SFTP or FTP; virtual drive root for VNC",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "path"
+                  ],
+                  "properties": {
+                    "path": {
+                      "type": "string",
+                      "pattern": "^(/|[A-Za-z]:/)"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "502": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/connections/{connectionID}/files/download": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/ConnectionID"
+        }
+      ],
+      "get": {
+        "summary": "Stream a remote file download",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/RemotePath"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "File content",
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "502": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/connections/{connectionID}/files/upload": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/ConnectionID"
+        }
+      ],
+      "put": {
+        "summary": "Stream a remote file upload",
+        "security": [
+          {
+            "cookieAuth": [],
+            "csrfHeader": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/RemotePath"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/octet-stream": {
+              "schema": {
+                "type": "string",
+                "format": "binary"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Uploaded"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "413": {
+            "$ref": "#/components/responses/Error"
+          },
+          "502": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/connections/{connectionID}/files/mkdir": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/ConnectionID"
+        }
+      ],
+      "post": {
+        "summary": "Create a remote directory",
+        "security": [
+          {
+            "cookieAuth": [],
+            "csrfHeader": []
+          }
+        ],
+        "requestBody": {
+          "$ref": "#/components/requestBodies/RemotePath"
+        },
+        "responses": {
+          "204": {
+            "description": "Created"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "502": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/connections/{connectionID}/files/rename": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/ConnectionID"
+        }
+      ],
+      "post": {
+        "summary": "Rename or move a remote entry",
+        "security": [
+          {
+            "cookieAuth": [],
+            "csrfHeader": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "oldPath",
+                  "newPath"
+                ],
+                "properties": {
+                  "oldPath": {
+                    "type": "string"
+                  },
+                  "newPath": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Renamed"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "502": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "cookieAuth": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "lr_session"
+      },
+      "csrfHeader": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-CSRF-Token"
+      }
+    },
+    "parameters": {
+      "UserID": {
+        "name": "userID",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "FolderID": {
+        "name": "folderID",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "ConnectionID": {
+        "name": "connectionID",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "SessionID": {
+        "name": "sessionID",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "RemotePath": {
+        "name": "path",
+        "in": "query",
+        "required": true,
+        "description": "Use / for a VNC drive list and C:/... for a Windows drive.",
+        "schema": {
+          "type": "string",
+          "pattern": "^(/|[A-Za-z]:/)"
+        }
+      }
+    },
+    "requestBodies": {
+      "FolderInput": {
+        "required": true,
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "required": [
+                "name"
+              ],
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 255
+                },
+                "parentId": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "uuid",
+                  "description": "A folder may be nested up to 16 levels, counting top-level folders as level 1."
+                }
+              }
+            }
+          }
+        }
+      },
+      "ConnectionInput": {
+        "required": true,
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ConnectionInput"
+            }
+          }
+        }
+      },
+      "RemotePath": {
+        "required": true,
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "required": [
+                "path"
+              ],
+              "properties": {
+                "path": {
+                  "type": "string",
+                  "pattern": "^(/|[A-Za-z]:/)"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "responses": {
+      "Error": {
+        "description": "Request or remote-operation error",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "required": [
+          "error"
+        ],
+        "properties": {
+          "error": {
+            "type": "object",
+            "required": [
+              "code",
+              "message"
+            ],
+            "properties": {
+              "code": {
+                "type": "string"
+              },
+              "message": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "User": {
+        "type": "object",
+        "required": [
+          "id",
+          "email",
+          "role",
+          "disabled",
+          "createdAt"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "email": {
+            "type": "string",
+            "format": "email"
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "admin",
+              "user"
+            ]
+          },
+          "disabled": {
+            "type": "boolean"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "LoginResult": {
+        "type": "object",
+        "required": [
+          "user",
+          "csrfToken",
+          "localMode"
+        ],
+        "properties": {
+          "user": {
+            "$ref": "#/components/schemas/User"
+          },
+          "csrfToken": {
+            "type": "string"
+          },
+          "localMode": {
+            "type": "boolean"
+          }
+        }
+      },
+      "Folder": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "createdAt"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "parentId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "RemoteSecret": {
+        "type": "object",
+        "writeOnly": true,
+        "properties": {
+          "password": {
+            "type": "string",
+            "format": "password"
+          },
+          "privateKey": {
+            "type": "string",
+            "format": "password"
+          },
+          "passphrase": {
+            "type": "string",
+            "format": "password"
+          }
+        }
+      },
+      "ProxyInput": {
+        "type": "object",
+        "required": [
+          "type",
+          "host",
+          "port"
+        ],
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "http",
+              "https",
+              "socks5"
+            ]
+          },
+          "host": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 255
+          },
+          "port": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 65535
+          },
+          "username": {
+            "type": "string",
+            "maxLength": 255
+          },
+          "password": {
+            "type": "string",
+            "format": "password",
+            "writeOnly": true,
+            "description": "Required when username is set for a new proxy identity."
+          }
+        }
+      },
+      "Proxy": {
+        "type": "object",
+        "required": [
+          "type",
+          "host",
+          "port",
+          "username",
+          "hasPassword"
+        ],
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "http",
+              "https",
+              "socks5"
+            ]
+          },
+          "host": {
+            "type": "string"
+          },
+          "port": {
+            "type": "integer"
+          },
+          "username": {
+            "type": "string"
+          },
+          "hasPassword": {
+            "type": "boolean"
+          }
+        }
+      },
+      "ConnectionInput": {
+        "type": "object",
+        "required": [
+          "name",
+          "kind",
+          "host",
+          "port",
+          "authType"
+        ],
+        "properties": {
+          "folderId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 255
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "ssh",
+              "vnc",
+              "sftp",
+              "ftp"
+            ]
+          },
+          "host": {
+            "type": "string"
+          },
+          "port": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 65535
+          },
+          "username": {
+            "type": "string"
+          },
+          "authType": {
+            "type": "string",
+            "enum": [
+              "none",
+              "password",
+              "private_key"
+            ]
+          },
+          "ftpTls": {
+            "type": "boolean",
+            "description": "Required for FTP. True enables explicit FTPS; false explicitly chooses plain FTP."
+          },
+          "vncEncoding": {
+            "type": "string",
+            "enum": [
+              "auto",
+              "copyrect",
+              "tight",
+              "zlib",
+              "hextile",
+              "zrle",
+              "raw"
+            ],
+            "default": "auto",
+            "description": "VNC framebuffer encoding preference. Unsupported choices fall back to Raw."
+          },
+          "vncReadOnly": {
+            "type": "boolean",
+            "default": false,
+            "description": "Disable VNC keyboard",
+            "pointer": null,
+            "and clipboard input.": null
+          },
+          "vncFileTransfer": {
+            "type": "boolean",
+            "default": true,
+            "description": "Allow VNC file operations. False requires vncReadOnly to be true."
+          },
+          "secret": {
+            "$ref": "#/components/schemas/RemoteSecret"
+          },
+          "proxy": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ProxyInput"
+              }
+            ]
+          }
+        }
+      },
+      "Connection": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ConnectionInput"
+          },
+          {
+            "type": "object",
+            "required": [
+              "id",
+              "createdAt",
+              "updatedAt"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "hostKeyFingerprint": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "proxy": {
+                "oneOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "$ref": "#/components/schemas/Proxy"
+                  }
+                ]
+              },
+              "createdAt": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "updatedAt": {
+                "type": "string",
+                "format": "date-time"
+              }
+            }
+          }
+        ]
+      },
+      "Fingerprint": {
+        "type": "object",
+        "required": [
+          "fingerprint"
+        ],
+        "properties": {
+          "fingerprint": {
+            "type": "string",
+            "example": "SHA256:abc..."
+          }
+        }
+      },
+      "WorkSession": {
+        "type": "object",
+        "required": [
+          "id",
+          "connectionId",
+          "kind",
+          "createdAt"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "connectionId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "ssh",
+              "vnc"
+            ]
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "Metrics": {
+        "type": "object",
+        "required": [
+          "bytesReceived",
+          "bytesSent",
+          "lastActivity"
+        ],
+        "properties": {
+          "bytesReceived": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "bytesSent": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "lastActivity": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "FileEntry": {
+        "type": "object",
+        "required": [
+          "name",
+          "path",
+          "size",
+          "isDir",
+          "modTime"
+        ],
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          },
+          "size": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "isDir": {
+            "type": "boolean"
+          },
+          "modTime": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      }
+    }
+  }
+}
