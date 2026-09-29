@@ -60,6 +60,80 @@ async function responseError(response: Response): Promise<Error> {
   return new Error(body?.error?.message ?? `File request failed (${response.status})`)
 }
 
+type TransferProgress = (loaded: number, total: number) => void
+
+function uploadFile(url: string, file: File, onProgress?: TransferProgress): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const request = new XMLHttpRequest()
+    request.open('PUT', url)
+    request.withCredentials = true
+    const token = store.getState().auth.csrfToken
+    if (token) request.setRequestHeader('X-CSRF-Token', token)
+
+    request.upload.onprogress = (event) => {
+      onProgress?.(event.loaded, file.size)
+    }
+    request.onload = () => {
+      if (request.status >= 200 && request.status < 300) {
+        onProgress?.(file.size, file.size)
+        resolve()
+        return
+      }
+      let message = `File request failed (${request.status})`
+      try {
+        const body = JSON.parse(request.responseText) as { error?: { message?: string } }
+        message = body.error?.message ?? message
+      } catch {
+        // Use the HTTP status when the server did not return JSON.
+      }
+      reject(new Error(message))
+    }
+    request.onerror = () => reject(new Error('Could not reach the server.'))
+    request.onabort = () => reject(new Error('Upload was canceled.'))
+    onProgress?.(0, file.size)
+    request.send(file)
+  })
+}
+
+async function downloadFile(
+  id: string,
+  path: string,
+  filename: string,
+  expectedSize: number,
+  onProgress?: TransferProgress,
+): Promise<void> {
+  const response = await fetch(fileURL(id, '/download', path), { credentials: 'same-origin' })
+  if (!response.ok) throw await responseError(response)
+  if (!response.body) throw new Error('The remote file could not be read.')
+
+  const length = Number(response.headers.get('Content-Length'))
+  const total = length > 0 ? length : expectedSize
+  const chunks: Uint8Array<ArrayBuffer>[] = []
+  const reader = response.body.getReader()
+  let loaded = 0
+  onProgress?.(0, total)
+  try {
+    while (true) {
+      const { done, value } = await reader.read()
+      if (done) break
+      chunks.push(new Uint8Array(value))
+      loaded += value.byteLength
+      onProgress?.(loaded, total)
+    }
+  } finally {
+    reader.releaseLock()
+  }
+
+  const objectURL = URL.createObjectURL(new Blob(chunks))
+  const link = document.createElement('a')
+  link.href = objectURL
+  link.download = filename
+  document.body.appendChild(link)
+  link.click()
+  link.remove()
+  window.setTimeout(() => URL.revokeObjectURL(objectURL), 60_000)
+}
+
 async function fileRequest<T>(
   url: string,
   method = 'GET',
@@ -142,7 +216,7 @@ export const files = {
     rememberList(id, path, entries)
     return entries
   },
-  downloadURL: (id: string, path: string) => fileURL(id, '/download', path),
+  download: downloadFile,
   readText,
   writeText: async (id: string, path: string, contents: string, maxBytes: number) => {
     const encoded = new TextEncoder().encode(contents)
@@ -152,8 +226,8 @@ export const files = {
     await fileRequest<void>(fileURL(id, '/upload', path), 'PUT', encoded)
     invalidatePaths(id, [parentRemotePath(path)])
   },
-  upload: async (id: string, path: string, file: File) => {
-    await fileRequest<void>(fileURL(id, '/upload', path), 'PUT', file)
+  upload: async (id: string, path: string, file: File, onProgress?: TransferProgress) => {
+    await uploadFile(fileURL(id, '/upload', path), file, onProgress)
     invalidatePaths(id, [parentRemotePath(path)])
   },
   mkdir: async (id: string, path: string) => {

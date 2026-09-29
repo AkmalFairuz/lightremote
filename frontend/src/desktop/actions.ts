@@ -13,8 +13,16 @@ export function saveRemoteFile(
   connectionId: string,
   remotePath: string,
   filename: string,
-): Promise<void> {
-  return call('main.DesktopService.SaveRemoteFile', connectionId, remotePath, filename)
+  transferId: string,
+): Promise<boolean> {
+  if (!desktopRuntime) return Promise.reject(new Error('Wails runtime is unavailable.'))
+  return desktopRuntime.Call.ByName(
+    'main.DesktopService.SaveRemoteFile',
+    connectionId,
+    remotePath,
+    filename,
+    transferId,
+  )
 }
 
 export function saveTextFile(filename: string, contents: string): Promise<void> {

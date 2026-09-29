@@ -31,6 +31,7 @@ import { errorMessage, type Connection } from '../../types'
 import { HostKeyDialog } from '../sidebar/HostKeyDialog'
 import { isWindowsDesktop } from '../../desktop/runtime'
 import { WindowControls, WindowDragRegion } from '../shell/WindowControls'
+import { toggleWindowOnTitlebarDoubleClick } from '../../desktop/titlebar'
 import {
   detachedChannel,
   detachedHeartbeatMs,
@@ -261,7 +262,10 @@ export function DetachedWorkspacePage() {
       }
     >
       {isWindowsDesktop && (
-        <header className="app-header detached-app-header">
+        <header
+          className="app-header detached-app-header"
+          onDoubleClick={toggleWindowOnTitlebarDoubleClick}
+        >
           <WindowDragRegion title={titleName ? `${titleName} — LightRemote` : 'LightRemote'} />
           <WindowControls />
         </header>

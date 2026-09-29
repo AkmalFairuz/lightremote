@@ -59,14 +59,49 @@ func (s *DesktopService) OpenDetached(transferID string) error {
 }
 
 // SaveRemoteFile prompts for a local destination and streams a remote file to it.
-func (s *DesktopService) SaveRemoteFile(connectionID, remotePath, filename string) error {
+func (s *DesktopService) SaveRemoteFile(connectionID, remotePath, filename, transferID string) (bool, error) {
 	destination, err := s.app.Dialog.SaveFile().SetFilename(filepath.Base(filename)).PromptForSingleSelection()
-	if err != nil || destination == "" {
-		return err
+	if err != nil {
+		return false, err
 	}
-	return saveFile(destination, func(file *os.File) error {
-		return s.runtime.Routes.Files.DownloadLocal(context.Background(), s.runtime.LocalUser.ID, connectionID, remotePath, file)
+	if destination == "" {
+		return false, nil
+	}
+	err = saveFile(destination, func(file *os.File) error {
+		writer := &downloadProgressWriter{
+			file: file,
+			onProgress: func(loaded int64) {
+				s.app.Event.Emit("lightremote:download-progress", map[string]any{
+					"id": transferID, "loaded": loaded,
+				})
+			},
+		}
+		err := s.runtime.Routes.Files.DownloadLocal(context.Background(), s.runtime.LocalUser.ID, connectionID, remotePath, writer)
+		writer.flush()
+		return err
 	})
+	return err == nil, err
+}
+
+type downloadProgressWriter struct {
+	file       *os.File
+	onProgress func(int64)
+	loaded     int64
+	lastUpdate time.Time
+}
+
+func (w *downloadProgressWriter) Write(data []byte) (int, error) {
+	n, err := w.file.Write(data)
+	w.loaded += int64(n)
+	if time.Since(w.lastUpdate) >= 100*time.Millisecond {
+		w.flush()
+	}
+	return n, err
+}
+
+func (w *downloadProgressWriter) flush() {
+	w.onProgress(w.loaded)
+	w.lastUpdate = time.Now()
 }
 
 // SaveTextFile uses the native save dialog for generated SSH keys.

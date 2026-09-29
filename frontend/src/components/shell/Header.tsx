@@ -19,6 +19,7 @@ import type { Connection } from '../../types'
 import { errorMessage } from '../../types'
 import { SSHKeyManagerDialog } from '../sshkeys/SSHKeyManagerDialog'
 import { WindowControls, WindowDragRegion } from './WindowControls'
+import { toggleWindowOnTitlebarDoubleClick } from '../../desktop/titlebar'
 
 interface HeaderProps {
   onToggleSidebar: () => void
@@ -135,7 +136,7 @@ export function Header({
   }
 
   return (
-    <header className="app-header">
+    <header className="app-header" onDoubleClick={toggleWindowOnTitlebarDoubleClick}>
       <div className="header-left">
         <IconButton
           aria-label="Toggle connections sidebar"

@@ -3,6 +3,7 @@ import { CircularProgress, IconButton, TextField } from '../../ui'
 import { useAppSelector } from '../../state/hooks'
 import { Glyph } from '../common/Glyph'
 import { WindowControls, WindowDragRegion } from './WindowControls'
+import { toggleWindowOnTitlebarDoubleClick } from '../../desktop/titlebar'
 
 /** Shows the application frame without mounting private workspace content. */
 export function LockedShell({
@@ -16,7 +17,7 @@ export function LockedShell({
 
   return (
     <div className="app-shell locked-shell">
-      <header className="app-header">
+      <header className="app-header" onDoubleClick={toggleWindowOnTitlebarDoubleClick}>
         <div className="header-left">
           <IconButton disabled aria-label="Toggle connections sidebar">
             <Glyph name="menu" size={16} />

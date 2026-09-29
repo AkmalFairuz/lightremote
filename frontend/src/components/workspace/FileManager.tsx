@@ -1,6 +1,6 @@
 import { useMemo, useRef, useState, type DragEvent } from 'react'
 import { files } from '../../api/files'
-import { DialogPresence } from '../../ui'
+import { Alert, DialogPresence, Snackbar } from '../../ui'
 import type { ConnectionKind, FileEntry } from '../../types'
 import { ConfirmDialog, TextPromptDialog } from '../common/ActionDialogs'
 import { FileList } from './FileList'
@@ -11,7 +11,30 @@ import { joinRemotePath, normalizeRemotePath, parentRemotePath } from '../../uti
 import { useRemoteDirectory } from './useRemoteDirectory'
 import { saveRemoteFile } from '../../desktop/actions'
 import { isDesktop } from '../../desktop/viewerSocket'
+import { desktopRuntime } from '../../desktop/runtime'
 import { errorMessage } from '../../types'
+import { formatBytes } from '../../utils/formatBytes'
+
+interface Transfer {
+  id: string
+  name: string
+  direction: 'upload' | 'download'
+  loaded: number
+  total: number
+}
+
+interface Notice {
+  id: string
+  message: string
+}
+
+const transferNamespace = Math.random().toString(36).slice(2)
+let transferSequence = 0
+
+function nextTransferId() {
+  transferSequence += 1
+  return `${transferNamespace}-${transferSequence}`
+}
 
 export function FileManager({
   connectionId,
@@ -32,12 +55,34 @@ export function FileManager({
   const [sort, setSort] = useState<FileSort>({ field: 'name', direction: 'asc' })
   const sortedEntries = useMemo(() => sortFileEntries(entries, sort), [entries, sort])
   const [busy, setBusy] = useState(false)
+  const [transfers, setTransfers] = useState<Transfer[]>([])
+  const [notices, setNotices] = useState<Notice[]>([])
   const [dropActive, setDropActive] = useState(false)
   const [editingFile, setEditingFile] = useState<FileEntry | null>(null)
   const [pending, setPending] = useState<
     { type: 'delete'; entry: FileEntry } | { type: 'mkdir' } | null
   >(null)
   const dragDepth = useRef(0)
+
+  function beginTransfer(name: string, direction: Transfer['direction'], total: number) {
+    const id = nextTransferId()
+    setTransfers((current) => [...current, { id, name, direction, loaded: 0, total }])
+    return id
+  }
+
+  function updateTransfer(id: string, loaded: number, total: number) {
+    setTransfers((current) =>
+      current.map((transfer) => (transfer.id === id ? { ...transfer, loaded, total } : transfer)),
+    )
+  }
+
+  function finishTransfer(id: string) {
+    setTransfers((current) => current.filter((transfer) => transfer.id !== id))
+  }
+
+  function showCompletion(message: string) {
+    setNotices((current) => [...current, { id: nextTransferId(), message }])
+  }
 
   async function perform(operation: () => Promise<unknown>) {
     setBusy(true)
@@ -75,7 +120,20 @@ export function FileManager({
     if (uploads.length === 0) return
     void perform(async () => {
       for (const file of uploads) {
-        await files.upload(connectionId, joinRemotePath(path, file.name), file)
+        const id = beginTransfer(file.name, 'upload', file.size)
+        try {
+          await files.upload(
+            connectionId,
+            joinRemotePath(path, file.name),
+            file,
+            (loaded, total) => {
+              updateTransfer(id, loaded, total)
+            },
+          )
+          showCompletion(`Uploaded ${file.name}`)
+        } finally {
+          finishTransfer(id)
+        }
       }
     })
   }
@@ -104,17 +162,34 @@ export function FileManager({
     uploadFiles(event.dataTransfer.files)
   }
 
-  function download(entry: FileEntry) {
-    if (isDesktop) {
-      void saveRemoteFile(connectionId, entry.path, entry.name).catch((cause) =>
-        setError(errorMessage(cause)),
-      )
-      return
+  async function download(entry: FileEntry) {
+    setError(null)
+    const id = beginTransfer(entry.name, 'download', entry.size)
+    try {
+      if (isDesktop) {
+        const stopProgress = desktopRuntime?.Events.On('lightremote:download-progress', (event) => {
+          const progress = event.data as { id?: string; loaded?: number }
+          if (progress.id === id && typeof progress.loaded === 'number') {
+            updateTransfer(id, progress.loaded, entry.size)
+          }
+        })
+        try {
+          const saved = await saveRemoteFile(connectionId, entry.path, entry.name, id)
+          if (saved) showCompletion(`Downloaded ${entry.name}`)
+        } finally {
+          stopProgress?.()
+        }
+      } else {
+        await files.download(connectionId, entry.path, entry.name, entry.size, (loaded, total) => {
+          updateTransfer(id, loaded, total)
+        })
+        showCompletion(`Downloaded ${entry.name}`)
+      }
+    } catch (cause) {
+      setError(errorMessage(cause))
+    } finally {
+      finishTransfer(id)
     }
-    const link = document.createElement('a')
-    link.href = files.downloadURL(connectionId, entry.path)
-    link.download = entry.name
-    link.click()
   }
 
   function navigateToPath(value: string, reloadIfSame = false) {
@@ -204,6 +279,38 @@ export function FileManager({
             }
             onDelete={(entry) => setPending({ type: 'delete', entry })}
           />
+          {transfers.length > 0 && (
+            <div className="files-transfers" role="status" aria-live="polite">
+              {transfers.map((transfer) => {
+                const percent =
+                  transfer.total > 0
+                    ? Math.min(100, Math.round((transfer.loaded / transfer.total) * 100))
+                    : undefined
+                const action = transfer.direction === 'upload' ? 'Uploading' : 'Downloading'
+                return (
+                  <div className="files-transfer" key={transfer.id}>
+                    <div className="files-transfer-label">
+                      <span>
+                        {action} {transfer.name}
+                      </span>
+                      <span>
+                        {formatBytes(transfer.loaded)}
+                        {transfer.total > 0 && ` / ${formatBytes(transfer.total)}`}
+                        {percent === 100 && ' · Finishing…'}
+                      </span>
+                    </div>
+                    <progress
+                      aria-label={`${action} ${transfer.name}`}
+                      max={transfer.total > 0 ? transfer.total : undefined}
+                      value={
+                        transfer.total > 0 ? Math.min(transfer.loaded, transfer.total) : undefined
+                      }
+                    />
+                  </div>
+                )
+              })}
+            </div>
+          )}
           <div className="files-footer">
             {loadedPath === path ? entries.length : 0} items {busy && '· Working…'}
           </div>
@@ -234,6 +341,16 @@ export function FileManager({
         )}
       </DialogPresence>
       {dropActive && <div className="files-drop-overlay">Drop files to upload</div>}
+      <Snackbar
+        key={notices[0]?.id}
+        open={notices.length > 0}
+        autoHideDuration={4000}
+        onClose={() => setNotices((current) => current.slice(1))}
+      >
+        <Alert severity="success" onClose={() => setNotices((current) => current.slice(1))}>
+          {notices[0]?.message}
+        </Alert>
+      </Snackbar>
     </div>
   )
 }
