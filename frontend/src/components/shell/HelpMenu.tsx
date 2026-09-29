@@ -13,6 +13,7 @@ export function HelpMenu({ anchorEl, onClose }: HelpMenuProps) {
       open={Boolean(anchorEl)}
       anchorEl={anchorEl}
       onClose={onClose}
+      disableEnforceFocus
       anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
       transformOrigin={{ vertical: 'top', horizontal: 'left' }}
       slotProps={{ paper: { className: 'help-popover' } }}

@@ -25,6 +25,7 @@ export function AccountPopover({
       open={Boolean(anchorEl)}
       anchorEl={anchorEl}
       onClose={onClose}
+      disableEnforceFocus
       anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
       transformOrigin={{ vertical: 'top', horizontal: 'left' }}
       slotProps={{ paper: { className: 'account-popover' } }}

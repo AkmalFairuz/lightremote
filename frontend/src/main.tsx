@@ -32,7 +32,7 @@ syncDesktopWindowTitle()
 
 createRoot(document.getElementById('root')!).render(
   <Provider store={store}>
-    <ThemeProvider theme={theme} defaultMode="light" noSsr>
+    <ThemeProvider theme={theme} defaultMode="system" noSsr>
       <CssBaseline />
       <App />
     </ThemeProvider>

@@ -28,6 +28,8 @@ interface HeaderProps {
   onOpenRecentConnection: (connection: Connection) => void
 }
 
+type HeaderMenu = 'file' | 'view' | 'help' | 'account'
+
 export function Header({
   onToggleSidebar,
   onOpenConnection,
@@ -115,6 +117,23 @@ export function Header({
     navigate('/', { replace: true })
   }
 
+  function toggleMenu(menu: HeaderMenu, anchor: HTMLElement) {
+    const anchors = {
+      file: fileAnchor,
+      view: viewAnchor,
+      help: helpAnchor,
+      account: accountAnchor,
+    }
+    const nextAnchor = anchors[menu] === anchor ? null : anchor
+
+    setFileAnchor(menu === 'file' ? nextAnchor : null)
+    setViewAnchor(menu === 'view' ? nextAnchor : null)
+    setHelpAnchor(menu === 'help' ? nextAnchor : null)
+    setAccountAnchor(menu === 'account' ? nextAnchor : null)
+    setFileSection('root')
+    setViewSection('root')
+  }
+
   return (
     <header className="app-header">
       <div className="header-left">
@@ -133,13 +152,7 @@ export function Header({
             aria-label="Open file actions"
             aria-haspopup="menu"
             aria-expanded={Boolean(fileAnchor)}
-            onClick={(event) => {
-              setViewAnchor(null)
-              setHelpAnchor(null)
-              setAccountAnchor(null)
-              setFileSection('root')
-              setFileAnchor(event.currentTarget)
-            }}
+            onClick={(event) => toggleMenu('file', event.currentTarget)}
             endIcon={<Glyph name="keyboard-arrow-down" size={17} />}
           >
             File
@@ -148,14 +161,7 @@ export function Header({
             aria-label="Open view settings"
             aria-haspopup="menu"
             aria-expanded={Boolean(viewAnchor)}
-            onClick={(event) => {
-              setFileAnchor(null)
-              setFileSection('root')
-              setHelpAnchor(null)
-              setAccountAnchor(null)
-              setViewSection('root')
-              setViewAnchor(event.currentTarget)
-            }}
+            onClick={(event) => toggleMenu('view', event.currentTarget)}
             endIcon={<Glyph name="keyboard-arrow-down" size={17} />}
           >
             View
@@ -164,14 +170,7 @@ export function Header({
             aria-label="Open help"
             aria-haspopup="menu"
             aria-expanded={Boolean(helpAnchor)}
-            onClick={(event) => {
-              setFileAnchor(null)
-              setFileSection('root')
-              setViewAnchor(null)
-              setViewSection('root')
-              setAccountAnchor(null)
-              setHelpAnchor(event.currentTarget)
-            }}
+            onClick={(event) => toggleMenu('help', event.currentTarget)}
             endIcon={<Glyph name="keyboard-arrow-down" size={17} />}
           >
             Help
@@ -181,14 +180,7 @@ export function Header({
               aria-label="Open account"
               aria-haspopup="menu"
               aria-expanded={Boolean(accountAnchor)}
-              onClick={(event) => {
-                setFileAnchor(null)
-                setFileSection('root')
-                setViewAnchor(null)
-                setViewSection('root')
-                setHelpAnchor(null)
-                setAccountAnchor(event.currentTarget)
-              }}
+              onClick={(event) => toggleMenu('account', event.currentTarget)}
               endIcon={<Glyph name="keyboard-arrow-down" size={17} />}
             >
               Account

@@ -89,6 +89,16 @@ export function ViewMenu({ anchorEl, section, onSection, onClose }: ViewMenuProp
             {section === 'appearance' && (
               <>
                 <MenuItem
+                  selected={mode === 'system'}
+                  onClick={() => {
+                    setMode('system')
+                    closeMenu()
+                  }}
+                >
+                  System mode
+                  {mode === 'system' && <Glyph name="check" size={16} />}
+                </MenuItem>
+                <MenuItem
                   selected={mode === 'light'}
                   onClick={() => {
                     setMode('light')
