@@ -1,10 +1,13 @@
-import { useCallback, useEffect, useRef, type CSSProperties } from 'react'
+import { useCallback, useEffect, useRef, useState, type CSSProperties } from 'react'
 import { useColorScheme } from '@mui/material/styles'
+import { Menu as MuiMenu, MenuItem } from '@mui/material'
 import { Terminal } from '@xterm/xterm'
 import { FitAddon } from '@xterm/addon-fit'
+import { Alert, Snackbar } from '../../ui'
 import { resolveTerminalTheme } from './terminalTheme'
 import { useTerminalThemePreference } from './terminalThemePreference'
 import { openViewerSocket } from '../../desktop/viewerSocket'
+import { desktopRuntime, isDesktop } from '../../desktop/runtime'
 
 const baseTerminalFontPixels = 13
 const percentageScale = 100
@@ -31,6 +34,7 @@ export function SshTerminal({
   const appMode = mode === 'system' ? systemMode : mode
   const palette = resolveTerminalTheme(themePreference, appMode === 'dark' ? 'dark' : 'light')
   const paletteRef = useRef(palette)
+  const view = useRef<HTMLDivElement>(null)
   const container = useRef<HTMLDivElement>(null)
   const terminalInstance = useRef<Terminal | null>(null)
   const zoomRef = useRef(zoom)
@@ -41,6 +45,13 @@ export function SshTerminal({
   const connectedRef = useRef(onConnected)
   const connectionErrorRef = useRef(onConnectionError)
   const lastSentSize = useRef<{ rows: number; cols: number } | null>(null)
+  const [contextMenu, setContextMenu] = useState<{
+    x: number
+    y: number
+    selection: string
+    canPaste: boolean
+  } | null>(null)
+  const [clipboardError, setClipboardError] = useState<string | null>(null)
 
   const fitAndResize = useCallback(() => {
     if (!visibleRef.current || !container.current?.offsetWidth || !container.current.offsetHeight)
@@ -80,6 +91,49 @@ export function SshTerminal({
     connectedRef.current = onConnected
     connectionErrorRef.current = onConnectionError
   }, [onConnected, onConnectionError])
+
+  useEffect(() => {
+    if (!isDesktop || !view.current) return
+    const element = view.current
+    const openContextMenu = (event: MouseEvent) => {
+      event.preventDefault()
+      event.stopPropagation()
+      setContextMenu({
+        x: event.clientX,
+        y: event.clientY,
+        selection: terminalInstance.current?.getSelection() ?? '',
+        canPaste: socket.current?.readyState === WebSocket.OPEN,
+      })
+    }
+    element.addEventListener('contextmenu', openContextMenu, true)
+    return () => element.removeEventListener('contextmenu', openContextMenu, true)
+  }, [])
+
+  async function copySelection() {
+    const selection = contextMenu?.selection
+    setContextMenu(null)
+    if (!selection || !desktopRuntime) return
+    try {
+      await desktopRuntime.Clipboard.SetText(selection)
+      terminalInstance.current?.focus()
+    } catch {
+      setClipboardError('Could not copy the terminal selection.')
+    }
+  }
+
+  async function pasteClipboard() {
+    setContextMenu(null)
+    if (!desktopRuntime) return
+    try {
+      const text = await desktopRuntime.Clipboard.Text()
+      const terminal = terminalInstance.current
+      if (!text || !terminal || socket.current?.readyState !== WebSocket.OPEN) return
+      terminal.paste(text)
+      terminal.focus()
+    } catch {
+      setClipboardError('Could not paste from the clipboard.')
+    }
+  }
 
   useEffect(() => {
     if (!container.current) return
@@ -196,9 +250,36 @@ export function SshTerminal({
     <div
       className="terminal-view"
       aria-label="SSH terminal"
+      ref={view}
       style={{ '--lr-terminal-bg': palette.background } as CSSProperties}
     >
       <div className="terminal-host" ref={container} />
+      {isDesktop && (
+        <>
+          <MuiMenu
+            open={Boolean(contextMenu)}
+            onClose={() => setContextMenu(null)}
+            anchorReference="anchorPosition"
+            anchorPosition={contextMenu ? { left: contextMenu.x, top: contextMenu.y } : undefined}
+          >
+            <MenuItem disabled={!contextMenu?.selection} onClick={() => void copySelection()}>
+              Copy
+            </MenuItem>
+            <MenuItem disabled={!contextMenu?.canPaste} onClick={() => void pasteClipboard()}>
+              Paste
+            </MenuItem>
+          </MuiMenu>
+          <Snackbar
+            open={Boolean(clipboardError)}
+            autoHideDuration={5500}
+            onClose={() => setClipboardError(null)}
+          >
+            <Alert severity="error" onClose={() => setClipboardError(null)}>
+              {clipboardError}
+            </Alert>
+          </Snackbar>
+        </>
+      )}
     </div>
   )
 }
