@@ -100,8 +100,26 @@
   font-size: 12px;
 }
 
+.connection-new-actions.MuiDialogActions-root {
+  gap: 8px;
+}
+
 @media (max-width: 420px) {
   .connection-type-grid {
     grid-template-columns: 1fr;
+  }
+
+  .connection-new-actions.MuiDialogActions-root {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .connection-new-actions > .ui-button:first-child {
+    grid-column: 1 / -1;
+    justify-self: start;
+  }
+
+  .connection-new-actions > .ui-button[type='submit'] {
+    width: 100%;
   }
 }

@@ -252,6 +252,7 @@ export function Sidebar({ onOpenConnection, onNotice }: SidebarProps) {
               folders={folders}
               onClose={() => setConnectionDialog(null)}
               onNotice={onNotice}
+              onSavedAndConnect={onOpenConnection}
             />
           )}
         </DialogPresence>

@@ -44,6 +44,7 @@ interface ConnectionDialogProps {
   onClose: () => void
   onNotice: (message: string) => void
   onDirectCreated?: (connection: Connection) => void
+  onSavedAndConnect?: (connection: Connection) => void
 }
 
 const defaultPorts: Record<ConnectionKind, number> = { ssh: 22, sftp: 22, ftp: 21, vnc: 5900 }
@@ -77,6 +78,7 @@ export function ConnectionDialog({
   onClose,
   onNotice,
   onDirectCreated,
+  onSavedAndConnect,
 }: ConnectionDialogProps) {
   const dispatch = useAppDispatch()
   const [createConnection, { isLoading: creating }] = useCreateConnectionMutation()
@@ -137,6 +139,9 @@ export function ConnectionDialog({
   async function save(event: FormEvent) {
     event.preventDefault()
     if (step === 'type') return
+    // Enter submits the first button (Save); the other button requests a connection too.
+    const saveAndConnect =
+      (event.nativeEvent as SubmitEvent).submitter?.getAttribute('value') === 'connect'
     setError(null)
     const portNumber = Number(port)
     if (!Number.isInteger(portNumber) || portNumber < 1 || portNumber > 65535) {
@@ -190,10 +195,12 @@ export function ConnectionDialog({
       if (connection) {
         await updateConnection({ id: connection.id, input }).unwrap()
         dispatch(closeConnectionTabs(connection.id))
-      } else {
-        await createConnection(input).unwrap()
+        onClose()
+        return
       }
+      const created = await createConnection(input).unwrap()
       onClose()
+      if (saveAndConnect) onSavedAndConnect?.(created)
     } catch (cause) {
       const message = errorMessage(cause)
       setError(message)
@@ -371,15 +378,33 @@ export function ConnectionDialog({
             )}
           </DialogContent>
           {step === 'details' && (
-            <DialogActions>
-              {!connection && <Button onClick={() => setStep('type')}>Back</Button>}
+            <DialogActions
+              className={!connection && !direct ? 'connection-new-actions' : undefined}
+              disableSpacing={!connection && !direct}
+            >
+              {!connection && (
+                <Button type="button" onClick={() => setStep('type')}>
+                  Back
+                </Button>
+              )}
               <Button
-                variant="contained"
+                variant={!connection && !direct ? 'outlined' : 'contained'}
                 type="submit"
+                value="save"
                 disabled={creating || creatingDirect || updating}
               >
                 {direct ? 'Connect' : 'Save connection'}
               </Button>
+              {!connection && !direct && (
+                <Button
+                  variant="contained"
+                  type="submit"
+                  value="connect"
+                  disabled={creating || creatingDirect || updating}
+                >
+                  Save &amp; connect
+                </Button>
+              )}
             </DialogActions>
           )}
         </form>
