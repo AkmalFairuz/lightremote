@@ -11,6 +11,13 @@
   width: min(290px, calc(100vw - 24px));
 }
 
+body.windows-desktop .file-popover.MuiPaper-root,
+body.windows-desktop .view-popover.MuiPaper-root,
+body.windows-desktop .help-popover.MuiPaper-root,
+body.windows-desktop .account-popover.MuiPaper-root {
+  margin-top: 6px;
+}
+
 .file-recent-name {
   min-width: 0;
   flex: 1;
