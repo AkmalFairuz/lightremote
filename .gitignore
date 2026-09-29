@@ -16,3 +16,4 @@ coverage.out
 *.key
 *.p12
 *.pfx
+*.syso

@@ -14,7 +14,7 @@ tasks:
       - 'go build {{if eq .DEV "true"}}-buildvcs=false -gcflags=all="-l"{{else}}-tags production -trimpath -buildvcs=false -ldflags="-w -s"{{end}} -o "bin/{{.APP_NAME}}"'
     env:
       GOOS: linux
-      GOARCH: '{{.ARCH | default ARCH}}'
+      GOARCH: '{{.TARGET_ARCH | default ARCH}}'
       CGO_ENABLED: 1
 
   run:

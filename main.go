@@ -7,7 +7,9 @@ import (
 	"embed"
 	"encoding/base64"
 	"errors"
+	"io"
 	"log"
+	"log/slog"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -137,11 +139,29 @@ func desktopAssetsMiddleware(api http.Handler) application.Middleware {
 	}
 }
 
-func runDesktop() error {
+func openDesktopLog() (*os.File, string, error) {
+	directory, err := desktopdata.Directory()
+	if err != nil {
+		return nil, "", err
+	}
+	if err := os.MkdirAll(directory, 0700); err != nil {
+		return nil, "", err
+	}
+	path := filepath.Join(directory, "lightremote.log")
+	file, err := os.OpenFile(path, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0600)
+	if err != nil {
+		return nil, path, err
+	}
+	return file, path, nil
+}
+
+func runDesktop(wailsLogger *slog.Logger) error {
+	log.Print("starting LightRemote desktop")
 	cfg, err := desktopdata.Config()
 	if err != nil {
 		return err
 	}
+	log.Printf("desktop data directory: %s", filepath.Dir(cfg.SQLitePath))
 	key, err := base64.StdEncoding.DecodeString(cfg.EncryptionKey)
 	if err != nil || len(key) != 32 {
 		return errors.New("invalid desktop vault key")
@@ -154,6 +174,7 @@ func runDesktop() error {
 		cancel()
 		return err
 	}
+	log.Print("desktop backend ready")
 	var closeOnce sync.Once
 	closeRuntime := func() {
 		closeOnce.Do(func() {
@@ -169,6 +190,14 @@ func runDesktop() error {
 		Name:        "LightRemote",
 		Description: "Remote desktop and file workspace",
 		Services:    []application.Service{application.NewService(service)},
+		Logger:      wailsLogger,
+		LogLevel:    slog.LevelInfo,
+		ErrorHandler: func(err error) {
+			log.Printf("Wails error: %v", err)
+		},
+		PanicHandler: func(details *application.PanicDetails) {
+			log.Printf("Wails panic: %v\n%s", details.Error, details.FullStackTrace)
+		},
 		Assets: application.AssetOptions{
 			Handler:    application.BundledAssetFileServer(assets),
 			Middleware: desktopAssetsMiddleware(api),
@@ -177,6 +206,7 @@ func runDesktop() error {
 			UniqueID:      "com.akmalfairuz.lightremote",
 			EncryptionKey: instanceKey,
 			OnSecondInstanceLaunch: func(application.SecondInstanceData) {
+				log.Print("second LightRemote instance launched")
 				if mainWindow != nil {
 					mainWindow.Restore()
 					mainWindow.Focus()
@@ -203,12 +233,36 @@ func runDesktop() error {
 		URL:       "/",
 	})
 	mainWindow.Show()
-	return app.Run()
+	log.Print("opening desktop window")
+	err = app.Run()
+	log.Printf("desktop event loop ended: %v", err)
+	return err
 }
 
 func main() {
-	if err := runDesktop(); err != nil {
+	logFile, logPath, logErr := openDesktopLog()
+	var output io.Writer = os.Stderr
+	if logErr == nil {
+		output = logFile
+	} else {
+		logPath = ""
+	}
+	log.SetOutput(output)
+	log.SetFlags(log.LstdFlags | log.Lmicroseconds)
+	if logErr != nil {
+		log.Printf("could not open desktop log: %v", logErr)
+	}
+	wailsLogger := slog.New(slog.NewTextHandler(output, nil))
+	if err := runDesktop(wailsLogger); err != nil {
 		log.Printf("start LightRemote desktop: %v", err)
+		if logFile != nil {
+			_ = logFile.Sync()
+			_ = logFile.Close()
+		}
+		showStartupError(err, logPath)
 		os.Exit(1)
+	}
+	if logFile != nil {
+		_ = logFile.Close()
 	}
 }

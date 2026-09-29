@@ -41,6 +41,11 @@ backing up data; losing the key makes saved credentials unreadable. Desktop
 data is separate from the web server's database and ignores the server's
 `.env` settings.
 
+GitHub's Windows artifact contains a `.tar.gz` archive; extract the executable
+before running it. If Windows cannot start the app, the new build displays the
+startup error and writes `%LOCALAPPDATA%\LightRemote\lightremote.log`. Windows
+also needs the WebView2 Runtime.
+
 For a single-person installation without login, set `LOCAL_MODE=true` and
 `LISTEN_ADDR=127.0.0.1:8080`. Keep `ENCRYPTION_KEY` set so saved remote
 credentials remain readable across restarts. Local mode creates one stable

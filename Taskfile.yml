@@ -18,6 +18,8 @@ tasks:
     summary: Builds the application
     cmds:
       - task: "{{.GOOS}}:build"
+        vars:
+          TARGET_ARCH: '{{.ARCH}}'
 
   run:
     summary: Runs the application

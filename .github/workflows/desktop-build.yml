@@ -42,7 +42,7 @@ jobs:
       - name: Install pinned Wails CLI
         run: go install github.com/wailsapp/wails/v3/cmd/wails3@v3.0.0-beta.26
       - name: Build desktop app
-        run: wails3 build ARCH=${{ matrix.arch }}
+        run: wails3 build GOARCH=${{ matrix.arch }}
       - name: Archive compiled app
         shell: bash
         run: |
