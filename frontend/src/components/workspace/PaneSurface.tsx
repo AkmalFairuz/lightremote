@@ -1,10 +1,12 @@
-import { useMemo, useRef, useState, type CSSProperties, type DragEvent } from 'react'
+import { useEffect, useMemo, useRef, useState, type CSSProperties, type DragEvent } from 'react'
 import { IconButton, Tooltip } from '../../ui'
 import { paneGeometry, type PaneEdge, type PaneNode, type PaneRect } from '../../state/paneLayout'
 import { maxVisiblePanes } from '../../state/workspaceLimits'
 import type { WorkspaceTab } from '../../state/workspaceSlice'
 import type { Connection } from '../../types'
 import { classNames } from '../../utils/classNames'
+import { clampZoom, defaultZoom, zoomStep } from '../../utils/zoom'
+import { isDesktop } from '../../desktop/runtime'
 import {
   newDirectConnectionShortcut,
   openConnectionShortcut,
@@ -24,6 +26,7 @@ interface PaneSurfaceProps {
   visible: boolean
   recentConnections: Connection[]
   onOpenConnection?: (connection: Connection) => void
+  onZoom: (id: string, zoom: number) => void
   onStatus: (id: string, status: WorkspaceTab['status'], error?: string) => void
   onReconnect: (id: string) => void
   onFilePath: (id: string, path: string) => void
@@ -66,6 +69,7 @@ export function PaneSurface({
   visible,
   recentConnections,
   onOpenConnection,
+  onZoom,
   onStatus,
   onReconnect,
   onFilePath,
@@ -79,8 +83,46 @@ export function PaneSurface({
   onClosePane,
 }: PaneSurfaceProps) {
   const contentRef = useRef<HTMLDivElement>(null)
+  const zoomValues = useRef(new Map<string, number>())
   const geometry = useMemo(() => paneGeometry(layout), [layout])
   const [paneDrop, setPaneDrop] = useState<{ id: string; edge: PaneEdge | null } | null>(null)
+
+  useEffect(() => {
+    zoomValues.current = new Map(tabs.map((tab) => [tab.id, tab.zoom ?? defaultZoom]))
+  }, [tabs])
+
+  useEffect(() => {
+    if (!isDesktop || !visible) return
+    const content = contentRef.current
+    if (!content) return
+
+    function zoomWithWheel(event: WheelEvent) {
+      if (!event.ctrlKey || event.deltaY === 0) return
+      const target = event.target
+      if (!(target instanceof Element)) return
+      if (!target.closest('.terminal-view, .vnc-viewport')) return
+      const panel = target.closest<HTMLElement>('.workspace-panel[data-tab-id]')
+      if (!panel || !content?.contains(panel)) return
+
+      const tab = tabs.find((item) => item.id === panel.dataset.tabId)
+      if (!tab || (tab.kind !== 'ssh' && tab.kind !== 'vnc')) return
+
+      event.preventDefault()
+      event.stopPropagation()
+      const currentZoom = zoomValues.current.get(tab.id) ?? tab.zoom ?? defaultZoom
+      const direction = event.deltaY < 0 ? 1 : -1
+      const nextZoom = clampZoom(tab.kind, currentZoom + direction * zoomStep)
+      if (nextZoom === currentZoom) return
+
+      zoomValues.current.set(tab.id, nextZoom)
+      const pane = geometry.panes.find((item) => item.tabId === tab.id)
+      if (pane && pane.paneId !== focusedPaneId) onFocusPane(pane.paneId)
+      onZoom(tab.id, nextZoom)
+    }
+
+    content.addEventListener('wheel', zoomWithWheel, { capture: true, passive: false })
+    return () => content.removeEventListener('wheel', zoomWithWheel, true)
+  }, [focusedPaneId, geometry.panes, onFocusPane, onZoom, tabs, visible])
 
   function acceptDrop(event: DragEvent<HTMLDivElement>, paneId: string) {
     event.preventDefault()
@@ -159,6 +201,7 @@ export function PaneSurface({
           <div
             key={tab.id}
             role="tabpanel"
+            data-tab-id={tab.id}
             className={classNames(
               'workspace-panel',
               !pane && 'panel-hidden',

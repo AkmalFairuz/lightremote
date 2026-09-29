@@ -4,6 +4,8 @@ The browser client for the LightRemote Go backend. It provides saved connection
 and folder management, up to 32 tabs with four visible panes, SSH terminals,
 VNC desktops, remote file operations, and account management dialogs opened
 from the navbar. Forms, dialogs, menus, buttons, and feedback use Material UI.
+In the desktop app, Ctrl+scroll over an SSH terminal or VNC desktop changes
+that tab's zoom in the same steps as the status bar controls.
 
 ## Run locally
 

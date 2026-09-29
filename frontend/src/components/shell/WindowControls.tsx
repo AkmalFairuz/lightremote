@@ -68,8 +68,8 @@ export function WindowControls() {
         <svg viewBox="0 0 16 16" aria-hidden="true">
           {maximized ? (
             <>
-              <path d="M5 3.5h8v8H5" />
-              <path d="M3 5.5h8v8H3z" />
+              <path d="M5.5 3.5h7v7h-2" />
+              <path d="M3.5 5.5h7v7h-7z" />
             </>
           ) : (
             <path d="M3 3h10v10H3z" />
