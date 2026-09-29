@@ -22,6 +22,60 @@ interface SidebarProps {
   onNotice: (message: string) => void
 }
 
+/** Keeps matches, their parent folders, and the contents of matching folders. */
+function filterSidebarItems(folders: Folder[], connections: Connection[], query: string) {
+  if (!query) {
+    return { folders, connections }
+  }
+
+  const foldersByParent = new Map<string | null, Folder[]>()
+  const connectionsByParent = new Map<string | null, Connection[]>()
+  for (const folder of folders) {
+    const siblings = foldersByParent.get(folder.parentId) ?? []
+    siblings.push(folder)
+    foldersByParent.set(folder.parentId, siblings)
+  }
+  for (const connection of connections) {
+    const siblings = connectionsByParent.get(connection.folderId) ?? []
+    siblings.push(connection)
+    connectionsByParent.set(connection.folderId, siblings)
+  }
+
+  const visibleFolderIds = new Set<string>()
+  const visibleConnectionIds = new Set<string>()
+
+  function visit(parentId: string | null, matchingParent: boolean): boolean {
+    let hasVisibleItem = false
+
+    for (const folder of foldersByParent.get(parentId) ?? []) {
+      const matches = folder.name.toLowerCase().includes(query)
+      const hasVisibleChildren = visit(folder.id, matchingParent || matches)
+      if (matchingParent || matches || hasVisibleChildren) {
+        visibleFolderIds.add(folder.id)
+        hasVisibleItem = true
+      }
+    }
+
+    for (const connection of connectionsByParent.get(parentId) ?? []) {
+      const matches = `${connection.name} ${connection.host} ${connection.kind}`
+        .toLowerCase()
+        .includes(query)
+      if (matchingParent || matches) {
+        visibleConnectionIds.add(connection.id)
+        hasVisibleItem = true
+      }
+    }
+
+    return hasVisibleItem
+  }
+
+  visit(null, false)
+  return {
+    folders: folders.filter((folder) => visibleFolderIds.has(folder.id)),
+    connections: connections.filter((connection) => visibleConnectionIds.has(connection.id)),
+  }
+}
+
 export function Sidebar({ onOpenConnection, onNotice }: SidebarProps) {
   const { data: folderData, isLoading: foldersLoading } = useFoldersQuery()
   const { data: connectionData, isLoading: connectionsLoading } = useConnectionsQuery()
@@ -36,21 +90,18 @@ export function Sidebar({ onOpenConnection, onNotice }: SidebarProps) {
   } | null>(null)
   const [hostKeyConnection, setHostKeyConnection] = useState<Connection | null>(null)
   const [expanded, setExpanded] = useState<Record<string, boolean>>({})
-
-  const matchingConnections = useMemo(
-    () =>
-      connections.filter((connection) =>
-        `${connection.name} ${connection.host} ${connection.kind}`
-          .toLowerCase()
-          .includes(search.toLowerCase()),
-      ),
-    [connections, search],
+  const query = search.trim().toLowerCase()
+  const visibleItems = useMemo(
+    () => filterSidebarItems(folders, connections, query),
+    [folders, connections, query],
   )
+  const visibleFolders = visibleItems.folders
+  const visibleConnections = visibleItems.connections
   const { treeRef, contentWidth } = useSidebarContentWidth(
-    folders,
-    matchingConnections,
+    visibleFolders,
+    visibleConnections,
     expanded,
-    search,
+    query,
   )
 
   function toggleFolder(id: string) {
@@ -81,7 +132,7 @@ export function Sidebar({ onOpenConnection, onNotice }: SidebarProps) {
           <div className="sidebar-filter">
             <TextField
               placeholder="Filter"
-              aria-label="Filter connections"
+              aria-label="Filter folders and connections"
               value={search}
               onChange={(event) => setSearch(event.target.value)}
               slotProps={{
@@ -120,17 +171,17 @@ export function Sidebar({ onOpenConnection, onNotice }: SidebarProps) {
               </div>
             ) : (
               <>
-                {orderedItems(null, folders, matchingConnections, order).map((item) => {
+                {orderedItems(null, visibleFolders, visibleConnections, order).map((item) => {
                   if (item.kind === 'folder') {
-                    const folder = folders.find((entry) => entry.id === item.id)
+                    const folder = visibleFolders.find((entry) => entry.id === item.id)
                     return folder ? (
                       <FolderBranch
                         key={itemKey(item)}
                         folder={folder}
-                        folders={folders}
-                        connections={matchingConnections}
+                        folders={visibleFolders}
+                        connections={visibleConnections}
                         order={order}
-                        expanded={search ? {} : expanded}
+                        expanded={query ? {} : expanded}
                         activeFolderId={addTarget === 'root' ? null : (addTarget?.id ?? null)}
                         contentWidth={contentWidth}
                         onToggle={toggleFolder}
@@ -144,7 +195,7 @@ export function Sidebar({ onOpenConnection, onNotice }: SidebarProps) {
                       />
                     ) : null
                   }
-                  const connection = matchingConnections.find((entry) => entry.id === item.id)
+                  const connection = visibleConnections.find((entry) => entry.id === item.id)
                   return connection ? (
                     <ConnectionRow
                       key={itemKey(item)}
@@ -168,8 +219,11 @@ export function Sidebar({ onOpenConnection, onNotice }: SidebarProps) {
                     Move to root
                   </div>
                 )}
-                {folders.length === 0 && connections.length === 0 && (
+                {!query && folders.length === 0 && connections.length === 0 && (
                   <p className="sidebar-empty">Add a connection to get started.</p>
+                )}
+                {query && visibleFolders.length === 0 && visibleConnections.length === 0 && (
+                  <p className="sidebar-empty">No matching folders or connections.</p>
                 )}
               </>
             )}

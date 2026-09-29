@@ -31,7 +31,11 @@ export function LockedShell({
           <div className="sidebar-content">
             <div className="sidebar-toolbar">
               <div className="sidebar-filter">
-                <TextField placeholder="Filter" aria-label="Filter connections" disabled />
+                <TextField
+                  placeholder="Filter"
+                  aria-label="Filter folders and connections"
+                  disabled
+                />
               </div>
               <div className="sidebar-tools">
                 <IconButton disabled aria-label="Add folder or connection">
