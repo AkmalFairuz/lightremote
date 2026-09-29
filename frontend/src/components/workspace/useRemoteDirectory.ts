@@ -53,11 +53,12 @@ export function useRemoteDirectory({
       if (!refresh) {
         const cached = files.cachedList(connectionId, path)
         if (cached) {
-          setEntries(displayEntries(kind, cached))
+          const displayed = displayEntries(kind, cached)
+          setEntries(displayed)
           setLoadedPath(path)
           setError(null)
           setLoading(false)
-          return
+          return displayed
         }
       }
 
@@ -66,8 +67,10 @@ export function useRemoteDirectory({
       try {
         const result = await files.list(connectionId, path)
         if (sequence !== requestSequence.current) return
-        setEntries(displayEntries(kind, result))
+        const displayed = displayEntries(kind, result)
+        setEntries(displayed)
         setLoadedPath(path)
+        return displayed
       } catch (cause) {
         if (sequence !== requestSequence.current) return
         setError(cause instanceof Error ? cause.message : 'Could not list remote files.')

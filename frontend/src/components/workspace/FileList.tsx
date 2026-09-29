@@ -1,8 +1,7 @@
-import type { CSSProperties } from 'react'
+import { useEffect, useRef, type ChangeEvent } from 'react'
 import { CircularProgress } from '../../ui'
 import type { FileEntry } from '../../types'
 import { isDriveRoot } from '../../utils/remoteFilePath'
-import { isEditableTextFile } from './editableFile'
 import { FileRow } from './FileRow'
 import type { FileSort, FileSortField } from './fileSort'
 
@@ -14,6 +13,10 @@ interface FileListProps {
   showEmpty: boolean
   sort: FileSort
   onSort: (field: FileSortField) => void
+  selectedPaths: ReadonlySet<string>
+  selectionDisabled: boolean
+  onSelect: (entry: FileEntry, selected: boolean) => void
+  onSelectAll: (selected: boolean) => void
   onOpen: (entry: FileEntry) => void
   onDownload: (entry: FileEntry) => void
   onEdit: (entry: FileEntry) => void
@@ -29,36 +32,45 @@ export function FileList({
   showEmpty,
   sort,
   onSort,
+  selectedPaths,
+  selectionDisabled,
+  onSelect,
+  onSelectAll,
   onOpen,
   onDownload,
   onEdit,
   onRename,
   onDelete,
 }: FileListProps) {
-  let actionSlots = 0
-  if (!hideActions) {
-    for (const entry of entries) {
-      const count = isDriveRoot(entry.path)
-        ? 0
-        : entry.isDir
-          ? 2
-          : isEditableTextFile(entry)
-            ? 4
-            : 3
-      actionSlots = Math.max(actionSlots, count)
-      if (actionSlots === 4) break
-    }
+  const selectAllRef = useRef<HTMLInputElement>(null)
+  const eligible = entries.filter((entry) => !isDriveRoot(entry.path))
+  const selectedCount = eligible.filter((entry) => selectedPaths.has(entry.path)).length
+  const allSelected = eligible.length > 0 && selectedCount === eligible.length
+  useEffect(() => {
+    if (selectAllRef.current) selectAllRef.current.indeterminate = selectedCount > 0 && !allSelected
+  }, [allSelected, selectedCount])
+
+  function selectAll(event: ChangeEvent<HTMLInputElement>) {
+    onSelectAll(event.target.checked)
   }
-  const showActions = actionSlots > 0
 
   return (
     <div
-      className={`files-list ${showActions ? '' : 'files-no-actions'}`}
+      className={`files-list ${hideActions ? 'files-no-actions' : ''}`}
       role="table"
       aria-label="Remote files"
-      style={{ '--files-actions-width': `${actionSlots * 28 + 4}px` } as CSSProperties}
     >
       <div className="files-header" role="row">
+        <span role="columnheader" className="file-selection-cell">
+          <input
+            ref={selectAllRef}
+            type="checkbox"
+            aria-label="Select all files and folders"
+            checked={allSelected}
+            disabled={eligible.length === 0 || loading || selectionDisabled}
+            onChange={selectAll}
+          />
+        </span>
         {(['name', 'size', 'modTime'] as const).map((field) => (
           <span
             key={field}
@@ -79,7 +91,7 @@ export function FileList({
             </button>
           </span>
         ))}
-        {showActions && <span>Actions</span>}
+        {!hideActions && <span role="columnheader">Actions</span>}
       </div>
       {loading && (
         <div className="files-loading">
@@ -96,6 +108,9 @@ export function FileList({
             key={entry.path}
             entry={entry}
             striped={index % 2 === 1}
+            selected={selectedPaths.has(entry.path)}
+            selectionDisabled={selectionDisabled}
+            onSelect={onSelect}
             onOpen={onOpen}
             onDownload={onDownload}
             onEdit={onEdit}
