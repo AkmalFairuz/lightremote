@@ -1,11 +1,13 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
-import { CircularProgress } from './ui'
+import { Dialog as MuiDialog } from '@mui/material'
+import { Button, CircularProgress, DialogActions, DialogContent, Typography } from './ui'
 import { lazy, Suspense, useEffect, type ReactNode } from 'react'
 import { useMeQuery } from './api/auth'
 import { LoginDialog } from './components/shell/LoginDialog'
 import { LockedShell } from './components/shell/LockedShell'
 import { useAppDispatch, useAppSelector } from './state/hooks'
 import { setAuth } from './state/authSlice'
+import { errorMessage, isUnauthorized } from './types'
 
 const AppShell = lazy(() =>
   import('./components/shell/AppShell').then((module) => ({ default: module.AppShell })),
@@ -27,7 +29,7 @@ function PageLoading() {
 function AuthGate({ children, detached = false }: { children: ReactNode; detached?: boolean }) {
   const dispatch = useAppDispatch()
   const { user, signedOut } = useAppSelector((state) => state.auth)
-  const { data, isLoading, isFetching, isError } = useMeQuery(undefined, {
+  const { data, error, isLoading, isFetching, isError, refetch } = useMeQuery(undefined, {
     skip: Boolean(user) || signedOut,
   })
 
@@ -36,12 +38,29 @@ function AuthGate({ children, detached = false }: { children: ReactNode; detache
   }, [data, dispatch, isError, isFetching, signedOut, user])
 
   if (user) return children
-  if (signedOut || isError || (!isLoading && !data)) {
+  if (signedOut || isUnauthorized(error)) {
     return detached ? (
       <Navigate to="/" replace />
     ) : (
       <LockedShell>
         <LoginDialog />
+      </LockedShell>
+    )
+  }
+  if (isError || (!isLoading && !data && !isFetching)) {
+    return (
+      <LockedShell>
+        <MuiDialog open fullWidth maxWidth="xs" aria-labelledby="server-error-title">
+          <DialogContent>
+            <Typography component="h1" variant="h6" id="server-error-title">
+              Server unavailable
+            </Typography>
+            <Typography>{errorMessage(error)}</Typography>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => refetch()}>Retry</Button>
+          </DialogActions>
+        </MuiDialog>
       </LockedShell>
     )
   }

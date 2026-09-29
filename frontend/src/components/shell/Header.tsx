@@ -6,7 +6,7 @@ import { files } from '../../api/files'
 import { clearAuth } from '../../state/authSlice'
 import { useAppDispatch, useAppSelector } from '../../state/hooks'
 import { resetWorkspace } from '../../state/workspaceSlice'
-import { Button, DialogPresence, IconButton } from '../../ui'
+import { Alert, Button, DialogPresence, IconButton, Snackbar } from '../../ui'
 import { Glyph } from '../common/Glyph'
 import { UsersDialog } from '../users/UsersDialog'
 import { AccountPopover } from './AccountPopover'
@@ -16,6 +16,7 @@ import { ViewMenu, type ViewSection } from './ViewMenu'
 import { FileMenu, type FileSection } from './FileMenu'
 import { HelpMenu } from './HelpMenu'
 import type { Connection } from '../../types'
+import { errorMessage } from '../../types'
 import { SSHKeyManagerDialog } from '../sshkeys/SSHKeyManagerDialog'
 
 interface HeaderProps {
@@ -46,6 +47,7 @@ export function Header({
   const [accountAnchor, setAccountAnchor] = useState<HTMLElement | null>(null)
   const [accountDialog, setAccountDialog] = useState<'password' | 'users' | null>(null)
   const [sshKeysOpen, setSSHKeysOpen] = useState(false)
+  const [logoutError, setLogoutError] = useState<string | null>(null)
 
   useEffect(() => {
     function handleShortcut(event: KeyboardEvent) {
@@ -97,10 +99,12 @@ export function Header({
   }
 
   async function signOut() {
+    setLogoutError(null)
     try {
       await logout().unwrap()
-    } catch {
-      // Clear local state even when the server has already expired the session.
+    } catch (cause) {
+      setLogoutError(errorMessage(cause))
+      return
     }
     dispatch(clearAuth())
     clearDetachedRegistry(userId)
@@ -243,6 +247,15 @@ export function Header({
           </DialogPresence>
         </>
       )}
+      <Snackbar
+        open={Boolean(logoutError)}
+        autoHideDuration={5500}
+        onClose={() => setLogoutError(null)}
+      >
+        <Alert severity="error" onClose={() => setLogoutError(null)}>
+          {logoutError}
+        </Alert>
+      </Snackbar>
     </header>
   )
 }

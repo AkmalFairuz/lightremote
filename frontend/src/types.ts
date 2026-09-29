@@ -114,6 +114,10 @@ export interface ApiError {
   data?: { error?: { code?: string; message?: string } }
 }
 
+export function isUnauthorized(error: unknown): boolean {
+  return (error as ApiError | null)?.status === 401
+}
+
 export function errorMessage(error: unknown): string {
   if (typeof error === 'string') return error
   if (error instanceof Error) return error.message
