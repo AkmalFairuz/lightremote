@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react'
 import { useConnectionsQuery } from '../../api/resources'
 import type { Connection } from '../../types'
-import { Dialog, DialogContent, DialogTitle, InputAdornment, TextField } from '../../ui'
+import { Dialog, DialogContent, IconButton, InputAdornment, TextField } from '../../ui'
 import { Glyph } from '../common/Glyph'
 
 interface OpenConnectionDialogProps {
@@ -57,39 +57,53 @@ export function OpenConnectionDialog({ onClose, onOpen }: OpenConnectionDialogPr
   }
 
   return (
-    <Dialog open onClose={onClose} className="open-connection-dialog" maxWidth="sm" fullWidth>
-      <DialogTitle>Open connection</DialogTitle>
+    <Dialog
+      open
+      onClose={onClose}
+      className="open-connection-dialog"
+      aria-labelledby="open-connection-title"
+      maxWidth="sm"
+      fullWidth
+    >
+      <span id="open-connection-title" className="open-connection-accessible-label">
+        Open connection
+      </span>
       <DialogContent className="open-connection-content">
-        <TextField
-          autoFocus
-          placeholder="Search connections"
-          aria-label="Search connections"
-          value={search}
-          onChange={(event) => {
-            setSearch(event.target.value)
-            setHighlightedIndex(0)
-          }}
-          onKeyDown={handleSearchKeyDown}
-          slotProps={{
-            input: {
-              startAdornment: (
-                <InputAdornment position="start">
-                  <Glyph name="search" size={21} />
-                </InputAdornment>
-              ),
-            },
-            htmlInput: {
-              role: 'combobox',
-              'aria-autocomplete': 'list',
-              'aria-expanded': true,
-              'aria-controls': 'open-connection-results',
-              'aria-activedescendant':
-                selectedIndex >= 0
-                  ? `open-connection-result-${matches[selectedIndex].id}`
-                  : undefined,
-            },
-          }}
-        />
+        <div className="open-connection-search-row">
+          <TextField
+            autoFocus
+            placeholder="Search connections"
+            aria-label="Search connections"
+            value={search}
+            onChange={(event) => {
+              setSearch(event.target.value)
+              setHighlightedIndex(0)
+            }}
+            onKeyDown={handleSearchKeyDown}
+            slotProps={{
+              input: {
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <Glyph name="search" size={21} />
+                  </InputAdornment>
+                ),
+              },
+              htmlInput: {
+                role: 'combobox',
+                'aria-autocomplete': 'list',
+                'aria-expanded': true,
+                'aria-controls': 'open-connection-results',
+                'aria-activedescendant':
+                  selectedIndex >= 0
+                    ? `open-connection-result-${matches[selectedIndex].id}`
+                    : undefined,
+              },
+            }}
+          />
+          <IconButton aria-label="Close open connection dialog" onClick={onClose}>
+            <Glyph name="close" size={20} />
+          </IconButton>
+        </div>
         <div
           id="open-connection-results"
           ref={resultsRef}

@@ -22,6 +22,7 @@ interface DialogProps {
   open: boolean
   onClose: () => void
   className?: string
+  'aria-labelledby'?: string
   fullWidth?: boolean
   maxWidth?: 'xs' | 'sm'
   children: ReactNode

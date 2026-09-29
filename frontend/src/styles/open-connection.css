@@ -11,6 +11,30 @@
   padding: 12px 16px 16px;
 }
 
+.open-connection-accessible-label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.open-connection-search-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.open-connection-search-row .ui-field {
+  min-width: 0;
+  flex: 1;
+}
+
+.open-connection-search-row .ui-icon-button {
+  color: var(--lr-muted);
+}
+
 .open-connection-content .ui-field .MuiInputBase-root {
   min-height: 48px;
   font-size: 16px;
