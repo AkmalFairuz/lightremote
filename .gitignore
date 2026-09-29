@@ -1,7 +1,10 @@
 .env
+.DS_Store
 .env.*
 !.env.example
 bin/
+frontend/bindings/
+.task/
 coverage.out
 *.db
 *.db-journal
@@ -13,3 +16,4 @@ coverage.out
 *.key
 *.p12
 *.pfx
+*.syso

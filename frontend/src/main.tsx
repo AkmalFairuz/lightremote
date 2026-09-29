@@ -8,6 +8,7 @@ import '@xterm/xterm/css/xterm.css'
 import App from './App'
 import { store } from './state/store'
 import { theme } from './ui/theme'
+import { syncDesktopWindowTitle } from './desktop/windowTitle'
 import './styles/base.css'
 import './styles/mui.css'
 import './styles/shell.css'
@@ -27,9 +28,11 @@ import './styles/folder-picker.css'
 import './styles/files.css'
 import './styles/file-editor.css'
 
+syncDesktopWindowTitle()
+
 createRoot(document.getElementById('root')!).render(
   <Provider store={store}>
-    <ThemeProvider theme={theme} defaultMode="light" noSsr>
+    <ThemeProvider theme={theme} defaultMode="system" noSsr>
       <CssBaseline />
       <App />
     </ThemeProvider>

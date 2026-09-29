@@ -1,5 +1,8 @@
 import { useCallback, useEffect, useRef } from 'react'
 import { flushSync } from 'react-dom'
+import { openDetachedWindow } from '../../desktop/actions'
+import { isDesktop } from '../../desktop/viewerSocket'
+import { desktopRuntime } from '../../desktop/runtime'
 import { useCreateSessionMutation, useDeleteSessionMutation } from '../../api/sessions'
 import { useDeleteDirectConnectionMutation } from '../../api/resources'
 import { useAppDispatch, useAppStore } from '../../state/hooks'
@@ -105,6 +108,11 @@ export function useDetachedTabs(userId: string, onNotice: (message: string) => v
     }
 
     const current = new BroadcastChannel(detachedChannel(userId))
+    const stopNativeClose = desktopRuntime
+      ? desktopRuntime.Events.On('lightremote:detached-closed', (event) => {
+          if (typeof event.data === 'string') void restore(event.data)
+        })
+      : null
     current.onmessage = async (event: MessageEvent<DetachedMessage>) => {
       const message = event.data
       const entry = entries.current.get(message.transferId)
@@ -162,6 +170,7 @@ export function useDetachedTabs(userId: string, onNotice: (message: string) => v
     return () => {
       window.clearInterval(timer)
       current.close()
+      stopNativeClose?.()
     }
   }, [deleteDirectConnection, deleteSession, dispatch, persist, restore, storageKey, userId])
 
@@ -169,8 +178,11 @@ export function useDetachedTabs(userId: string, onNotice: (message: string) => v
     (tab: WorkspaceTab) => {
       if (tab.status === 'connecting') return
       const transferId = crypto.randomUUID()
-      const popup = window.open(`/detached/${transferId}`, '_blank', detachedWindowFeatures)
-      if (!popup) {
+      let popup: Window | null = null
+      if (!isDesktop) {
+        popup = window.open(`/detached/${transferId}`, '_blank', detachedWindowFeatures)
+      }
+      if (!isDesktop && !popup) {
         onNotice('The browser blocked the detached window. Allow popups and try again.')
         return
       }
@@ -181,7 +193,15 @@ export function useDetachedTabs(userId: string, onNotice: (message: string) => v
         lastSeen: Date.now(),
       })
       persist()
-      popup.focus()
+      if (isDesktop) {
+        void openDetachedWindow(transferId).catch((cause) => {
+          entries.current.delete(transferId)
+          persist()
+          onNotice(cause instanceof Error ? cause.message : 'Could not open detached window.')
+        })
+      } else {
+        popup?.focus()
+      }
     },
     [onNotice, persist],
   )

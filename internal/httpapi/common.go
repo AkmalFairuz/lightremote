@@ -16,12 +16,19 @@ import (
 )
 
 type principalKey struct{}
+type desktopRequestKey struct{}
 
 const maxJSONBodyBytes = 1 << 20
 
 // principal returns the account established by RequireAuth.
 func principal(r *http.Request) security.Principal {
 	return r.Context().Value(principalKey{}).(security.Principal)
+}
+
+// DesktopRequest marks a request delivered by Wails' in-process asset server.
+// Only the desktop entry point should call this before routing /api requests.
+func DesktopRequest(r *http.Request) *http.Request {
+	return r.WithContext(context.WithValue(r.Context(), desktopRequestKey{}, true))
 }
 
 // readJSON accepts exactly one bounded JSON value with known fields.
@@ -91,11 +98,12 @@ func (m *AuthMiddleware) LocalMode() bool {
 func (m *AuthMiddleware) RequireAuth(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if m.localMode {
-			if !localRequestHost(r.Host) {
+			desktop := r.Context().Value(desktopRequestKey{}) == true
+			if !desktop && !localRequestHost(r.Host) {
 				writeError(w, 403, "invalid_host", "local mode requires a loopback host")
 				return
 			}
-			if r.Header.Get("Origin") != "" && !m.ValidOrigin(r) {
+			if !desktop && r.Header.Get("Origin") != "" && !m.ValidOrigin(r) {
 				writeError(w, 403, "invalid_origin", "request origin is not allowed")
 				return
 			}

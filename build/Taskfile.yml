@@ -1,0 +1,42 @@
+version: '3'
+
+tasks:
+  install:frontend:deps:
+    dir: frontend
+    sources:
+      - package.json
+      - package-lock.json
+    generates:
+      - node_modules
+    cmds:
+      - npm ci
+
+  build:frontend:
+    run: once
+    dir: frontend
+    deps:
+      - task: install:frontend:deps
+    cmds:
+      - npm run build
+    env:
+      VITE_DESKTOP: 'true'
+
+  generate:icons:
+    run: once
+    dir: build
+    sources:
+      - appicon.png
+    generates:
+      - darwin/icons.icns
+      - windows/icon.ico
+    cmds:
+      - wails3 generate icons -input appicon.png -macfilename darwin/icons.icns -windowsfilename windows/icon.ico
+
+  dev:frontend:
+    dir: frontend
+    deps:
+      - task: install:frontend:deps
+    cmds:
+      - npm run dev -- --port {{.VITE_PORT}} --strictPort
+    env:
+      VITE_DESKTOP: 'true'

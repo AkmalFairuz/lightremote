@@ -1,0 +1,31 @@
+version: '3'
+
+includes:
+  common: ../Taskfile.yml
+
+tasks:
+  build:
+    summary: Builds the native macOS desktop app
+    deps:
+      - task: common:generate:icons
+      - task: common:build:frontend
+    cmds:
+      - 'go build {{if eq .DEV "true"}}-buildvcs=false -gcflags=all="-l"{{else}}-tags production -trimpath -buildvcs=false -ldflags="-w -s"{{end}} -o "bin/{{.APP_NAME}}"'
+    env:
+      GOOS: darwin
+      GOARCH: '{{.TARGET_ARCH | default ARCH}}'
+      CGO_ENABLED: 1
+      CGO_CFLAGS: "-mmacosx-version-min=12.0"
+      CGO_LDFLAGS: "-mmacosx-version-min=12.0"
+      MACOSX_DEPLOYMENT_TARGET: "12.0"
+
+  run:
+    summary: Runs the native macOS development app
+    cmds:
+      - mkdir -p "bin/{{.APP_NAME}}.dev.app/Contents/MacOS"
+      - mkdir -p "bin/{{.APP_NAME}}.dev.app/Contents/Resources"
+      - cp build/darwin/icons.icns "bin/{{.APP_NAME}}.dev.app/Contents/Resources"
+      - cp "bin/{{.APP_NAME}}" "bin/{{.APP_NAME}}.dev.app/Contents/MacOS"
+      - cp build/darwin/Info.dev.plist "bin/{{.APP_NAME}}.dev.app/Contents/Info.plist"
+      - codesign --force --deep --sign - "bin/{{.APP_NAME}}.dev.app"
+      - '"bin/{{.APP_NAME}}.dev.app/Contents/MacOS/{{.APP_NAME}}"'

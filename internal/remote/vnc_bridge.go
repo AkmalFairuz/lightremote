@@ -13,7 +13,6 @@ import (
 	"time"
 
 	"github.com/akmalfairuz/lightremote/internal/model"
-	"github.com/coder/websocket"
 )
 
 const (
@@ -125,10 +124,9 @@ func newVNCBridgeFromConn(upstream net.Conn, password string, timeout time.Durat
 	return bridge, nil
 }
 
-// Serve bridges one browser to the upstream RFB connection for its lifetime.
-func (b *VNCBridge) Serve(ctx context.Context, socket *websocket.Conn, onReceive, onSend func(int), onReady func()) error {
+// Serve bridges one viewer to the upstream RFB connection for its lifetime.
+func (b *VNCBridge) Serve(ctx context.Context, downstream net.Conn, onReceive, onSend func(int), onReady func()) error {
 	defer b.Close()
-	downstream := websocket.NetConn(ctx, socket, websocket.MessageBinary)
 	defer downstream.Close()
 	if err := b.initBrowser(downstream); err != nil {
 		return err

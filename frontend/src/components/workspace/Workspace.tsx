@@ -91,6 +91,7 @@ export function Workspace({
         visible={visible}
         recentConnections={recentConnections}
         onOpenConnection={onOpenConnection}
+        onZoom={onZoom}
         onStatus={onStatus}
         onReconnect={onReconnect}
         onFilePath={onFilePath}

@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react'
-import { IconButton, Tooltip } from '../../ui'
+import { IconButton, Menu, MenuItem } from '../../ui'
 import type { FileEntry } from '../../types'
 import { formatBytes } from '../../utils/formatBytes'
 import { Glyph } from '../common/Glyph'
@@ -10,6 +10,9 @@ import { isDriveRoot } from '../../utils/remoteFilePath'
 interface FileRowProps {
   entry: FileEntry
   striped: boolean
+  selected: boolean
+  selectionDisabled: boolean
+  onSelect: (entry: FileEntry, selected: boolean) => void
   onOpen: (entry: FileEntry) => void
   onDownload: (entry: FileEntry) => void
   onEdit: (entry: FileEntry) => void
@@ -20,6 +23,9 @@ interface FileRowProps {
 export function FileRow({
   entry,
   striped,
+  selected,
+  selectionDisabled,
+  onSelect,
   onOpen,
   onDownload,
   onEdit,
@@ -30,7 +36,10 @@ export function FileRow({
   const [name, setName] = useState(entry.name)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [anchor, setAnchor] = useState<HTMLElement | null>(null)
+  const [menuOpen, setMenuOpen] = useState(false)
   const modifiedAt = Date.parse(entry.modTime)
+  const driveRoot = isDriveRoot(entry.path)
 
   async function submit(event: FormEvent) {
     event.preventDefault()
@@ -56,86 +65,111 @@ export function FileRow({
 
   return (
     <div className={`file-row ${striped ? 'file-row-striped' : ''}`} role="row">
-      {editing ? (
-        <form className="file-rename" onSubmit={submit}>
-          <FileTypeIcon entry={entry} />
-          <input
-            aria-label={`New name for ${entry.name}`}
-            autoFocus
-            value={name}
-            onChange={(event) => setName(event.target.value)}
-            onKeyDown={(event) => {
-              if (event.key === 'Escape') setEditing(false)
-            }}
-            disabled={busy}
-          />
-          <IconButton type="submit" aria-label="Save name" disabled={busy}>
-            <Glyph name="check" size={16} />
-          </IconButton>
-          <IconButton aria-label="Cancel rename" onClick={() => setEditing(false)} disabled={busy}>
-            <Glyph name="close" size={16} />
-          </IconButton>
-          {error && <small className="file-rename-error">{error}</small>}
-        </form>
-      ) : (
-        <button
-          className="file-name"
-          onClick={() => (entry.isDir ? onOpen(entry) : onDownload(entry))}
-        >
-          <FileTypeIcon entry={entry} />
-          <span>{entry.name}</span>
-        </button>
-      )}
-      <span>{entry.isDir ? '—' : formatBytes(entry.size)}</span>
-      <span>{modifiedAt > 0 ? new Date(modifiedAt).toLocaleString() : '—'}</span>
-      <div className="file-row-actions">
-        {isEditableTextFile(entry) && (
-          <Tooltip
-            title={
-              entry.size >= maxEditableBytes
-                ? 'Files of 10 MB or larger cannot be edited'
-                : 'Edit in browser'
-            }
-          >
-            <span>
-              <IconButton
-                aria-label={`Edit ${entry.name}`}
-                disabled={entry.size >= maxEditableBytes}
-                onClick={() => onEdit(entry)}
-              >
-                <Glyph name="edit-note" size={17} />
-              </IconButton>
-            </span>
-          </Tooltip>
-        )}
-        {!entry.isDir && (
-          <Tooltip title="Download">
-            <IconButton aria-label={`Download ${entry.name}`} onClick={() => onDownload(entry)}>
-              <Glyph name="download" size={17} />
+      <span role="cell" className="file-selection-cell">
+        <input
+          type="checkbox"
+          aria-label={`Select ${entry.name}`}
+          checked={selected}
+          disabled={driveRoot || selectionDisabled}
+          onChange={(event) => onSelect(entry, event.target.checked)}
+        />
+      </span>
+      <div className="file-name-cell" role="cell">
+        {editing ? (
+          <form className="file-rename" onSubmit={submit}>
+            <FileTypeIcon entry={entry} />
+            <input
+              aria-label={`New name for ${entry.name}`}
+              autoFocus
+              value={name}
+              onChange={(event) => setName(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === 'Escape') setEditing(false)
+              }}
+              disabled={busy}
+            />
+            <IconButton type="submit" aria-label="Save name" disabled={busy}>
+              <Glyph name="check" size={16} />
             </IconButton>
-          </Tooltip>
+            <IconButton
+              aria-label="Cancel rename"
+              onClick={() => setEditing(false)}
+              disabled={busy}
+            >
+              <Glyph name="close" size={16} />
+            </IconButton>
+            {error && <small className="file-rename-error">{error}</small>}
+          </form>
+        ) : (
+          <button
+            className="file-name"
+            onClick={() => (entry.isDir ? onOpen(entry) : onDownload(entry))}
+          >
+            <FileTypeIcon entry={entry} />
+            <span>{entry.name}</span>
+          </button>
         )}
-        {!isDriveRoot(entry.path) && (
-          <>
-            <Tooltip title="Rename">
-              <IconButton
-                aria-label={`Rename ${entry.name}`}
-                onClick={() => {
-                  setName(entry.name)
-                  setError(null)
-                  setEditing(true)
-                }}
-              >
-                <Glyph name="drive-file-rename-outline" size={17} />
-              </IconButton>
-            </Tooltip>
-            <Tooltip title="Delete">
-              <IconButton aria-label={`Delete ${entry.name}`} onClick={() => onDelete(entry)}>
-                <Glyph name="delete-outline" size={17} />
-              </IconButton>
-            </Tooltip>
-          </>
+      </div>
+      <span role="cell">{entry.isDir ? '—' : formatBytes(entry.size)}</span>
+      <span role="cell">{modifiedAt > 0 ? new Date(modifiedAt).toLocaleString() : '—'}</span>
+      <div className="file-row-actions" role="cell">
+        {!driveRoot && (
+          <IconButton
+            aria-label={`Actions for ${entry.name}`}
+            onClick={(event) => {
+              setAnchor(event.currentTarget)
+              setMenuOpen(true)
+            }}
+          >
+            <Glyph name="more-vert" size={18} />
+          </IconButton>
         )}
+        <Menu
+          anchorEl={anchor}
+          open={menuOpen}
+          onClose={() => setMenuOpen(false)}
+          onClosed={() => setAnchor(null)}
+        >
+          {isEditableTextFile(entry) && (
+            <MenuItem
+              disabled={entry.size >= maxEditableBytes}
+              onClick={() => {
+                setMenuOpen(false)
+                onEdit(entry)
+              }}
+            >
+              {entry.size >= maxEditableBytes ? 'Edit (10 MB limit)' : 'Edit'}
+            </MenuItem>
+          )}
+          {!entry.isDir && (
+            <MenuItem
+              onClick={() => {
+                setMenuOpen(false)
+                onDownload(entry)
+              }}
+            >
+              Download
+            </MenuItem>
+          )}
+          <MenuItem
+            onClick={() => {
+              setMenuOpen(false)
+              setName(entry.name)
+              setError(null)
+              setEditing(true)
+            }}
+          >
+            Rename
+          </MenuItem>
+          <MenuItem
+            onClick={() => {
+              setMenuOpen(false)
+              onDelete(entry)
+            }}
+          >
+            Delete
+          </MenuItem>
+        </Menu>
       </div>
     </div>
   )

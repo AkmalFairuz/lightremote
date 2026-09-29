@@ -1,0 +1,35 @@
+version: '3'
+
+includes:
+  common: ../Taskfile.yml
+
+tasks:
+  build:
+    summary: Builds the native Windows desktop app
+    deps:
+      - task: common:generate:icons
+      - task: common:build:frontend
+    cmds:
+      - task: generate:syso
+        vars:
+          TARGET_ARCH: '{{.TARGET_ARCH}}'
+      - 'go build {{if eq .DEV "true"}}-buildvcs=false -gcflags=all="-l"{{else}}-tags production -trimpath -buildvcs=false -ldflags="-w -s -H windowsgui"{{end}} -o "bin/{{.APP_NAME}}.exe"'
+      - cmd: powershell Remove-Item *.syso
+        platforms: [windows]
+      - cmd: rm -f *.syso
+        platforms: [darwin, linux]
+    env:
+      GOOS: windows
+      GOARCH: '{{.TARGET_ARCH | default ARCH}}'
+      CGO_ENABLED: 0
+
+  generate:syso:
+    internal: true
+    dir: build
+    cmds:
+      - wails3 generate syso -arch {{.TARGET_ARCH | default ARCH}} -icon windows/icon.ico -manifest windows/wails.exe.manifest -info windows/info.json -out ../wails_windows_{{.TARGET_ARCH | default ARCH}}.syso
+
+  run:
+    summary: Runs the native Windows development app
+    cmds:
+      - 'bin/{{.APP_NAME}}.exe'

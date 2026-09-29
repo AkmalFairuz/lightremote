@@ -76,7 +76,7 @@ func openSQLite(ctx context.Context, path string) (*sqlx.DB, error) {
 	if err != nil {
 		return nil, fmt.Errorf("resolve SQLite path: %w", err)
 	}
-	databaseURL := url.URL{Scheme: "file", Path: filepath.ToSlash(absolutePath)}
+	databaseURL := sqliteFileURL(absolutePath)
 	parameters := url.Values{}
 	parameters.Add("_pragma", "foreign_keys(1)")
 	parameters.Add("_pragma", "busy_timeout(5000)")
@@ -93,4 +93,18 @@ func openSQLite(ctx context.Context, path string) (*sqlx.DB, error) {
 		return nil, fmt.Errorf("connect sqlite: %w", err)
 	}
 	return db, nil
+}
+
+func sqliteFileURL(absolutePath string) url.URL {
+	uriPath := filepath.ToSlash(absolutePath)
+	if len(uriPath) >= 2 && uriPath[1] == ':' {
+		drive := uriPath[0]
+		upperDrive := drive >= 'A' && drive <= 'Z'
+		lowerDrive := drive >= 'a' && drive <= 'z'
+		if upperDrive || lowerDrive {
+			// SQLite expects file:///C:/..., with the drive in the URI path.
+			uriPath = "/" + uriPath
+		}
+	}
+	return url.URL{Scheme: "file", Path: uriPath}
 }

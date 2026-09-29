@@ -1,14 +1,45 @@
 import { useMemo, useRef, useState, type DragEvent } from 'react'
 import { files } from '../../api/files'
-import { DialogPresence } from '../../ui'
-import type { ConnectionKind, FileEntry } from '../../types'
+import { Alert, Button, DialogPresence, Snackbar } from '../../ui'
+import { errorMessage, type ConnectionKind, type FileEntry } from '../../types'
 import { ConfirmDialog, TextPromptDialog } from '../common/ActionDialogs'
+import { Glyph } from '../common/Glyph'
 import { FileList } from './FileList'
 import { FileEditor } from './FileEditor'
 import { FileToolbar } from './FileToolbar'
 import { sortFileEntries, type FileSort, type FileSortField } from './fileSort'
-import { joinRemotePath, normalizeRemotePath, parentRemotePath } from '../../utils/remoteFilePath'
+import {
+  isDriveRoot,
+  joinRemotePath,
+  normalizeRemotePath,
+  parentRemotePath,
+} from '../../utils/remoteFilePath'
 import { useRemoteDirectory } from './useRemoteDirectory'
+import { saveRemoteFile } from '../../desktop/actions'
+import { isDesktop } from '../../desktop/viewerSocket'
+import { desktopRuntime } from '../../desktop/runtime'
+import { formatBytes } from '../../utils/formatBytes'
+
+interface Transfer {
+  id: string
+  name: string
+  direction: 'upload' | 'download'
+  loaded: number
+  total: number
+}
+
+interface Notice {
+  id: string
+  message: string
+}
+
+const transferNamespace = Math.random().toString(36).slice(2)
+let transferSequence = 0
+
+function nextTransferId() {
+  transferSequence += 1
+  return `${transferNamespace}-${transferSequence}`
+}
 
 export function FileManager({
   connectionId,
@@ -28,20 +59,96 @@ export function FileManager({
   const currentPath = path ?? '/'
   const [sort, setSort] = useState<FileSort>({ field: 'name', direction: 'asc' })
   const sortedEntries = useMemo(() => sortFileEntries(entries, sort), [entries, sort])
+  const selectionScope = `${connectionId}\0${path ?? ''}`
+  const [selection, setSelection] = useState<{ scope: string; paths: Set<string> }>(() => ({
+    scope: selectionScope,
+    paths: new Set(),
+  }))
+  if (selection.scope !== selectionScope) {
+    setSelection({ scope: selectionScope, paths: new Set() })
+  }
+  const visibleEntries = loadedPath === path ? sortedEntries : []
+  const availablePaths = new Set(visibleEntries.map((entry) => entry.path))
+  const selectedPaths = new Set(
+    selection.scope === selectionScope
+      ? [...selection.paths].filter((entryPath) => availablePaths.has(entryPath))
+      : [],
+  )
+  const selectedEntries = visibleEntries.filter((entry) => selectedPaths.has(entry.path))
+  const downloadableEntries = selectedEntries.filter((entry) => !entry.isDir)
   const [busy, setBusy] = useState(false)
+  const [transfers, setTransfers] = useState<Transfer[]>([])
+  const [notices, setNotices] = useState<Notice[]>([])
   const [dropActive, setDropActive] = useState(false)
   const [editingFile, setEditingFile] = useState<FileEntry | null>(null)
   const [pending, setPending] = useState<
-    { type: 'delete'; entry: FileEntry } | { type: 'mkdir' } | null
+    | { type: 'delete'; entry: FileEntry }
+    | { type: 'bulkDelete'; entries: FileEntry[] }
+    | { type: 'mkdir' }
+    | null
   >(null)
   const dragDepth = useRef(0)
+
+  function selectEntry(entry: FileEntry, selected: boolean) {
+    setSelection((current) => {
+      const paths = new Set(current.scope === selectionScope ? current.paths : [])
+      if (selected) {
+        paths.add(entry.path)
+      } else {
+        paths.delete(entry.path)
+      }
+      return { scope: selectionScope, paths }
+    })
+  }
+
+  function selectAll(selected: boolean) {
+    const paths = selected
+      ? visibleEntries.filter((entry) => !isDriveRoot(entry.path)).map((entry) => entry.path)
+      : []
+    setSelection({
+      scope: selectionScope,
+      paths: new Set(paths),
+    })
+  }
+
+  function beginTransfer(name: string, direction: Transfer['direction'], total: number) {
+    const id = nextTransferId()
+    setTransfers((current) => [...current, { id, name, direction, loaded: 0, total }])
+    return id
+  }
+
+  function updateTransfer(id: string, loaded: number, total: number) {
+    setTransfers((current) =>
+      current.map((transfer) => (transfer.id === id ? { ...transfer, loaded, total } : transfer)),
+    )
+  }
+
+  function finishTransfer(id: string) {
+    setTransfers((current) => current.filter((transfer) => transfer.id !== id))
+  }
+
+  function showCompletion(message: string) {
+    setNotices((current) => [...current, { id: nextTransferId(), message }])
+  }
+
+  async function refreshFiles() {
+    const refreshed = await load(true)
+    if (!refreshed) return
+
+    const availablePaths = new Set(refreshed.map((entry) => entry.path))
+    setSelection((current) => {
+      if (current.scope !== selectionScope) return current
+      const paths = new Set([...current.paths].filter((entryPath) => availablePaths.has(entryPath)))
+      return { scope: selectionScope, paths }
+    })
+  }
 
   async function perform(operation: () => Promise<unknown>) {
     setBusy(true)
     setError(null)
     try {
       await operation()
-      await load(true)
+      await refreshFiles()
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'File operation failed.')
     } finally {
@@ -53,7 +160,7 @@ export function FileManager({
     setBusy(true)
     try {
       await operation()
-      await load(true)
+      await refreshFiles()
     } finally {
       setBusy(false)
     }
@@ -72,7 +179,20 @@ export function FileManager({
     if (uploads.length === 0) return
     void perform(async () => {
       for (const file of uploads) {
-        await files.upload(connectionId, joinRemotePath(path, file.name), file)
+        const id = beginTransfer(file.name, 'upload', file.size)
+        try {
+          await files.upload(
+            connectionId,
+            joinRemotePath(path, file.name),
+            file,
+            (loaded, total) => {
+              updateTransfer(id, loaded, total)
+            },
+          )
+          showCompletion(`Uploaded ${file.name}`)
+        } finally {
+          finishTransfer(id)
+        }
       }
     })
   }
@@ -101,11 +221,111 @@ export function FileManager({
     uploadFiles(event.dataTransfer.files)
   }
 
-  function download(entry: FileEntry) {
-    const link = document.createElement('a')
-    link.href = files.downloadURL(connectionId, entry.path)
-    link.download = entry.name
-    link.click()
+  async function download(entry: FileEntry, reportError = true): Promise<string | null> {
+    if (reportError) setError(null)
+    const id = beginTransfer(entry.name, 'download', entry.size)
+    try {
+      if (isDesktop) {
+        const stopProgress = desktopRuntime?.Events.On('lightremote:download-progress', (event) => {
+          const progress = event.data as { id?: string; loaded?: number }
+          if (progress.id === id && typeof progress.loaded === 'number') {
+            updateTransfer(id, progress.loaded, entry.size)
+          }
+        })
+        try {
+          const saved = await saveRemoteFile(connectionId, entry.path, entry.name, id)
+          if (!saved) return 'Download canceled'
+          showCompletion(`Downloaded ${entry.name}`)
+        } finally {
+          stopProgress?.()
+        }
+      } else {
+        await files.download(connectionId, entry.path, entry.name, entry.size, (loaded, total) => {
+          updateTransfer(id, loaded, total)
+        })
+        showCompletion(`Downloaded ${entry.name}`)
+      }
+      return null
+    } catch (cause) {
+      const message = errorMessage(cause)
+      if (reportError) setError(message)
+      return message
+    } finally {
+      finishTransfer(id)
+    }
+  }
+
+  async function downloadSelected() {
+    const toDownload = downloadableEntries
+    const skipped = selectedEntries.length - toDownload.length
+    if (toDownload.length === 0) return
+    setBusy(true)
+    setError(null)
+    const failed: { path: string; message: string }[] = []
+    const remainingPaths = new Set(selectedEntries.map((entry) => entry.path))
+    let canceled = false
+    try {
+      for (const entry of toDownload) {
+        const failure = await download(entry, false)
+        if (failure === 'Download canceled') {
+          canceled = true
+          break
+        }
+        if (failure) {
+          failed.push({ path: entry.path, message: `${entry.name}: ${failure}` })
+        } else {
+          remainingPaths.delete(entry.path)
+        }
+      }
+      setSelection((current) =>
+        current.scope === selectionScope
+          ? { scope: selectionScope, paths: remainingPaths }
+          : current,
+      )
+      if (failed.length || skipped || canceled) {
+        setError(
+          [
+            failed.length
+              ? `${failed.length} download(s) failed: ${failed.map((item) => item.message).join('; ')}`
+              : '',
+            skipped ? `${skipped} folder(s) skipped.` : '',
+            canceled ? 'Remaining downloads were canceled.' : '',
+          ]
+            .filter(Boolean)
+            .join(' '),
+        )
+      }
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function deleteSelected(toDelete: FileEntry[]) {
+    setBusy(true)
+    setError(null)
+    const failed: { path: string; message: string }[] = []
+    try {
+      for (const entry of toDelete) {
+        try {
+          await files.delete(connectionId, entry.path)
+        } catch (cause) {
+          failed.push({ path: entry.path, message: `${entry.name}: ${errorMessage(cause)}` })
+        }
+      }
+      setSelection((current) =>
+        current.scope === selectionScope
+          ? { scope: selectionScope, paths: new Set(failed.map((item) => item.path)) }
+          : current,
+      )
+      await refreshFiles()
+      if (failed.length) {
+        setError(
+          `${failed.length} item(s) could not be deleted: ${failed.map((item) => item.message).join('; ')}`,
+        )
+      }
+    } finally {
+      setBusy(false)
+    }
   }
 
   function navigateToPath(value: string, reloadIfSame = false) {
@@ -123,6 +343,7 @@ export function FileManager({
       if (reloadIfSame) void load()
       return
     }
+    setSelection({ scope: `${connectionId}\0${destination}`, paths: new Set() })
     changePath(destination)
   }
 
@@ -148,7 +369,7 @@ export function FileManager({
           connectionId={connectionId}
           entry={editingFile}
           onBack={() => setEditingFile(null)}
-          onSaved={() => load(true)}
+          onSaved={refreshFiles}
         />
       ) : (
         <>
@@ -159,10 +380,40 @@ export function FileManager({
             writeDisabled={kind === 'vnc' && path === '/'}
             onParent={() => navigateToPath(parentRemotePath(currentPath))}
             onNavigate={(value) => navigateToPath(value, true)}
-            onRefresh={() => void load(true)}
+            onRefresh={() => void refreshFiles()}
             onNewFolder={() => setPending({ type: 'mkdir' })}
             onUpload={uploadFiles}
           />
+          {selectedEntries.length > 0 && (
+            <div className="files-selection-bar">
+              <strong>{selectedEntries.length} selected</strong>
+              <span className="files-selection-actions">
+                <Button
+                  disabled={busy || downloadableEntries.length === 0}
+                  onClick={() => void downloadSelected()}
+                  startIcon={<Glyph name="download" size={17} />}
+                >
+                  Download
+                  {selectedEntries.length !== downloadableEntries.length
+                    ? ` ${downloadableEntries.length} files`
+                    : ''}
+                </Button>
+                <Button
+                  disabled={busy}
+                  onClick={() => setPending({ type: 'bulkDelete', entries: selectedEntries })}
+                  startIcon={<Glyph name="delete-outline" size={17} />}
+                >
+                  Delete
+                </Button>
+                <Button
+                  disabled={busy}
+                  onClick={() => setSelection({ scope: selectionScope, paths: new Set() })}
+                >
+                  Clear selection
+                </Button>
+              </span>
+            </div>
+          )}
           {error && (
             <div className="files-error" role="alert">
               {error}
@@ -170,12 +421,16 @@ export function FileManager({
           )}
           <FileList
             hideActions={kind === 'vnc' && path === '/'}
-            entries={loadedPath === path ? sortedEntries : []}
+            entries={visibleEntries}
             loading={loading || (!error && (path === null || loadedPath !== path))}
             loadingLabel={path === null ? 'Finding home directory…' : 'Loading files…'}
             showEmpty={path !== null && loadedPath === path && !error}
             sort={sort}
             onSort={toggleSort}
+            selectedPaths={selectedPaths}
+            selectionDisabled={busy}
+            onSelect={selectEntry}
+            onSelectAll={selectAll}
             onOpen={(entry) => {
               if (kind === 'vnc' && currentPath === '/') {
                 const drive = /^[A-Za-z]:/.exec(entry.name) ?? /[A-Za-z]:/.exec(entry.path)
@@ -195,6 +450,38 @@ export function FileManager({
             }
             onDelete={(entry) => setPending({ type: 'delete', entry })}
           />
+          {transfers.length > 0 && (
+            <div className="files-transfers" role="status" aria-live="polite">
+              {transfers.map((transfer) => {
+                const percent =
+                  transfer.total > 0
+                    ? Math.min(100, Math.round((transfer.loaded / transfer.total) * 100))
+                    : undefined
+                const action = transfer.direction === 'upload' ? 'Uploading' : 'Downloading'
+                return (
+                  <div className="files-transfer" key={transfer.id}>
+                    <div className="files-transfer-label">
+                      <span>
+                        {action} {transfer.name}
+                      </span>
+                      <span>
+                        {formatBytes(transfer.loaded)}
+                        {transfer.total > 0 && ` / ${formatBytes(transfer.total)}`}
+                        {percent === 100 && ' · Finishing…'}
+                      </span>
+                    </div>
+                    <progress
+                      aria-label={`${action} ${transfer.name}`}
+                      max={transfer.total > 0 ? transfer.total : undefined}
+                      value={
+                        transfer.total > 0 ? Math.min(transfer.loaded, transfer.total) : undefined
+                      }
+                    />
+                  </div>
+                )
+              })}
+            </div>
+          )}
           <div className="files-footer">
             {loadedPath === path ? entries.length : 0} items {busy && '· Working…'}
           </div>
@@ -224,7 +511,28 @@ export function FileManager({
           />
         )}
       </DialogPresence>
+      <DialogPresence>
+        {pending?.type === 'bulkDelete' && (
+          <ConfirmDialog
+            title="Delete selected remote entries"
+            message={`Delete ${pending.entries.length} selected item(s)? Directories must be empty.`}
+            actionLabel="Delete"
+            onClose={() => setPending(null)}
+            onConfirm={() => deleteSelected(pending.entries)}
+          />
+        )}
+      </DialogPresence>
       {dropActive && <div className="files-drop-overlay">Drop files to upload</div>}
+      <Snackbar
+        key={notices[0]?.id}
+        open={notices.length > 0}
+        autoHideDuration={4000}
+        onClose={() => setNotices((current) => current.slice(1))}
+      >
+        <Alert severity="success" onClose={() => setNotices((current) => current.slice(1))}>
+          {notices[0]?.message}
+        </Alert>
+      </Snackbar>
     </div>
   )
 }

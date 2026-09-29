@@ -1,5 +1,5 @@
-import { Icon } from '@iconify/react'
 import { IconButton, Tooltip } from '../../ui'
+import { Glyph } from '../common/Glyph'
 import { clampZoom, zoomBounds, zoomStep } from '../../utils/zoom'
 
 interface ZoomControlsProps {
@@ -21,12 +21,7 @@ export function ZoomControls({ kind, zoom, onChange }: ZoomControlsProps) {
             disabled={zoom <= min}
             onClick={() => onChange(clampZoom(kind, zoom - zoomStep))}
           >
-            <Icon
-              icon="material-symbols-light:zoom-out"
-              width={22}
-              height={22}
-              aria-hidden="true"
-            />
+            <Glyph name="zoom-out" size={22} />
           </IconButton>
         </span>
       </Tooltip>
@@ -40,7 +35,7 @@ export function ZoomControls({ kind, zoom, onChange }: ZoomControlsProps) {
             disabled={zoom >= max}
             onClick={() => onChange(clampZoom(kind, zoom + zoomStep))}
           >
-            <Icon icon="material-symbols-light:zoom-in" width={22} height={22} aria-hidden="true" />
+            <Glyph name="zoom-in" size={22} />
           </IconButton>
         </span>
       </Tooltip>

@@ -1,5 +1,5 @@
-import { Icon } from '@iconify/react'
+import { LocalIcon } from '../../ui/localIcons'
 
 export function Glyph({ name, size = 18 }: { name: string; size?: number }) {
-  return <Icon icon={`material-symbols:${name}`} width={size} height={size} aria-hidden="true" />
+  return <LocalIcon name={name} size={size} />
 }

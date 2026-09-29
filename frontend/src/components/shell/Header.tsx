@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useColorScheme } from '@mui/material/styles'
 import { Link, useNavigate } from 'react-router-dom'
 import { useLogoutMutation } from '../../api/auth'
 import { api } from '../../api/base'
@@ -18,6 +19,11 @@ import { HelpMenu } from './HelpMenu'
 import type { Connection } from '../../types'
 import { errorMessage } from '../../types'
 import { SSHKeyManagerDialog } from '../sshkeys/SSHKeyManagerDialog'
+import { WindowControls, WindowDragRegion } from './WindowControls'
+import { toggleWindowOnTitlebarDoubleClick } from '../../desktop/titlebar'
+import { desktopRuntime, isMacDesktop } from '../../desktop/runtime'
+import { terminalThemeOptions } from '../workspace/terminalTheme'
+import { setTerminalThemePreference } from '../workspace/terminalThemePreference'
 
 interface HeaderProps {
   onToggleSidebar: () => void
@@ -26,6 +32,8 @@ interface HeaderProps {
   recentConnections: Connection[]
   onOpenRecentConnection: (connection: Connection) => void
 }
+
+type HeaderMenu = 'file' | 'view' | 'help' | 'account'
 
 export function Header({
   onToggleSidebar,
@@ -39,6 +47,7 @@ export function Header({
   const localMode = useAppSelector((state) => state.auth.localMode)
   const navigate = useNavigate()
   const [logout] = useLogoutMutation()
+  const { setMode } = useColorScheme()
   const [viewAnchor, setViewAnchor] = useState<HTMLElement | null>(null)
   const [helpAnchor, setHelpAnchor] = useState<HTMLElement | null>(null)
   const [fileAnchor, setFileAnchor] = useState<HTMLElement | null>(null)
@@ -48,6 +57,44 @@ export function Header({
   const [accountDialog, setAccountDialog] = useState<'password' | 'users' | null>(null)
   const [sshKeysOpen, setSSHKeysOpen] = useState(false)
   const [logoutError, setLogoutError] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!isMacDesktop || !desktopRuntime) return
+
+    return desktopRuntime.Events.On('lightremote:mac-menu', (event) => {
+      const action = event.data
+      if (typeof action !== 'string') return
+
+      if (action === 'file:open') onOpenConnection()
+      if (action === 'file:direct') onNewDirectConnection()
+      if (action === 'file:ssh-keys') setSSHKeysOpen(true)
+      if (action.startsWith('file:recent:')) {
+        const connection = recentConnections.find((item) => item.id === action.slice(12))
+        if (connection) onOpenRecentConnection(connection)
+      }
+      if (action.startsWith('view:appearance:')) {
+        const mode = action.slice(16)
+        if (mode === 'system' || mode === 'light' || mode === 'dark') setMode(mode)
+      }
+      if (action.startsWith('view:terminal:')) {
+        const name = action.slice(14)
+        const theme = terminalThemeOptions.find((option) => option.name === name)
+        if (theme) setTerminalThemePreference(theme.name)
+      }
+      if (action === 'help:source') {
+        void desktopRuntime?.Browser.OpenURL('https://github.com/AkmalFairuz/lightremote')
+      }
+    })
+  }, [onOpenConnection, onNewDirectConnection, onOpenRecentConnection, recentConnections, setMode])
+
+  useEffect(() => {
+    if (!isMacDesktop || !desktopRuntime) return
+    const recent = recentConnections.map(({ id, name, kind }) => ({ id, name, kind }))
+    void desktopRuntime.Call.ByName(
+      'main.DesktopService.UpdateRecentConnections',
+      JSON.stringify(recent),
+    ).catch((cause) => console.error('Could not update macOS recent connections menu:', cause))
+  }, [recentConnections])
 
   useEffect(() => {
     function handleShortcut(event: KeyboardEvent) {
@@ -114,8 +161,25 @@ export function Header({
     navigate('/', { replace: true })
   }
 
+  function toggleMenu(menu: HeaderMenu, anchor: HTMLElement) {
+    const anchors = {
+      file: fileAnchor,
+      view: viewAnchor,
+      help: helpAnchor,
+      account: accountAnchor,
+    }
+    const nextAnchor = anchors[menu] === anchor ? null : anchor
+
+    setFileAnchor(menu === 'file' ? nextAnchor : null)
+    setViewAnchor(menu === 'view' ? nextAnchor : null)
+    setHelpAnchor(menu === 'help' ? nextAnchor : null)
+    setAccountAnchor(menu === 'account' ? nextAnchor : null)
+    setFileSection('root')
+    setViewSection('root')
+  }
+
   return (
-    <header className="app-header">
+    <header className="app-header" onDoubleClick={toggleWindowOnTitlebarDoubleClick}>
       <div className="header-left">
         <IconButton
           aria-label="Toggle connections sidebar"
@@ -127,74 +191,51 @@ export function Header({
         <Link to="/" className="brand-link">
           LightRemote
         </Link>
-        <nav className="header-menus" aria-label="Application menus">
-          <Button
-            aria-label="Open file actions"
-            aria-haspopup="menu"
-            aria-expanded={Boolean(fileAnchor)}
-            onClick={(event) => {
-              setViewAnchor(null)
-              setHelpAnchor(null)
-              setAccountAnchor(null)
-              setFileSection('root')
-              setFileAnchor(event.currentTarget)
-            }}
-            endIcon={<Glyph name="keyboard-arrow-down" size={17} />}
-          >
-            File
-          </Button>
-          <Button
-            aria-label="Open view settings"
-            aria-haspopup="menu"
-            aria-expanded={Boolean(viewAnchor)}
-            onClick={(event) => {
-              setFileAnchor(null)
-              setFileSection('root')
-              setHelpAnchor(null)
-              setAccountAnchor(null)
-              setViewSection('root')
-              setViewAnchor(event.currentTarget)
-            }}
-            endIcon={<Glyph name="keyboard-arrow-down" size={17} />}
-          >
-            View
-          </Button>
-          <Button
-            aria-label="Open help"
-            aria-haspopup="menu"
-            aria-expanded={Boolean(helpAnchor)}
-            onClick={(event) => {
-              setFileAnchor(null)
-              setFileSection('root')
-              setViewAnchor(null)
-              setViewSection('root')
-              setAccountAnchor(null)
-              setHelpAnchor(event.currentTarget)
-            }}
-            endIcon={<Glyph name="keyboard-arrow-down" size={17} />}
-          >
-            Help
-          </Button>
-          {!localMode && (
+        {!isMacDesktop && (
+          <nav className="header-menus" aria-label="Application menus">
             <Button
-              aria-label="Open account"
+              aria-label="Open file actions"
               aria-haspopup="menu"
-              aria-expanded={Boolean(accountAnchor)}
-              onClick={(event) => {
-                setFileAnchor(null)
-                setFileSection('root')
-                setViewAnchor(null)
-                setViewSection('root')
-                setHelpAnchor(null)
-                setAccountAnchor(event.currentTarget)
-              }}
+              aria-expanded={Boolean(fileAnchor)}
+              onClick={(event) => toggleMenu('file', event.currentTarget)}
               endIcon={<Glyph name="keyboard-arrow-down" size={17} />}
             >
-              Account
+              File
             </Button>
-          )}
-        </nav>
+            <Button
+              aria-label="Open view settings"
+              aria-haspopup="menu"
+              aria-expanded={Boolean(viewAnchor)}
+              onClick={(event) => toggleMenu('view', event.currentTarget)}
+              endIcon={<Glyph name="keyboard-arrow-down" size={17} />}
+            >
+              View
+            </Button>
+            <Button
+              aria-label="Open help"
+              aria-haspopup="menu"
+              aria-expanded={Boolean(helpAnchor)}
+              onClick={(event) => toggleMenu('help', event.currentTarget)}
+              endIcon={<Glyph name="keyboard-arrow-down" size={17} />}
+            >
+              Help
+            </Button>
+            {!localMode && (
+              <Button
+                aria-label="Open account"
+                aria-haspopup="menu"
+                aria-expanded={Boolean(accountAnchor)}
+                onClick={(event) => toggleMenu('account', event.currentTarget)}
+                endIcon={<Glyph name="keyboard-arrow-down" size={17} />}
+              >
+                Account
+              </Button>
+            )}
+          </nav>
+        )}
       </div>
+      <WindowDragRegion />
+      <WindowControls />
       <FileMenu
         anchorEl={fileAnchor}
         section={fileSection}

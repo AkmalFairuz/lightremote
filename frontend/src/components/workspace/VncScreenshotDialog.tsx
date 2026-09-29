@@ -2,6 +2,9 @@ import { useEffect, useState } from 'react'
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle } from '../../ui'
 import { Notice } from '../common/Notice'
 import { Glyph } from '../common/Glyph'
+import { saveImageFile } from '../../desktop/actions'
+import { isDesktop } from '../../desktop/viewerSocket'
+import { errorMessage } from '../../types'
 
 interface VncScreenshotDialogProps {
   blob: Blob
@@ -38,7 +41,21 @@ export function VncScreenshotDialog({
     }
   }
 
-  function downloadImage() {
+  async function downloadImage() {
+    if (isDesktop) {
+      try {
+        const dataURL = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader()
+          reader.onload = () => resolve(String(reader.result))
+          reader.onerror = () => reject(reader.error)
+          reader.readAsDataURL(blob)
+        })
+        await saveImageFile(filename, dataURL.slice(dataURL.indexOf(',') + 1))
+      } catch (cause) {
+        setError(errorMessage(cause))
+      }
+      return
+    }
     const link = document.createElement('a')
     link.href = imageUrl
     link.download = filename
@@ -69,7 +86,7 @@ export function VncScreenshotDialog({
         <Button
           variant="contained"
           startIcon={<Glyph name="download" size={17} />}
-          onClick={downloadImage}
+          onClick={() => void downloadImage()}
         >
           Download
         </Button>

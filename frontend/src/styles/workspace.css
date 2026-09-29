@@ -18,6 +18,16 @@
   height: 100dvh;
 }
 
+.desktop-detached-workspace {
+  display: flex;
+  flex-direction: column;
+}
+
+.desktop-detached-workspace > .workspace {
+  height: auto;
+  flex: 1;
+}
+
 .tab-strip {
   position: relative;
   z-index: 2;

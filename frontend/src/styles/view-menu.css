@@ -11,6 +11,13 @@
   width: min(290px, calc(100vw - 24px));
 }
 
+body.desktop-app .file-popover.MuiPaper-root,
+body.desktop-app .view-popover.MuiPaper-root,
+body.desktop-app .help-popover.MuiPaper-root,
+body.desktop-app .account-popover.MuiPaper-root {
+  margin-top: 6px;
+}
+
 .file-recent-name {
   min-width: 0;
   flex: 1;

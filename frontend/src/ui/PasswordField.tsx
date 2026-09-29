@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Icon } from '@iconify/react'
+import { LocalIcon } from './localIcons'
 import type { TextFieldProps } from '@mui/material'
 import { IconButton } from './controls'
 import { InputAdornment, TextField } from './fields'
@@ -25,15 +25,9 @@ export function PasswordField({ slotProps, ...props }: Omit<TextFieldProps, 'typ
                 onClick={() => setVisible((current) => !current)}
                 onMouseDown={(event) => event.preventDefault()}
               >
-                <Icon
-                  icon={
-                    visible
-                      ? 'material-symbols:visibility-off-outline'
-                      : 'material-symbols:visibility-outline'
-                  }
-                  width={18}
-                  height={18}
-                  aria-hidden="true"
+                <LocalIcon
+                  name={visible ? 'visibility-off-outline' : 'visibility-outline'}
+                  size={18}
                 />
               </IconButton>
             </InputAdornment>

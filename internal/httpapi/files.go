@@ -1,6 +1,7 @@
 package httpapi
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -95,6 +96,50 @@ func (h *FileHandler) Download(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/octet-stream")
 	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%q", filename))
 	_, _ = io.Copy(w, source)
+}
+
+// DownloadLocal writes a remote file to a desktop-selected destination.
+func (h *FileHandler) DownloadLocal(ctx context.Context, ownerID, connectionID, inputPath string, destination io.Writer) error {
+	remotePath, err := remote.CleanRemotePath(inputPath)
+	if err != nil || remotePath == "/" {
+		return errors.New("a non-root absolute file path is required")
+	}
+	connection, err := h.connections.Get(ctx, ownerID, connectionID)
+	if err != nil {
+		return err
+	}
+	if connection.Kind == "ssh" {
+		return errors.New("use an SFTP connection for SSH files")
+	}
+	if connection.Kind == "vnc" && !connection.VNCFileTransfer {
+		return errors.New("file transfer is disabled for this VNC connection")
+	}
+	var client remote.FileClient
+	if connection.Kind == "vnc" {
+		var starting bool
+		client, starting = h.sessions.FileClientForConnection(ownerID, connectionID)
+		if client == nil && starting {
+			return errors.New("VNC desktop is still connecting")
+		}
+	}
+	if client == nil {
+		secret, err := h.connections.Credentials(ctx, connection)
+		if err != nil {
+			return err
+		}
+		client, err = h.dial(ctx, connection, secret)
+		if err != nil {
+			return err
+		}
+	}
+	defer client.Close()
+	source, err := client.Download(remotePath)
+	if err != nil {
+		return err
+	}
+	defer source.Close()
+	_, err = io.Copy(destination, source)
+	return err
 }
 
 // Upload streams the request body directly to a remote file.
@@ -225,7 +270,7 @@ func (h *FileHandler) openClient(w http.ResponseWriter, r *http.Request) (remote
 		writeError(w, 500, "internal", "could not decrypt credentials")
 		return nil, false
 	}
-	client, err := h.dial(r, connection, secret)
+	client, err := h.dial(r.Context(), connection, secret)
 	if err != nil {
 		writeRemoteError(w, err, err.Error())
 		return nil, false
@@ -234,9 +279,9 @@ func (h *FileHandler) openClient(w http.ResponseWriter, r *http.Request) (remote
 }
 
 // dial creates a file-only VNC bridge or a standalone SFTP/FTP client.
-func (h *FileHandler) dial(r *http.Request, connection model.Connection, secret model.RemoteSecret) (remote.FileClient, error) {
+func (h *FileHandler) dial(ctx context.Context, connection model.Connection, secret model.RemoteSecret) (remote.FileClient, error) {
 	if connection.Kind == "vnc" {
-		bridge, err := remote.NewVNCBridge(r.Context(), connection, secret, h.dialTimeout)
+		bridge, err := remote.NewVNCBridge(ctx, connection, secret, h.dialTimeout)
 		if err != nil {
 			return nil, err
 		}
@@ -246,7 +291,7 @@ func (h *FileHandler) dial(r *http.Request, connection model.Connection, secret 
 		}
 		return bridge.Files(true), nil
 	}
-	return remote.OpenFileClient(r.Context(), connection, secret, h.dialTimeout)
+	return remote.OpenFileClient(ctx, connection, secret, h.dialTimeout)
 }
 
 // writeRemoteError maps known capability and host-trust errors to API codes.

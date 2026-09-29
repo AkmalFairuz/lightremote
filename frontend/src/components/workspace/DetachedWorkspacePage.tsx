@@ -29,6 +29,9 @@ import {
 } from '../../state/workspaceSlice'
 import { errorMessage, type Connection } from '../../types'
 import { HostKeyDialog } from '../sidebar/HostKeyDialog'
+import { isDesktop } from '../../desktop/runtime'
+import { WindowControls, WindowDragRegion } from '../shell/WindowControls'
+import { toggleWindowOnTitlebarDoubleClick } from '../../desktop/titlebar'
 import {
   detachedChannel,
   detachedHeartbeatMs,
@@ -253,7 +256,18 @@ export function DetachedWorkspacePage() {
   ])
 
   return (
-    <div className="detached-workspace">
+    <div
+      className={isDesktop ? 'detached-workspace desktop-detached-workspace' : 'detached-workspace'}
+    >
+      {isDesktop && (
+        <header
+          className="app-header detached-app-header"
+          onDoubleClick={toggleWindowOnTitlebarDoubleClick}
+        >
+          <WindowDragRegion title={titleName ? `${titleName} — LightRemote` : 'LightRemote'} />
+          <WindowControls />
+        </header>
+      )}
       <Workspace
         tabs={tabs}
         activeId={activeId}

@@ -4,6 +4,7 @@ import { Alert, DialogPresence, Snackbar } from '../../ui'
 import { VncFilesPanel } from './VncFilesPanel'
 import { VncScreenshotDialog } from './VncScreenshotDialog'
 import type { VncControls } from './vncControls'
+import { openViewerSocket } from '../../desktop/viewerSocket'
 
 const cursorPreferenceKey = 'lightremote.vnc.cursorMarker'
 const wheelLinePixels = 16
@@ -178,9 +179,7 @@ export function VncCanvas({
 
   useEffect(() => {
     if (!container.current) return
-    const url = new URL(`/api/sessions/${sessionId}/ws`, window.location.href)
-    url.protocol = url.protocol === 'https:' ? 'wss:' : 'ws:'
-    const channel = new WebSocket(url.toString())
+    const channel = openViewerSocket('vnc', sessionId)
     let settled = false
     let reportedError = false
     let disposed = false
