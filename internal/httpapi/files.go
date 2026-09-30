@@ -10,6 +10,7 @@ import (
 	"path"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 	"unicode"
 	"unicode/utf8"
@@ -26,6 +27,7 @@ type FileHandler struct {
 	dialTimeout time.Duration
 	maxUpload   int64
 	sessions    *work.Manager
+	uploads     sync.Map
 }
 
 // NewFileHandler wires streaming remote file operations.
@@ -152,6 +154,11 @@ func (h *FileHandler) Upload(w http.ResponseWriter, r *http.Request) {
 		writeUploadError(w, err)
 		return
 	}
+	onProgress, release, ok := h.trackUpload(w, r)
+	if !ok {
+		return
+	}
+	defer release()
 	client, remotePath, ok := h.open(w, r, "path")
 	if !ok {
 		return
@@ -161,7 +168,7 @@ func (h *FileHandler) Upload(w http.ResponseWriter, r *http.Request) {
 		writeError(w, 400, "invalid_path", "a file path is required")
 		return
 	}
-	if err := client.Upload(remotePath, source); err != nil {
+	if err := client.Upload(remotePath, source, onProgress); err != nil {
 		writeUploadError(w, err)
 		return
 	}

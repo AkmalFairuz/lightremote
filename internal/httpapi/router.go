@@ -86,6 +86,7 @@ func Router(routes Routes) http.Handler {
 			authenticated.Get("/connections/{connectionID}/files", routes.Files.List)
 			authenticated.Get("/connections/{connectionID}/files/home", routes.Files.Home)
 			authenticated.Get("/connections/{connectionID}/files/download", routes.Files.Download)
+			authenticated.Get("/connections/{connectionID}/files/upload/progress", routes.Files.UploadProgress)
 			authenticated.Put("/connections/{connectionID}/files/upload", routes.Files.Upload)
 			authenticated.Post("/connections/{connectionID}/files/mkdir", routes.Files.Mkdir)
 			authenticated.Post("/connections/{connectionID}/files/rename", routes.Files.Rename)

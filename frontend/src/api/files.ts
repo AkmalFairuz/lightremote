@@ -67,38 +67,70 @@ async function uploadFile(url: string, file: File, onProgress?: TransferProgress
   // WebKit custom-scheme requests can lose File/Blob bodies. Materialize the
   // bytes for the desktop asset server; browsers can stream the original File.
   const body = isDesktop ? await file.arrayBuffer() : file
-  return new Promise((resolve, reject) => {
-    const request = new XMLHttpRequest()
-    request.open('PUT', url)
-    request.withCredentials = true
-    request.setRequestHeader('Content-Type', 'application/octet-stream')
-    request.setRequestHeader('X-Upload-Size', String(file.size))
-    const token = store.getState().auth.csrfToken
-    if (token) request.setRequestHeader('X-CSRF-Token', token)
+  const transferId = crypto.randomUUID()
+  const separator = url.includes('?') ? '&' : '?'
+  const progressURL =
+    url.replace('/upload?', '/upload/progress?') + `${separator}transfer=${transferId}`
+  const uploadURL = url + `${separator}transfer=${transferId}`
+  const controller = new AbortController()
+  let timer: ReturnType<typeof setTimeout> | undefined
+  let reported = 0
 
-    request.upload.onprogress = (event) => {
-      onProgress?.(event.loaded, file.size)
-    }
-    request.onload = () => {
-      if (request.status >= 200 && request.status < 300) {
-        onProgress?.(file.size, file.size)
-        resolve()
-        return
+  async function pollProgress() {
+    try {
+      const response = await fetch(progressURL, {
+        credentials: 'same-origin',
+        cache: 'no-store',
+        signal: controller.signal,
+      })
+      if (response.ok) {
+        const progress = (await response.json()) as { loaded: number }
+        if (!controller.signal.aborted && progress.loaded > reported) {
+          reported = Math.min(progress.loaded, file.size)
+          onProgress?.(reported, file.size)
+        }
       }
-      let message = `File request failed (${request.status})`
-      try {
-        const body = JSON.parse(request.responseText) as { error?: { message?: string } }
-        message = body.error?.message ?? message
-      } catch {
-        // Use the HTTP status when the server did not return JSON.
-      }
-      reject(new Error(message))
+    } catch {
+      // A failed progress request must not interrupt the file transfer.
     }
-    request.onerror = () => reject(new Error('Could not reach the server.'))
-    request.onabort = () => reject(new Error('Upload was canceled.'))
-    onProgress?.(0, file.size)
-    request.send(body)
-  })
+    if (!controller.signal.aborted) timer = setTimeout(() => void pollProgress(), 150)
+  }
+
+  try {
+    await new Promise<void>((resolve, reject) => {
+      const request = new XMLHttpRequest()
+      request.open('PUT', uploadURL)
+      request.withCredentials = true
+      request.setRequestHeader('Content-Type', 'application/octet-stream')
+      request.setRequestHeader('X-Upload-Size', String(file.size))
+      const token = store.getState().auth.csrfToken
+      if (token) request.setRequestHeader('X-CSRF-Token', token)
+
+      request.onload = () => {
+        if (request.status >= 200 && request.status < 300) {
+          onProgress?.(file.size, file.size)
+          resolve()
+          return
+        }
+        let message = `File request failed (${request.status})`
+        try {
+          const body = JSON.parse(request.responseText) as { error?: { message?: string } }
+          message = body.error?.message ?? message
+        } catch {
+          // Use the HTTP status when the server did not return JSON.
+        }
+        reject(new Error(message))
+      }
+      request.onerror = () => reject(new Error('Could not reach the server.'))
+      request.onabort = () => reject(new Error('Upload was canceled.'))
+      onProgress?.(0, file.size)
+      request.send(body)
+      if (onProgress) void pollProgress()
+    })
+  } finally {
+    controller.abort()
+    clearTimeout(timer)
+  }
 }
 
 async function downloadFile(

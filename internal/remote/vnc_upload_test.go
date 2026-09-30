@@ -30,7 +30,7 @@ func TestUltraUploadRespectsNegotiatedBlockSize(t *testing.T) {
 		server.Close()
 		close(b.done)
 	}()
-	err := (&ultraVNCFiles{bridge: b}).Upload("C:/upload.bin", bytes.NewReader(payload))
+	err := (&ultraVNCFiles{bridge: b}).Upload("C:/upload.bin", bytes.NewReader(payload), nil)
 	peerErr := <-result
 	if err != nil || peerErr != nil {
 		t.Fatalf("upload: %v; peer: %v", err, peerErr)

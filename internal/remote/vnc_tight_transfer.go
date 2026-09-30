@@ -153,7 +153,7 @@ func (f *tightVNCFiles) Download(remotePath string) (io.ReadCloser, error) {
 }
 
 // Upload sends a remote file in acknowledged TightVNC chunks.
-func (f *tightVNCFiles) Upload(remotePath string, source io.Reader) error {
+func (f *tightVNCFiles) Upload(remotePath string, source io.Reader, onProgress func(int64)) error {
 	b := f.bridge
 	if !b.hasCaps(ftUploadStart, ftUploadStarted, ftUploadData, ftUploadDataAck, ftUploadEnd, ftUploadEnded) {
 		return ErrUnsupported
@@ -170,6 +170,7 @@ func (f *tightVNCFiles) Upload(remotePath string, source io.Reader) error {
 	if _, err := b.awaitReply(ftUploadStarted); err != nil {
 		return err
 	}
+	var loaded int64
 	buffer := make([]byte, ftChunkBytes)
 	for {
 		count, readErr := source.Read(buffer)
@@ -183,6 +184,10 @@ func (f *tightVNCFiles) Upload(remotePath string, source io.Reader) error {
 			}
 			if _, err := b.awaitReply(ftUploadDataAck); err != nil {
 				return err
+			}
+			loaded += int64(count)
+			if onProgress != nil {
+				onProgress(loaded)
 			}
 		}
 		if readErr == io.EOF {

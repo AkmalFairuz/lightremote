@@ -23,7 +23,7 @@ var ErrUnsupported = errors.New("operation is not supported by the remote server
 type FileClient interface {
 	List(path string) ([]model.FileEntry, error)
 	Download(path string) (io.ReadCloser, error)
-	Upload(path string, source io.Reader) error
+	Upload(path string, source io.Reader, onProgress func(int64)) error
 	Mkdir(path string) error
 	Rename(oldPath, newPath string) error
 	Delete(path string) error
@@ -179,12 +179,12 @@ func (f *sftpFiles) Download(remotePath string) (io.ReadCloser, error) {
 }
 
 // Upload truncates and streams a remote SFTP file.
-func (f *sftpFiles) Upload(remotePath string, source io.Reader) error {
+func (f *sftpFiles) Upload(remotePath string, source io.Reader, onProgress func(int64)) error {
 	target, err := f.client.OpenFile(remotePath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC)
 	if err != nil {
 		return err
 	}
-	_, copyErr := io.Copy(target, source)
+	_, copyErr := io.Copy(&uploadProgressWriter{target: target, onProgress: onProgress}, source)
 	closeErr := target.Close()
 	if copyErr != nil {
 		return copyErr
@@ -258,8 +258,8 @@ func (f *ftpFiles) Download(remotePath string) (io.ReadCloser, error) {
 }
 
 // Upload streams one file over the FTP data connection.
-func (f *ftpFiles) Upload(remotePath string, source io.Reader) error {
-	return f.client.Stor(remotePath, source)
+func (f *ftpFiles) Upload(remotePath string, source io.Reader, onProgress func(int64)) error {
+	return f.client.Stor(remotePath, &uploadProgressReader{source: source, onProgress: onProgress})
 }
 
 // Mkdir creates a remote FTP directory.

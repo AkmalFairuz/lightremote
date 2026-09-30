@@ -198,7 +198,7 @@ func ultraFileData(reply ultraReply, maxBytes int64) ([]byte, error) {
 	}
 }
 
-func (f *ultraVNCFiles) Upload(remotePath string, source io.Reader) error {
+func (f *ultraVNCFiles) Upload(remotePath string, source io.Reader, onProgress func(int64)) error {
 	b := f.bridge
 	wirePath, err := ultraWirePath(remotePath, false, b.ultraVersion.Load())
 	if err != nil {
@@ -258,12 +258,17 @@ func (f *ultraVNCFiles) Upload(remotePath string, source io.Reader) error {
 	if negotiated := b.ultraBlockSize.Load(); negotiated >= ultraMinBlockBytes && negotiated <= ultraMaxBlockBytes {
 		chunkSize = int(negotiated)
 	}
+	var loaded int64
 	buffer := make([]byte, chunkSize)
 	for {
 		count, readErr := temp.Read(buffer)
 		if count > 0 {
 			if err := b.writeUpstream(ultraPacket(ultraFilePacket, 0, 0, buffer[:count])); err != nil {
 				return err
+			}
+			loaded += int64(count)
+			if onProgress != nil {
+				onProgress(loaded)
 			}
 		}
 		if readErr == io.EOF {

@@ -12,7 +12,7 @@ import (
 type vncFileProtocol interface {
 	List(path string) ([]model.FileEntry, error)
 	Download(path string) (io.ReadCloser, error)
-	Upload(path string, source io.Reader) error
+	Upload(path string, source io.Reader, onProgress func(int64)) error
 	Mkdir(path string) error
 	Rename(oldPath, newPath string) error
 	Delete(path string) error
@@ -66,12 +66,12 @@ func (f *vncFileClient) Download(remotePath string) (io.ReadCloser, error) {
 	return client.Download(remotePath)
 }
 
-func (f *vncFileClient) Upload(remotePath string, source io.Reader) error {
+func (f *vncFileClient) Upload(remotePath string, source io.Reader, onProgress func(int64)) error {
 	client, err := f.selected()
 	if err != nil {
 		return err
 	}
-	return client.Upload(remotePath, source)
+	return client.Upload(remotePath, source, onProgress)
 }
 
 func (f *vncFileClient) Mkdir(remotePath string) error {
