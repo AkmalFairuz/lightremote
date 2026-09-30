@@ -8,7 +8,7 @@ app. Both use the same React interface and backend services.
 | [Getting started](getting-started.md) | Run the web workspace, choose an operating mode, and deploy it |
 | [Configuration](configuration.md) | Environment variables, defaults, and validation |
 | [Architecture](architecture.md) | Entry points, backend layers, API flows, and state ownership |
-| [Frontend](frontend.md) | Components, connections, panes, detached windows, and files |
+| [Frontend](frontend.md) | Components, connections, tabs, detached windows, and files |
 | [Protocols](protocols.md) | SSH, VNC, file transfers, and outbound proxies |
 | [Security](security.md) | Accounts, session cookies, CSRF, credentials, and host trust |
 | [Storage](storage.md) | Databases, migrations, backups, and temporary state |

@@ -1,8 +1,7 @@
 import { useCallback, useState } from 'react'
-import type { PaneEdge, PaneNode } from '../../state/paneLayout'
 import type { TabMove, WorkspaceTab } from '../../state/workspaceSlice'
 import type { Connection } from '../../types'
-import { PaneSurface } from './PaneSurface'
+import { TabSurface } from './TabSurface'
 import { StatusBar } from './StatusBar'
 import { TabStrip } from './TabStrip'
 import type { VncControls } from './vncControls'
@@ -10,8 +9,6 @@ import type { VncControls } from './vncControls'
 interface WorkspaceProps {
   tabs: WorkspaceTab[]
   activeId: string | null
-  layout: PaneNode
-  focusedPaneId: string
   visible: boolean
   recentConnections?: Connection[]
   onOpenConnection?: (connection: Connection) => void
@@ -24,21 +21,14 @@ interface WorkspaceProps {
   onFilePath: (id: string, path: string) => void
   onVncFilesOpen: (id: string, open: boolean) => void
   onVncFilesWidth: (id: string, width: number) => void
-  onShowInPane: (tabId: string, paneId: string) => void
-  onSplit: (tabId: string, paneId: string, edge: PaneEdge) => void
-  onResize: (id: string, ratio: number) => void
-  onFocusPane: (id: string) => void
-  onClosePane: (id: string) => void
   onDetach?: (id: string) => void
   showTabStrip?: boolean
 }
 
-/** Combines global tabs, visible panes, and the focused pane's status. */
+/** Combines open tabs with the active tab's viewer and status. */
 export function Workspace({
   tabs,
   activeId,
-  layout,
-  focusedPaneId,
   visible,
   recentConnections = [],
   onOpenConnection,
@@ -51,11 +41,6 @@ export function Workspace({
   onFilePath,
   onVncFilesOpen,
   onVncFilesWidth,
-  onShowInPane,
-  onSplit,
-  onResize,
-  onFocusPane,
-  onClosePane,
   onDetach,
   showTabStrip = true,
 }: WorkspaceProps) {
@@ -84,10 +69,9 @@ export function Workspace({
           onDetach={onDetach}
         />
       )}
-      <PaneSurface
+      <TabSurface
         tabs={tabs}
-        layout={layout}
-        focusedPaneId={focusedPaneId}
+        activeId={activeId}
         visible={visible}
         recentConnections={recentConnections}
         onOpenConnection={onOpenConnection}
@@ -98,11 +82,6 @@ export function Workspace({
         onVncFilesOpen={onVncFilesOpen}
         onVncFilesWidth={onVncFilesWidth}
         onVncControls={onVncControls}
-        onShowInPane={onShowInPane}
-        onSplit={onSplit}
-        onResize={onResize}
-        onFocusPane={onFocusPane}
-        onClosePane={onClosePane}
       />
       <StatusBar
         tab={active}

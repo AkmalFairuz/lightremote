@@ -17,19 +17,19 @@ theme, bundled Roboto fonts, and application styles.
 | --- | --- |
 | `components/shell` | Header, menus, login, account dialogs, and connection opening |
 | `components/sidebar` | Folder tree, drag and drop, connection forms, proxies, and host-key dialogs |
-| `components/workspace` | Tabs, split panes, terminals, desktops, remote files, and status controls |
+| `components/workspace` | Tabs, terminals, desktops, remote files, and status controls |
 | `components/sshkeys` | Key management, import, and generation dialogs |
 | `components/users` | Administrator account dialogs |
 | `components/common` | Shared application feedback, icons, and action dialogs |
 | `api` | RTK Query resources and direct file requests |
-| `state` | Redux authentication, temporary tabs, pane layout, and shared limits |
+| `state` | Redux authentication, temporary tabs, and shared limits |
 | `ui` | Shared Material UI wrappers, theme, and icons |
 | `styles` | Shared tokens and feature styles |
 | `desktop` | Native actions, title synchronization, and viewer transport adapter |
 | `utils` | Paths, file sizes, shortcuts, zoom, and other shared helpers |
 
 The main route renders a header, resizable sidebar, tabbed workspace, and
-focused-tab status bar. `/detached/:transferId` hosts a moved work tab.
+active-tab status bar. `/detached/:transferId` hosts a moved work tab.
 Legacy login and settings URLs redirect to the main workspace.
 
 ## Authentication and data
@@ -94,16 +94,16 @@ or import one. Imported keys remain saved when the connection dialog is
 cancelled. The key manager also generates downloadable key pairs. See
 [SSH keys](security.md#reusable-ssh-keys) for formats, limits, and storage rules.
 
-## Tabs, panes, and detached windows
+## Tabs and detached windows
 
 The workspace allows 32 open tabs, including detached tabs tracked by the main
-window, and four visible resizable panes. SFTP and FTP use file tabs without
+window, and shows one active tab at a time. SFTP and FTP use file tabs without
 backend work reservations. SSH and VNC reserve work sessions before attaching
 their viewers.
 
-Drag a tab onto a pane edge to split it, or onto the center to show it there.
-Tabs can be reordered in the strip. The focused pane supplies footer status
-and zoom. Each divider keeps both sides between 20% and 80% of its split.
+Tabs can be reordered in the strip. The active tab fills the workspace and
+supplies footer status and zoom. Other tabs keep their viewers mounted while
+hidden so switching tabs preserves their sessions and state.
 
 Detach moves the tab to a same-origin browser window or a native desktop
 window. A per-user BroadcastChannel coordinates transfer and heartbeats.
@@ -130,10 +130,10 @@ changes update the renderer without reconnecting the shell.
 
 Each SSH or VNC tab has its own zoom. SSH zoom changes the font size and
 refits the PTY grid. VNC zoom changes the local viewport size, with scrolling
-when the desktop exceeds its pane. Desktop Ctrl+scroll changes zoom using the
-same steps as the footer controls.
+when the desktop exceeds its viewport. Desktop Ctrl+scroll changes zoom
+using the same steps as the footer controls.
 
-VNC uses noVNC against the backend's authenticated RFB bridge. The focused
+VNC uses noVNC against the backend's authenticated RFB bridge. The active
 desktop exposes Ctrl+Alt+Del, Files, Cursor, and Screenshot actions. RichCursor
 updates render the remote cursor locally. Cursor toggles a fallback dot for
 servers that hide their pointer. Read-only mode disables desktop input in

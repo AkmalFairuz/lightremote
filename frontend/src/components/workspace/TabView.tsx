@@ -12,10 +12,9 @@ const VncCanvas = lazy(() =>
   import('./VncCanvas').then((module) => ({ default: module.VncCanvas })),
 )
 
-interface PaneViewProps {
+interface TabViewProps {
   tab: WorkspaceTab
   visible: boolean
-  focused: boolean
   onStatus: (id: string, status: WorkspaceTab['status'], error?: string) => void
   onReconnect: (id: string) => void
   onFilePath: (id: string, path: string) => void
@@ -25,17 +24,16 @@ interface PaneViewProps {
 }
 
 /** Keeps a tab's remote viewer mounted while another tab is shown. */
-export function PaneView({
+export function TabView({
   tab,
   visible,
-  focused,
   onStatus,
   onReconnect,
   onFilePath,
   onVncFilesOpen,
   onVncFilesWidth,
   onVncControls,
-}: PaneViewProps) {
+}: TabViewProps) {
   return (
     <>
       {tab.kind === 'ssh' && tab.sessionId && tab.status !== 'error' && (
@@ -43,7 +41,7 @@ export function PaneView({
           <SshTerminal
             sessionId={tab.sessionId}
             visible={visible}
-            active={visible && focused}
+            active={visible}
             zoom={tab.zoom ?? defaultZoom}
             onConnected={() => onStatus(tab.id, 'ready')}
             onConnectionError={(error) => onStatus(tab.id, 'error', error)}

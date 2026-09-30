@@ -104,7 +104,7 @@ work sessions. Inline rename and folder moves preserve them.
 Browser storage keeps sidebar ordering and appearance preferences. Detached
 window coordination also uses session storage and BroadcastChannel messages.
 These records contain tab metadata rather than saved remote credentials.
-See [frontend](frontend.md#tabs-panes-and-detached-windows).
+See [frontend](frontend.md#tabs-and-detached-windows).
 
 ## Backups
 

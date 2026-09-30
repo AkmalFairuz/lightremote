@@ -11,20 +11,15 @@ import { DialogPresence } from '../../ui'
 import { useAppDispatch, useAppSelector, useAppStore } from '../../state/hooks'
 import {
   activateTab,
-  closePaneView,
   connectionFailure,
-  focusPane,
   moveTab,
   openTab,
   setTabSession,
-  resizePaneDivider,
   setTabStatus,
   setTabPath,
   setVncFilesOpen,
   setVncFilesWidth,
   setTabZoom,
-  showTabInPane,
-  splitTabIntoPane,
   type WorkspaceTab,
 } from '../../state/workspaceSlice'
 import { errorMessage, type Connection } from '../../types'
@@ -44,7 +39,7 @@ import { Workspace } from './Workspace'
 export function DetachedWorkspacePage() {
   const { transferId = '' } = useParams()
   const userId = useAppSelector((state) => state.auth.user?.id ?? '')
-  const { tabs, activeId, layout, focusedPaneId } = useAppSelector((state) => state.workspace)
+  const { tabs, activeId } = useAppSelector((state) => state.workspace)
   const dispatch = useAppDispatch()
   const store = useAppStore()
   const [createSession] = useCreateSessionMutation()
@@ -271,8 +266,6 @@ export function DetachedWorkspacePage() {
       <Workspace
         tabs={tabs}
         activeId={activeId}
-        layout={layout}
-        focusedPaneId={focusedPaneId}
         visible
         showTabStrip={false}
         onActivate={(id) => dispatch(activateTab(id))}
@@ -295,21 +288,6 @@ export function DetachedWorkspacePage() {
           dispatch(setVncFilesWidth({ id, width }))
           publishTabState()
         }}
-        onShowInPane={(tabId, paneId) => dispatch(showTabInPane({ tabId, paneId }))}
-        onSplit={(tabId, paneId, edge) =>
-          dispatch(
-            splitTabIntoPane({
-              tabId,
-              paneId,
-              edge,
-              splitId: crypto.randomUUID(),
-              newPaneId: crypto.randomUUID(),
-            }),
-          )
-        }
-        onResize={(id, ratio) => dispatch(resizePaneDivider({ id, ratio }))}
-        onFocusPane={(id) => dispatch(focusPane(id))}
-        onClosePane={(id) => dispatch(closePaneView(id))}
       />
       <DialogPresence>
         {hostKeyPrompt && (

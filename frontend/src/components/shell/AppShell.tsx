@@ -13,13 +13,10 @@ import {
 import { useAppDispatch, useAppSelector, useAppStore } from '../../state/hooks'
 import {
   activateTab,
-  closePaneView,
   closeTab,
   connectionFailure,
-  focusPane,
   moveTab,
   openTab,
-  resizePaneDivider,
   setTabSession,
   setTabStatus,
   setTabPath,
@@ -27,10 +24,7 @@ import {
   setVncFilesWidth,
   setTabZoom,
   setSidebarWidth,
-  showTabInPane,
-  splitTabIntoPane,
 } from '../../state/workspaceSlice'
-import type { PaneEdge } from '../../state/paneLayout'
 import { maxOpenTabs } from '../../state/workspaceLimits'
 import type { Connection } from '../../types'
 import { classNames } from '../../utils/classNames'
@@ -47,9 +41,7 @@ export function AppShell() {
   const appStore = useAppStore()
   const location = useLocation()
   const navigate = useNavigate()
-  const { tabs, activeId, layout, focusedPaneId, sidebarWidth } = useAppSelector(
-    (state) => state.workspace,
-  )
+  const { tabs, activeId, sidebarWidth } = useAppSelector((state) => state.workspace)
   const [createSession] = useCreateSessionMutation()
   const [deleteSession] = useDeleteSessionMutation()
   const [inspectHostKey] = useInspectHostKeyMutation()
@@ -246,18 +238,6 @@ export function AppShell() {
     }
   }
 
-  function splitWorkspaceTab(tabId: string, paneId: string, edge: PaneEdge) {
-    dispatch(
-      splitTabIntoPane({
-        tabId,
-        paneId,
-        edge,
-        splitId: crypto.randomUUID(),
-        newPaneId: crypto.randomUUID(),
-      }),
-    )
-  }
-
   return (
     <div className="app-shell">
       <Header
@@ -316,8 +296,6 @@ export function AppShell() {
             <Workspace
               tabs={tabs}
               activeId={activeId}
-              layout={layout}
-              focusedPaneId={focusedPaneId}
               visible={isWorkspace}
               recentConnections={recentConnections}
               onOpenConnection={(connection) => void openConnection(connection)}
@@ -330,11 +308,6 @@ export function AppShell() {
               onFilePath={(id, path) => dispatch(setTabPath({ id, path }))}
               onVncFilesOpen={(id, open) => dispatch(setVncFilesOpen({ id, open }))}
               onVncFilesWidth={(id, width) => dispatch(setVncFilesWidth({ id, width }))}
-              onShowInPane={(tabId, paneId) => dispatch(showTabInPane({ tabId, paneId }))}
-              onSplit={splitWorkspaceTab}
-              onResize={(id, ratio) => dispatch(resizePaneDivider({ id, ratio }))}
-              onFocusPane={(id) => dispatch(focusPane(id))}
-              onClosePane={(id) => dispatch(closePaneView(id))}
               onDetach={(id) => {
                 const tab = tabs.find((item) => item.id === id)
                 if (tab) detach(tab)
