@@ -34,6 +34,7 @@ interface Notice {
 }
 
 const transferNamespace = Math.random().toString(36).slice(2)
+const emptyEntries: FileEntry[] = []
 let transferSequence = 0
 
 function nextTransferId() {
@@ -69,15 +70,31 @@ export function FileManager({
     setSelecting(false)
     setSelection({ scope: selectionScope, paths: new Set() })
   }
-  const visibleEntries = loadedPath === path ? sortedEntries : []
-  const availablePaths = new Set(visibleEntries.map((entry) => entry.path))
-  const selectedPaths = new Set(
-    selection.scope === selectionScope
-      ? [...selection.paths].filter((entryPath) => availablePaths.has(entryPath))
-      : [],
+  const visibleEntries = loadedPath === path ? sortedEntries : emptyEntries
+  const availablePaths = useMemo(
+    () => new Set(visibleEntries.map((entry) => entry.path)),
+    [visibleEntries],
   )
-  const selectedEntries = visibleEntries.filter((entry) => selectedPaths.has(entry.path))
-  const downloadableEntries = selectedEntries.filter((entry) => !entry.isDir)
+  const selectedPaths = useMemo(
+    () =>
+      new Set(
+        selection.scope === selectionScope
+          ? [...selection.paths].filter((entryPath) => availablePaths.has(entryPath))
+          : [],
+      ),
+    [selection, selectionScope, availablePaths],
+  )
+  const selectedEntries = useMemo(
+    () =>
+      selectedPaths.size
+        ? visibleEntries.filter((entry) => selectedPaths.has(entry.path))
+        : emptyEntries,
+    [visibleEntries, selectedPaths],
+  )
+  const downloadableEntries = useMemo(
+    () => selectedEntries.filter((entry) => !entry.isDir),
+    [selectedEntries],
+  )
   const [busy, setBusy] = useState(false)
   const [transfers, setTransfers] = useState<Transfer[]>([])
   const [notices, setNotices] = useState<Notice[]>([])
@@ -131,6 +148,17 @@ export function FileManager({
 
   function showCompletion(message: string) {
     setNotices((current) => [...current, { id: nextTransferId(), message }])
+  }
+
+  async function copyPath(entry: FileEntry) {
+    setError(null)
+    try {
+      if (desktopRuntime) await desktopRuntime.Clipboard.SetText(entry.path)
+      else await navigator.clipboard.writeText(entry.path)
+      showCompletion('Copied path')
+    } catch {
+      setError('Could not copy the path. Check clipboard permission and try again.')
+    }
   }
 
   async function refreshFiles() {
@@ -432,6 +460,7 @@ export function FileManager({
             </div>
           )}
           <FileList
+            directoryKey={selectionScope}
             hideActions={kind === 'vnc' && path === '/'}
             entries={visibleEntries}
             loading={loading || (!error && (path === null || loadedPath !== path))}
@@ -456,6 +485,7 @@ export function FileManager({
             }}
             onDownload={download}
             onEdit={setEditingFile}
+            onCopyPath={copyPath}
             onRename={(entry, name) =>
               performDialog(() =>
                 files.rename(connectionId, entry.path, joinRemotePath(currentPath, name)),

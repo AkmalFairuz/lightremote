@@ -8,16 +8,22 @@ export interface FileSort {
   direction: FileSortDirection
 }
 
+// Reuse collators instead of constructing one for every name comparison.
+const nameCollator = new Intl.Collator(undefined, { sensitivity: 'base' })
+const tieCollator = new Intl.Collator()
+
 export function sortFileEntries(entries: FileEntry[], sort: FileSort): FileEntry[] {
   const direction = sort.direction === 'asc' ? 1 : -1
+  const modifiedTimes =
+    sort.field === 'modTime'
+      ? new Map(entries.map((entry) => [entry, Date.parse(entry.modTime) || 0]))
+      : null
   return [...entries].sort((left, right) => {
     if (left.isDir !== right.isDir) return left.isDir ? -1 : 1
     let compared = 0
     if (sort.field === 'size') compared = left.size - right.size
-    if (sort.field === 'modTime')
-      compared = new Date(left.modTime).getTime() - new Date(right.modTime).getTime()
-    if (sort.field === 'name')
-      compared = left.name.localeCompare(right.name, undefined, { sensitivity: 'base' })
-    return direction * compared || left.name.localeCompare(right.name)
+    if (sort.field === 'modTime') compared = modifiedTimes!.get(left)! - modifiedTimes!.get(right)!
+    if (sort.field === 'name') compared = nameCollator.compare(left.name, right.name)
+    return direction * compared || tieCollator.compare(left.name, right.name)
   })
 }
