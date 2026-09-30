@@ -7,7 +7,7 @@ on:
 
 jobs:
   build:
-    name: Build desktop app (${{ matrix.os }}, ${{ matrix.arch }})
+    name: build ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
