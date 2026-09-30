@@ -19,6 +19,15 @@ tasks:
       CGO_LDFLAGS: "-mmacosx-version-min=12.0"
       MACOSX_DEPLOYMENT_TARGET: "12.0"
 
+  package:
+    summary: Builds and packages the macOS app as a DMG
+    cmds:
+      - task: build
+        vars:
+          DEV: 'false'
+          TARGET_ARCH: '{{.TARGET_ARCH | default ARCH}}'
+      - 'sh build/darwin/package.sh "{{.TARGET_ARCH | default ARCH}}"'
+
   run:
     summary: Runs the native macOS development app
     cmds:

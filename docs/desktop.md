@@ -35,6 +35,25 @@ generate platform icons, and compile the native executable. Output is
 `bin/lightremote-desktop`, or `bin/lightremote-desktop.exe` on Windows.
 The entry point embeds `frontend/dist`.
 
+On macOS, build a disk image for drag-and-drop installation with:
+
+```sh
+wails3 task darwin:package
+```
+
+Packaging also requires Python 3.10 or newer. The script installs pinned
+`dmgbuild` into an isolated environment under `bin/.dmg-tools` on first use.
+It writes the Finder layout directly, without automating Finder.
+
+The task builds the production executable and creates
+`bin/lightremote-darwin-<arch>.dmg`, where `<arch>` is `amd64` (Intel) or `arm64`
+(Apple Silicon). Set `TARGET_ARCH=amd64` or `TARGET_ARCH=arm64` on the command
+to choose an architecture explicitly. The disk image contains `LightRemote.app`
+with its icon and an Applications shortcut. The installer opens in an 800 × 380
+window with a white background, 96-point icons, and a drag-to-install arrow.
+Open the disk image and drag the app into Applications. The bundle is signed
+ad hoc; Developer ID signing and notarization are not configured.
+
 Start desktop development with:
 
 ```sh
@@ -109,11 +128,16 @@ users is rejected.
 
 The [desktop workflow](../.github/workflows/desktop-build.yml) builds amd64 and
 arm64 on native macOS, Windows, and Linux runners. It runs on pull requests
-and pushes to `feature/wails`. Each job uploads a `.tar.gz` containing the
-compiled executable, with a 14-day retention period.
+and pushes to `feature/wails`. macOS jobs upload a `.dmg` containing
+`LightRemote.app` and an Applications shortcut. Packaging validates the plist,
+architecture, signature, background, and mounted disk image contents before
+upload.
+Windows and Linux jobs upload a `.tar.gz` containing the compiled executable.
+All artifacts have a 14-day retention period.
 
-Extract the archive before launching the executable, including on Windows.
-The artifacts contain compiled executables rather than platform installers.
+Extract the GitHub artifact download to access the `.dmg` or `.tar.gz`.
+On macOS, open the disk image and drag `LightRemote.app` into Applications.
+On Windows and Linux, extract the `.tar.gz` before launching the executable.
 
 Startup logging goes to `lightremote.log` in the platform data directory.
 Windows also displays a startup-error dialog. For startup failures, read the
