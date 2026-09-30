@@ -93,6 +93,9 @@ See [configuration](configuration.md) for the complete settings and
 
 ## Web deployment
 
+For a single-container deployment with the frontend included, see
+[Docker deployment](docker.md).
+
 Build the frontend:
 
 ```sh
@@ -101,9 +104,11 @@ npm ci
 npm run build
 ```
 
-Serve `frontend/dist/` through a static host with an SPA fallback to
-`index.html`, including `/detached/*`. The standalone Go server serves the API
-and health check only.
+Set `FRONTEND_DIR=./frontend/dist` when running the standalone Go server from
+the repository root to serve the frontend and API together. With this setting
+unset, the Go server serves only the API and health check. You can instead
+serve `frontend/dist/` through a static host with an SPA fallback to
+`index.html`, including `/detached/*`.
 
 Route `/api` and `/healthz` to the backend on the same public origin. Allow
 WebSocket upgrades under `/api/sessions/*/ws`. Use HTTPS at the reverse proxy,

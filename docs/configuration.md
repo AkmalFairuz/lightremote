@@ -13,6 +13,7 @@ several settings that have empty defaults.
 | Variable | Default | Purpose |
 | --- | --- | --- |
 | `LISTEN_ADDR` | `:8080` | HTTP listening address |
+| `FRONTEND_DIR` | Empty | Optional built frontend directory; unset means API-only serving |
 | `LOCAL_MODE` | `false` | Use a stable local owner without account login |
 | `DATABASE_DRIVER` | `sqlite` | Select `sqlite` or `mysql` |
 | `SQLITE_PATH` | `./lightremote.db` | Database file relative to the working directory |
@@ -28,6 +29,12 @@ several settings that have empty defaults.
 `SESSION_TTL`, `MAX_UPLOAD_BYTES`, and `DIAL_TIMEOUT` must be positive.
 Durations use Go duration syntax such as `10s` and `24h`. The vault validates
 the decoded encryption key during startup.
+
+When `FRONTEND_DIR` is set, the standalone server requires a readable
+`index.html` in that directory and serves the browser workspace on the same
+origin as the API. Browser navigation uses an SPA fallback, while missing
+assets return 404. `/api` and `/healthz` keep their existing routing. The
+Docker image sets this path automatically; see [Docker deployment](docker.md).
 
 `PUBLIC_ORIGIN` must start with `http://` or `https://`. Use the exact browser
 origin, including its port. With an empty value, WebSocket validation compares

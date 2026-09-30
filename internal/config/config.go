@@ -14,6 +14,7 @@ import (
 
 type Config struct {
 	ListenAddr     string        `env:"LISTEN_ADDR" envDefault:":8080"`
+	FrontendDir    string        `env:"FRONTEND_DIR"`
 	LocalMode      bool          `env:"LOCAL_MODE" envDefault:"false"`
 	DatabaseDriver string        `env:"DATABASE_DRIVER" envDefault:"sqlite"`
 	SQLitePath     string        `env:"SQLITE_PATH" envDefault:"./lightremote.db"`

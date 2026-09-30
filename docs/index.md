@@ -13,6 +13,7 @@ app. Both use the same React interface and backend services.
 | [Security](security.md) | Accounts, session cookies, CSRF, credentials, and host trust |
 | [Storage](storage.md) | Databases, migrations, backups, and temporary state |
 | [Desktop](desktop.md) | Native builds, streams, platform integration, and troubleshooting |
+| [Docker](docker.md) | Container deployment, persistent data, and release-only GHCR publishing |
 | [Development](development.md) | Repository layout and verification commands |
 
 The [OpenAPI specification](../api/openapi.json) describes the HTTP API.

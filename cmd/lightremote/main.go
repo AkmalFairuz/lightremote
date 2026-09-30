@@ -51,9 +51,13 @@ func run() error {
 		return err
 	}
 	defer runtime.Close()
+	handler, err := httpapi.WithFrontend(httpapi.Router(runtime.Routes), cfg.FrontendDir)
+	if err != nil {
+		return err
+	}
 	server := &http.Server{
 		Addr:              cfg.ListenAddr,
-		Handler:           httpapi.Router(runtime.Routes),
+		Handler:           handler,
 		ReadHeaderTimeout: 10 * time.Second,
 	}
 	go func() {
