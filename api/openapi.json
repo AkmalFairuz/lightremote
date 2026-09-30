@@ -1043,6 +1043,17 @@
         "parameters": [
           {
             "$ref": "#/components/parameters/RemotePath"
+          },
+          {
+            "name": "X-Upload-Size",
+            "in": "header",
+            "required": false,
+            "description": "Original file size in bytes. Empty or mismatched upload bodies are rejected with upload_size_mismatch.",
+            "schema": {
+              "type": "integer",
+              "format": "int64",
+              "minimum": 0
+            }
           }
         ],
         "requestBody": {
@@ -1059,6 +1070,9 @@
         "responses": {
           "204": {
             "description": "Uploaded"
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
           },
           "403": {
             "$ref": "#/components/responses/Error"

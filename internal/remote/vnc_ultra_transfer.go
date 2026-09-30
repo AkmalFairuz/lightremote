@@ -255,6 +255,9 @@ func (f *ultraVNCFiles) Upload(remotePath string, source io.Reader) error {
 	if b.ultraVersion.Load() < ultraUnicodeVersion {
 		chunkSize = ultraLegacyBlockBytes
 	}
+	if negotiated := b.ultraBlockSize.Load(); negotiated >= ultraMinBlockBytes && negotiated <= ultraMaxBlockBytes {
+		chunkSize = int(negotiated)
+	}
 	buffer := make([]byte, chunkSize)
 	for {
 		count, readErr := temp.Read(buffer)

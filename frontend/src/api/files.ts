@@ -1,4 +1,5 @@
 import { store } from '../state/store'
+import { isDesktop } from '../desktop/runtime'
 import type { FileEntry } from '../types'
 import { parentRemotePath } from '../utils/remoteFilePath'
 
@@ -62,11 +63,16 @@ async function responseError(response: Response): Promise<Error> {
 
 type TransferProgress = (loaded: number, total: number) => void
 
-function uploadFile(url: string, file: File, onProgress?: TransferProgress): Promise<void> {
+async function uploadFile(url: string, file: File, onProgress?: TransferProgress): Promise<void> {
+  // WebKit custom-scheme requests can lose File/Blob bodies. Materialize the
+  // bytes for the desktop asset server; browsers can stream the original File.
+  const body = isDesktop ? await file.arrayBuffer() : file
   return new Promise((resolve, reject) => {
     const request = new XMLHttpRequest()
     request.open('PUT', url)
     request.withCredentials = true
+    request.setRequestHeader('Content-Type', 'application/octet-stream')
+    request.setRequestHeader('X-Upload-Size', String(file.size))
     const token = store.getState().auth.csrfToken
     if (token) request.setRequestHeader('X-CSRF-Token', token)
 
@@ -91,7 +97,7 @@ function uploadFile(url: string, file: File, onProgress?: TransferProgress): Pro
     request.onerror = () => reject(new Error('Could not reach the server.'))
     request.onabort = () => reject(new Error('Upload was canceled.'))
     onProgress?.(0, file.size)
-    request.send(file)
+    request.send(body)
   })
 }
 

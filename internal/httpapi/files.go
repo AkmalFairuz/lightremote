@@ -1,12 +1,14 @@
 package httpapi
 
 import (
+	"bufio"
 	"context"
 	"errors"
 	"fmt"
 	"io"
 	"net/http"
 	"path"
+	"strconv"
 	"strings"
 	"time"
 	"unicode"
@@ -144,8 +146,10 @@ func (h *FileHandler) DownloadLocal(ctx context.Context, ownerID, connectionID, 
 
 // Upload streams the request body directly to a remote file.
 func (h *FileHandler) Upload(w http.ResponseWriter, r *http.Request) {
-	if r.ContentLength > h.maxUpload {
-		writeError(w, 413, "too_large", "upload exceeds configured limit")
+	defer r.Body.Close()
+	source, err := prepareUpload(w, r, h.maxUpload)
+	if err != nil {
+		writeUploadError(w, err)
 		return
 	}
 	client, remotePath, ok := h.open(w, r, "path")
@@ -157,18 +161,76 @@ func (h *FileHandler) Upload(w http.ResponseWriter, r *http.Request) {
 		writeError(w, 400, "invalid_path", "a file path is required")
 		return
 	}
-	r.Body = http.MaxBytesReader(w, r.Body, h.maxUpload)
-	defer r.Body.Close()
-	if err := client.Upload(remotePath, r.Body); err != nil {
-		var maxBytes *http.MaxBytesError
-		if errors.As(err, &maxBytes) {
-			writeError(w, 413, "too_large", "upload exceeds configured limit")
-			return
-		}
-		writeRemoteError(w, err, "could not upload remote file")
+	if err := client.Upload(remotePath, source); err != nil {
+		writeUploadError(w, err)
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)
+}
+
+var errUploadSize = errors.New("upload body does not match the declared file size")
+
+// prepareUpload checks for a lost body before any remote file can be truncated.
+// The explicit size survives desktop transports that lose Content-Length.
+func prepareUpload(w http.ResponseWriter, r *http.Request, limit int64) (io.Reader, error) {
+	expected := int64(-1)
+	if values, present := r.Header["X-Upload-Size"]; present {
+		if len(values) != 1 || values[0] == "" || strings.Trim(values[0], "0123456789") != "" {
+			return nil, errUploadSize
+		}
+		var err error
+		expected, err = strconv.ParseInt(values[0], 10, 64)
+		if err != nil {
+			return nil, errUploadSize
+		}
+	} else if r.ContentLength > 0 {
+		expected = r.ContentLength
+	}
+	if expected > limit || r.ContentLength > limit {
+		return nil, &http.MaxBytesError{Limit: limit}
+	}
+	if expected >= 0 && r.ContentLength > 0 && expected != r.ContentLength {
+		return nil, errUploadSize
+	}
+	r.Body = http.MaxBytesReader(w, r.Body, limit)
+	reader := bufio.NewReader(r.Body)
+	if expected >= 0 {
+		_, err := reader.Peek(1)
+		if (expected > 0 && err == io.EOF) || (expected == 0 && err == nil) {
+			return nil, errUploadSize
+		}
+		if err != nil && err != io.EOF {
+			return nil, err
+		}
+	}
+	return &uploadSizeReader{source: reader, expected: expected}, nil
+}
+
+type uploadSizeReader struct {
+	source   io.Reader
+	expected int64
+	read     int64
+}
+
+func (r *uploadSizeReader) Read(p []byte) (int, error) {
+	n, err := r.source.Read(p)
+	r.read += int64(n)
+	if r.expected >= 0 && (r.read > r.expected || ((err == io.EOF || err == io.ErrUnexpectedEOF) && r.read != r.expected)) {
+		return n, errUploadSize
+	}
+	return n, err
+}
+
+func writeUploadError(w http.ResponseWriter, err error) {
+	var maxBytes *http.MaxBytesError
+	switch {
+	case errors.As(err, &maxBytes):
+		writeError(w, 413, "too_large", "upload exceeds configured limit")
+	case errors.Is(err, errUploadSize):
+		writeError(w, 400, "upload_size_mismatch", errUploadSize.Error())
+	default:
+		writeRemoteError(w, err, "could not upload remote file")
+	}
 }
 
 // Mkdir creates one remote directory.
