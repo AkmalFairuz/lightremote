@@ -11,6 +11,7 @@ interface FileRowProps {
   entry: FileEntry
   striped: boolean
   selected: boolean
+  selecting: boolean
   selectionDisabled: boolean
   onSelect: (entry: FileEntry, selected: boolean) => void
   onOpen: (entry: FileEntry) => void
@@ -24,6 +25,7 @@ export function FileRow({
   entry,
   striped,
   selected,
+  selecting,
   selectionDisabled,
   onSelect,
   onOpen,
@@ -65,15 +67,17 @@ export function FileRow({
 
   return (
     <div className={`file-row ${striped ? 'file-row-striped' : ''}`} role="row">
-      <span role="cell" className="file-selection-cell">
-        <input
-          type="checkbox"
-          aria-label={`Select ${entry.name}`}
-          checked={selected}
-          disabled={driveRoot || selectionDisabled}
-          onChange={(event) => onSelect(entry, event.target.checked)}
-        />
-      </span>
+      {selecting && (
+        <span role="cell" className="file-selection-cell">
+          <input
+            type="checkbox"
+            aria-label={`Select ${entry.name}`}
+            checked={selected}
+            disabled={driveRoot || selectionDisabled}
+            onChange={(event) => onSelect(entry, event.target.checked)}
+          />
+        </span>
+      )}
       <div className="file-name-cell" role="cell">
         {editing ? (
           <form className="file-rename" onSubmit={submit}>
@@ -103,7 +107,12 @@ export function FileRow({
         ) : (
           <button
             className="file-name"
-            onClick={() => (entry.isDir ? onOpen(entry) : onDownload(entry))}
+            disabled={selecting && (driveRoot || selectionDisabled)}
+            onClick={() => {
+              if (selecting) onSelect(entry, !selected)
+              else if (entry.isDir) onOpen(entry)
+              else onDownload(entry)
+            }}
           >
             <FileTypeIcon entry={entry} />
             <span>{entry.name}</span>

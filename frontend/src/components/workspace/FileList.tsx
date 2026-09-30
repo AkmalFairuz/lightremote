@@ -14,6 +14,7 @@ interface FileListProps {
   sort: FileSort
   onSort: (field: FileSortField) => void
   selectedPaths: ReadonlySet<string>
+  selecting: boolean
   selectionDisabled: boolean
   onSelect: (entry: FileEntry, selected: boolean) => void
   onSelectAll: (selected: boolean) => void
@@ -33,6 +34,7 @@ export function FileList({
   sort,
   onSort,
   selectedPaths,
+  selecting,
   selectionDisabled,
   onSelect,
   onSelectAll,
@@ -48,7 +50,7 @@ export function FileList({
   const allSelected = eligible.length > 0 && selectedCount === eligible.length
   useEffect(() => {
     if (selectAllRef.current) selectAllRef.current.indeterminate = selectedCount > 0 && !allSelected
-  }, [allSelected, selectedCount])
+  }, [allSelected, selectedCount, selecting])
 
   function selectAll(event: ChangeEvent<HTMLInputElement>) {
     onSelectAll(event.target.checked)
@@ -56,21 +58,23 @@ export function FileList({
 
   return (
     <div
-      className={`files-list ${hideActions ? 'files-no-actions' : ''}`}
+      className={`files-list ${hideActions ? 'files-no-actions' : ''} ${selecting ? 'files-selecting' : ''}`}
       role="table"
       aria-label="Remote files"
     >
       <div className="files-header" role="row">
-        <span role="columnheader" className="file-selection-cell">
-          <input
-            ref={selectAllRef}
-            type="checkbox"
-            aria-label="Select all files and folders"
-            checked={allSelected}
-            disabled={eligible.length === 0 || loading || selectionDisabled}
-            onChange={selectAll}
-          />
-        </span>
+        {selecting && (
+          <span role="columnheader" className="file-selection-cell">
+            <input
+              ref={selectAllRef}
+              type="checkbox"
+              aria-label="Select all files and folders"
+              checked={allSelected}
+              disabled={eligible.length === 0 || loading || selectionDisabled}
+              onChange={selectAll}
+            />
+          </span>
+        )}
         {(['name', 'size', 'modTime'] as const).map((field) => (
           <span
             key={field}
@@ -108,6 +112,7 @@ export function FileList({
             key={entry.path}
             entry={entry}
             striped={index % 2 === 1}
+            selecting={selecting}
             selected={selectedPaths.has(entry.path)}
             selectionDisabled={selectionDisabled}
             onSelect={onSelect}

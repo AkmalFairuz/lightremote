@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import RFB from '@novnc/novnc'
 import { Alert, DialogPresence, Snackbar } from '../../ui'
 import { VncFilesPanel } from './VncFilesPanel'
@@ -65,6 +65,8 @@ export function VncCanvas({
   const viewport = useRef<HTMLDivElement>(null)
   const container = useRef<HTMLDivElement>(null)
   const rfb = useRef<RFB | null>(null)
+  const cursorPosition = useRef<{ x: number; y: number } | null>(null)
+  const previousZoom = useRef(zoom)
   const localCursorRef = useRef(true)
   const filesOpenRef = useRef(filesOpen)
   const filesOpenActionRef = useRef(onFilesOpen)
@@ -159,6 +161,75 @@ export function VncCanvas({
   useEffect(() => {
     const element = viewport.current
     if (!element) return
+    function rememberCursor(point: { clientX: number; clientY: number }) {
+      const canvas = container.current?.querySelector('canvas')
+      if (!canvas) return
+      const bounds = canvas.getBoundingClientRect()
+      if (!bounds.width || !bounds.height) return
+      cursorPosition.current = {
+        x: Math.max(0, Math.min(1, (point.clientX - bounds.left) / bounds.width)),
+        y: Math.max(0, Math.min(1, (point.clientY - bounds.top) / bounds.height)),
+      }
+    }
+    const rememberZoomCursor = (event: Event) =>
+      rememberCursor((event as CustomEvent<{ clientX: number; clientY: number }>).detail)
+    element.addEventListener('pointermove', rememberCursor, true)
+    element.addEventListener('vnc-zoom-anchor', rememberZoomCursor)
+    return () => {
+      element.removeEventListener('pointermove', rememberCursor, true)
+      element.removeEventListener('vnc-zoom-anchor', rememberZoomCursor)
+    }
+  }, [])
+
+  useLayoutEffect(() => {
+    if (previousZoom.current === zoom) return
+    previousZoom.current = zoom
+    const element = viewport.current
+    const canvas = container.current?.querySelector('canvas')
+    if (!element || !canvas) return
+    const before = canvas.getBoundingClientRect()
+    if (!before.width || !before.height) return
+    const view = element.getBoundingClientRect()
+    const anchor = cursorPosition.current ?? {
+      x: Math.max(
+        0,
+        Math.min(1, (view.left + element.clientWidth / 2 - before.left) / before.width),
+      ),
+      y: Math.max(
+        0,
+        Math.min(1, (view.top + element.clientHeight / 2 - before.top) / before.height),
+      ),
+    }
+    // noVNC rescales on a later animation frame. Wait for the actual canvas size.
+    const observer = new ResizeObserver(() => {
+      const bounds = canvas.getBoundingClientRect()
+      if (bounds.width === before.width && bounds.height === before.height) return
+      if (!bounds.width || !bounds.height) return
+      const viewportBounds = element.getBoundingClientRect()
+      element.scrollTo({
+        left:
+          element.scrollLeft +
+          bounds.left -
+          viewportBounds.left +
+          anchor.x * bounds.width -
+          element.clientWidth / 2,
+        top:
+          element.scrollTop +
+          bounds.top -
+          viewportBounds.top +
+          anchor.y * bounds.height -
+          element.clientHeight / 2,
+        behavior: 'instant',
+      })
+      observer.disconnect()
+    })
+    observer.observe(canvas)
+    return () => observer.disconnect()
+  }, [zoom])
+
+  useEffect(() => {
+    const element = viewport.current
+    if (!element) return
     const panZoomedView = (event: WheelEvent) => {
       if (event.altKey) return
       const horizontal = element.scrollWidth > element.clientWidth
@@ -179,6 +250,7 @@ export function VncCanvas({
 
   useEffect(() => {
     if (!container.current) return
+    cursorPosition.current = null
     const channel = openViewerSocket('vnc', sessionId)
     let settled = false
     let reportedError = false

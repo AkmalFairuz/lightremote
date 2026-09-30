@@ -7,6 +7,7 @@ interface FileToolbarProps {
   pathPlaceholder?: string
   busy: boolean
   writeDisabled?: boolean
+  onStartSelection: () => void
   onParent: () => void
   onNavigate: (path: string) => void
   onRefresh: () => void
@@ -19,6 +20,7 @@ export function FileToolbar({
   pathPlaceholder = '/remote/path',
   busy,
   writeDisabled = false,
+  onStartSelection,
   onParent,
   onNavigate,
   onRefresh,
@@ -57,6 +59,13 @@ export function FileToolbar({
             <Glyph name="refresh" size={18} />
           </IconButton>
         </Tooltip>
+        <Button
+          onClick={onStartSelection}
+          disabled={busy || path === null || writeDisabled}
+          startIcon={<Glyph name="check" size={17} />}
+        >
+          Select
+        </Button>
         <Button
           onClick={onNewFolder}
           disabled={busy || path === null || writeDisabled}

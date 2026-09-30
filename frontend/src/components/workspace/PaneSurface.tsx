@@ -114,6 +114,13 @@ export function PaneSurface({
       const nextZoom = clampZoom(tab.kind, currentZoom + direction * zoomStep)
       if (nextZoom === currentZoom) return
 
+      if (tab.kind === 'vnc') {
+        target.closest('.vnc-viewport')?.dispatchEvent(
+          new CustomEvent('vnc-zoom-anchor', {
+            detail: { clientX: event.clientX, clientY: event.clientY },
+          }),
+        )
+      }
       zoomValues.current.set(tab.id, nextZoom)
       const pane = geometry.panes.find((item) => item.tabId === tab.id)
       if (pane && pane.paneId !== focusedPaneId) onFocusPane(pane.paneId)

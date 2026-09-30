@@ -1,6 +1,6 @@
 import { useMemo, useRef, useState, type DragEvent } from 'react'
 import { files } from '../../api/files'
-import { Alert, Button, DialogPresence, Snackbar } from '../../ui'
+import { Alert, DialogPresence, IconButton, Snackbar, Tooltip } from '../../ui'
 import { errorMessage, type ConnectionKind, type FileEntry } from '../../types'
 import { ConfirmDialog, TextPromptDialog } from '../common/ActionDialogs'
 import { Glyph } from '../common/Glyph'
@@ -60,11 +60,13 @@ export function FileManager({
   const [sort, setSort] = useState<FileSort>({ field: 'name', direction: 'asc' })
   const sortedEntries = useMemo(() => sortFileEntries(entries, sort), [entries, sort])
   const selectionScope = `${connectionId}\0${path ?? ''}`
+  const [selecting, setSelecting] = useState(false)
   const [selection, setSelection] = useState<{ scope: string; paths: Set<string> }>(() => ({
     scope: selectionScope,
     paths: new Set(),
   }))
   if (selection.scope !== selectionScope) {
+    setSelecting(false)
     setSelection({ scope: selectionScope, paths: new Set() })
   }
   const visibleEntries = loadedPath === path ? sortedEntries : []
@@ -343,6 +345,7 @@ export function FileManager({
       if (reloadIfSame) void load()
       return
     }
+    setSelecting(false)
     setSelection({ scope: `${connectionId}\0${destination}`, paths: new Set() })
     changePath(destination)
   }
@@ -373,46 +376,55 @@ export function FileManager({
         />
       ) : (
         <>
-          <FileToolbar
-            path={path}
-            pathPlaceholder={kind === 'vnc' ? 'C:/path' : '/remote/path'}
-            busy={busy}
-            writeDisabled={kind === 'vnc' && path === '/'}
-            onParent={() => navigateToPath(parentRemotePath(currentPath))}
-            onNavigate={(value) => navigateToPath(value, true)}
-            onRefresh={() => void refreshFiles()}
-            onNewFolder={() => setPending({ type: 'mkdir' })}
-            onUpload={uploadFiles}
-          />
-          {selectedEntries.length > 0 && (
-            <div className="files-selection-bar">
-              <strong>{selectedEntries.length} selected</strong>
-              <span className="files-selection-actions">
-                <Button
-                  disabled={busy || downloadableEntries.length === 0}
-                  onClick={() => void downloadSelected()}
-                  startIcon={<Glyph name="download" size={17} />}
-                >
-                  Download
-                  {selectedEntries.length !== downloadableEntries.length
-                    ? ` ${downloadableEntries.length} files`
-                    : ''}
-                </Button>
-                <Button
-                  disabled={busy}
-                  onClick={() => setPending({ type: 'bulkDelete', entries: selectedEntries })}
-                  startIcon={<Glyph name="delete-outline" size={17} />}
-                >
-                  Delete
-                </Button>
-                <Button
-                  disabled={busy}
-                  onClick={() => setSelection({ scope: selectionScope, paths: new Set() })}
-                >
-                  Clear selection
-                </Button>
-              </span>
+          {selecting ? (
+            <div className="files-toolbar files-selection-bar">
+              <strong role="status">{selectedEntries.length} selected</strong>
+              <div className="files-actions">
+                <Tooltip title="Clear selection">
+                  <IconButton
+                    aria-label="Clear selection"
+                    disabled={busy}
+                    onClick={() => {
+                      setSelection({ scope: selectionScope, paths: new Set() })
+                      setSelecting(false)
+                    }}
+                  >
+                    <Glyph name="close" size={18} />
+                  </IconButton>
+                </Tooltip>
+                <Tooltip title="Download selected files">
+                  <IconButton
+                    aria-label="Download selected files"
+                    disabled={busy || downloadableEntries.length === 0}
+                    onClick={() => void downloadSelected()}
+                  >
+                    <Glyph name="download" size={18} />
+                  </IconButton>
+                </Tooltip>
+                <Tooltip title="Delete selected items">
+                  <IconButton
+                    aria-label="Delete selected items"
+                    disabled={busy || selectedEntries.length === 0}
+                    onClick={() => setPending({ type: 'bulkDelete', entries: selectedEntries })}
+                  >
+                    <Glyph name="delete-outline" size={18} />
+                  </IconButton>
+                </Tooltip>
+              </div>
             </div>
+          ) : (
+            <FileToolbar
+              path={path}
+              pathPlaceholder={kind === 'vnc' ? 'C:/path' : '/remote/path'}
+              busy={busy}
+              writeDisabled={kind === 'vnc' && path === '/'}
+              onParent={() => navigateToPath(parentRemotePath(currentPath))}
+              onNavigate={(value) => navigateToPath(value, true)}
+              onRefresh={() => void refreshFiles()}
+              onNewFolder={() => setPending({ type: 'mkdir' })}
+              onUpload={uploadFiles}
+              onStartSelection={() => setSelecting(true)}
+            />
           )}
           {error && (
             <div className="files-error" role="alert">
@@ -427,6 +439,7 @@ export function FileManager({
             showEmpty={path !== null && loadedPath === path && !error}
             sort={sort}
             onSort={toggleSort}
+            selecting={selecting}
             selectedPaths={selectedPaths}
             selectionDisabled={busy}
             onSelect={selectEntry}
