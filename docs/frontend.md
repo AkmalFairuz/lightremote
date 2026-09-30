@@ -160,8 +160,10 @@ late responses for the previous directory.
 
 Uploads accept the file picker or dropped files and send raw bodies. Browser
 downloads use the native download path. Desktop downloads use a native save
-dialog and report progress. Renaming happens inline, while creation and
-deletion use application dialogs. Deletion removes a file or empty directory.
+dialog and report progress. Uploads and downloads show recent transfer speed
+and estimated time remaining when the file size and throughput are known.
+Renaming happens inline, while creation and deletion use application dialogs.
+Deletion removes a file or empty directory.
 
 Edit opens known text and configuration formats as UTF-8. Files must be smaller
 than 10 MiB. The streamed reader enforces the same limit when the remote file

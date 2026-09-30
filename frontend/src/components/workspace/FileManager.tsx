@@ -7,6 +7,8 @@ import { Glyph } from '../common/Glyph'
 import { FileList } from './FileList'
 import { FileEditor } from './FileEditor'
 import { FileToolbar } from './FileToolbar'
+import { FileTransfer, type Transfer } from './FileTransfer'
+import { recordTransferProgress } from './transferProgress'
 import { sortFileEntries, type FileSort, type FileSortField } from './fileSort'
 import {
   isDriveRoot,
@@ -18,15 +20,6 @@ import { useRemoteDirectory } from './useRemoteDirectory'
 import { saveRemoteFile } from '../../desktop/actions'
 import { isDesktop } from '../../desktop/viewerSocket'
 import { desktopRuntime } from '../../desktop/runtime'
-import { formatBytes } from '../../utils/formatBytes'
-
-interface Transfer {
-  id: string
-  name: string
-  direction: 'upload' | 'download'
-  loaded: number
-  total: number
-}
 
 interface Notice {
   id: string
@@ -132,13 +125,18 @@ export function FileManager({
 
   function beginTransfer(name: string, direction: Transfer['direction'], total: number) {
     const id = nextTransferId()
-    setTransfers((current) => [...current, { id, name, direction, loaded: 0, total }])
+    setTransfers((current) => [...current, { id, name, direction, loaded: 0, total, samples: [] }])
     return id
   }
 
   function updateTransfer(id: string, loaded: number, total: number) {
+    const time = performance.now()
     setTransfers((current) =>
-      current.map((transfer) => (transfer.id === id ? { ...transfer, loaded, total } : transfer)),
+      current.map((transfer) =>
+        transfer.id === id
+          ? { ...transfer, ...recordTransferProgress(transfer, loaded, total, time) }
+          : transfer,
+      ),
     )
   }
 
@@ -495,34 +493,9 @@ export function FileManager({
           />
           {transfers.length > 0 && (
             <div className="files-transfers" role="status" aria-live="polite">
-              {transfers.map((transfer) => {
-                const percent =
-                  transfer.total > 0
-                    ? Math.min(100, Math.round((transfer.loaded / transfer.total) * 100))
-                    : undefined
-                const action = transfer.direction === 'upload' ? 'Uploading' : 'Downloading'
-                return (
-                  <div className="files-transfer" key={transfer.id}>
-                    <div className="files-transfer-label">
-                      <span>
-                        {action} {transfer.name}
-                      </span>
-                      <span>
-                        {formatBytes(transfer.loaded)}
-                        {transfer.total > 0 && ` / ${formatBytes(transfer.total)}`}
-                        {percent === 100 && ' · Finishing…'}
-                      </span>
-                    </div>
-                    <progress
-                      aria-label={`${action} ${transfer.name}`}
-                      max={transfer.total > 0 ? transfer.total : undefined}
-                      value={
-                        transfer.total > 0 ? Math.min(transfer.loaded, transfer.total) : undefined
-                      }
-                    />
-                  </div>
-                )
-              })}
+              {transfers.map((transfer) => (
+                <FileTransfer key={transfer.id} transfer={transfer} />
+              ))}
             </div>
           )}
           <div className="files-footer">

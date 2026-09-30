@@ -365,12 +365,15 @@
 
 .files-transfer-label {
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
   gap: 12px;
   color: var(--lr-text);
 }
 
 .files-transfer-label span:first-child {
+  min-width: 0;
+  flex: 1 1 120px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -378,7 +381,19 @@
 
 .files-transfer-label span:last-child {
   flex-shrink: 0;
+  max-width: 100%;
   color: var(--lr-soft);
+  overflow-wrap: anywhere;
+}
+
+.files-transfer-details {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 2px 12px;
+  margin-top: 3px;
+  color: var(--lr-soft);
+  font-variant-numeric: tabular-nums;
 }
 
 .files-transfer progress {

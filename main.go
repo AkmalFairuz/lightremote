@@ -78,6 +78,7 @@ func (s *DesktopService) SaveRemoteFile(connectionID, remotePath, filename, tran
 				})
 			},
 		}
+		writer.flush()
 		err := s.runtime.Routes.Files.DownloadLocal(context.Background(), s.runtime.LocalUser.ID, connectionID, remotePath, writer)
 		writer.flush()
 		return err
