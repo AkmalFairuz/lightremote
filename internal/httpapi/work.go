@@ -124,6 +124,7 @@ func (h *WorkHandler) WebSocket(w http.ResponseWriter, r *http.Request) {
 	}
 	socket, err := websocket.Accept(w, r, &websocket.AcceptOptions{
 		InsecureSkipVerify: true,
+		Subprotocols:       []string{"lightremote"},
 	})
 	if err != nil {
 		return

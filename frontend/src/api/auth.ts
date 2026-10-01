@@ -1,5 +1,5 @@
 import { api } from './base'
-import type { LoginResult, User } from '../types'
+import type { AuthIdentity, LoginResult, User } from '../types'
 
 export const authApi = api.injectEndpoints({
   endpoints: (build) => ({
@@ -11,7 +11,7 @@ export const authApi = api.injectEndpoints({
       query: (body) => ({ url: '/auth/setup', method: 'POST', body }),
       invalidatesTags: ['Auth', 'Users'],
     }),
-    me: build.query<LoginResult, void>({ query: () => '/auth/me', providesTags: ['Auth'] }),
+    me: build.query<AuthIdentity, void>({ query: () => '/auth/me', providesTags: ['Auth'] }),
     login: build.mutation<LoginResult, { email: string; password: string }>({
       query: (body) => ({ url: '/auth/login', method: 'POST', body }),
       invalidatesTags: ['Auth'],

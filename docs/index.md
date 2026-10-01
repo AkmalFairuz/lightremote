@@ -10,7 +10,7 @@ app. Both use the same React interface and backend services.
 | [Architecture](architecture.md) | Entry points, backend layers, API flows, and state ownership |
 | [Frontend](frontend.md) | Components, connections, tabs, detached windows, and files |
 | [Protocols](protocols.md) | SSH, VNC, file transfers, and outbound proxies |
-| [Security](security.md) | Accounts, session cookies, CSRF, credentials, and host trust |
+| [Security](security.md) | Accounts, session tokens, CSRF, credentials, and host trust |
 | [Storage](storage.md) | Databases, migrations, backups, and temporary state |
 | [Desktop](desktop.md) | Native builds, streams, platform integration, and troubleshooting |
 | [Docker](docker.md) | Container deployment, persistent data, and release-only GHCR publishing |

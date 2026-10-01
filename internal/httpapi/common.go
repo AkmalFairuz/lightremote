@@ -74,7 +74,7 @@ type AuthMiddleware struct {
 	localMode bool
 }
 
-// NewAuthMiddleware creates cookie authentication and CSRF middleware.
+// NewAuthMiddleware creates bearer authentication and CSRF middleware.
 func NewAuthMiddleware(service *security.AuthService, cfg config.Config, localUser model.User, localCSRF string) *AuthMiddleware {
 	origin := cfg.PublicOrigin
 	if cfg.LocalMode {
@@ -117,12 +117,12 @@ func (m *AuthMiddleware) RequireAuth(next http.Handler) http.Handler {
 			next.ServeHTTP(w, r.WithContext(ctx))
 			return
 		}
-		cookie, err := r.Cookie("lr_session")
-		if err != nil {
+		token := requestSessionToken(r)
+		if token == "" {
 			writeError(w, 401, "unauthorized", "login required")
 			return
 		}
-		identity, err := m.service.Authenticate(r.Context(), cookie.Value)
+		identity, err := m.service.Authenticate(r.Context(), token)
 		if err != nil {
 			writeError(w, 401, "unauthorized", "session expired")
 			return
@@ -182,4 +182,35 @@ func validOrigin(r *http.Request, expected string) bool {
 		return strings.TrimRight(value, "/") == strings.TrimRight(expected, "/")
 	}
 	return parsed.Host == r.Host && (parsed.Scheme == "https" || parsed.Scheme == "http")
+}
+
+// requestSessionToken accepts bearer credentials, or browser WebSocket credentials
+// exclusively on the viewer upgrade route. Cookies and URL tokens are never used.
+func requestSessionToken(r *http.Request) string {
+	if authorization := r.Header.Get("Authorization"); authorization != "" {
+		parts := strings.Fields(authorization)
+		if len(parts) == 2 && strings.EqualFold(parts[0], "Bearer") {
+			return parts[1]
+		}
+		return ""
+	}
+	if r.Method != http.MethodGet || !strings.HasPrefix(r.URL.Path, "/api/sessions/") ||
+		!strings.HasSuffix(r.URL.Path, "/ws") || !strings.EqualFold(r.Header.Get("Upgrade"), "websocket") {
+		return ""
+	}
+	var token string
+	count := 0
+	for _, header := range r.Header.Values("Sec-WebSocket-Protocol") {
+		for _, protocol := range strings.Split(header, ",") {
+			protocol = strings.TrimSpace(protocol)
+			if strings.HasPrefix(protocol, "lightremote.auth.") {
+				count++
+				if count > 1 {
+					return ""
+				}
+				token = strings.TrimPrefix(protocol, "lightremote.auth.")
+			}
+		}
+	}
+	return token
 }

@@ -57,22 +57,15 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	h.writeLogin(w, result)
 }
 
-// writeLogin establishes the session cookie and shared login response.
+// writeLogin returns the session credential and shared login response.
 func (h *AuthHandler) writeLogin(w http.ResponseWriter, result security.LoginResult) {
 	w.Header().Set("Cache-Control", "no-store")
-	http.SetCookie(w, &http.Cookie{
-		Name:     "lr_session",
-		Value:    result.Token,
-		Path:     "/",
-		HttpOnly: true,
-		Secure:   h.cfg.CookieSecure,
-		SameSite: http.SameSiteStrictMode,
-		Expires:  result.ExpiresAt,
-	})
 	writeJSON(w, 200, map[string]any{
 		"user":      result.User,
 		"csrfToken": result.CSRFToken,
 		"localMode": false,
+		"token":     result.Token,
+		"expiresAt": result.ExpiresAt,
 	})
 }
 
@@ -95,14 +88,6 @@ func (h *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
 	}
 	h.sessions.CloseUser(principal(r).User.ID)
 	h.connections.DeleteDirectOwner(principal(r).User.ID)
-	http.SetCookie(w, &http.Cookie{
-		Name:     "lr_session",
-		Path:     "/",
-		MaxAge:   -1,
-		HttpOnly: true,
-		Secure:   h.cfg.CookieSecure,
-		SameSite: http.SameSiteStrictMode,
-	})
 	w.WriteHeader(http.StatusNoContent)
 }
 

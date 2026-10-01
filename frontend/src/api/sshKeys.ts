@@ -1,3 +1,4 @@
+import { authenticatedFetch, authHeaders } from './authSession'
 import {
   errorMessage,
   type GeneratedSSHKey,
@@ -18,14 +19,12 @@ async function postSSHKey<Result>(
   body: unknown,
   csrfToken: string | null,
 ): Promise<Result> {
-  const response = await fetch(path, {
+  const headers = authHeaders(csrfToken)
+  headers.set('Content-Type', 'application/json')
+  const response = await authenticatedFetch(path, {
     method: 'POST',
-    credentials: 'same-origin',
     cache: 'no-store',
-    headers: {
-      'Content-Type': 'application/json',
-      ...(csrfToken ? { 'X-CSRF-Token': csrfToken } : {}),
-    },
+    headers,
     body: JSON.stringify(body),
   })
   const result = await response.json()

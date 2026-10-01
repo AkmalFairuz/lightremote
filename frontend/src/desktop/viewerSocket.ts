@@ -1,3 +1,4 @@
+import { sessionToken } from '../api/authSession'
 import type { WailsSocket } from '@wailsio/runtime'
 import { desktopRuntime, isDesktop } from './runtime'
 
@@ -15,7 +16,8 @@ export function openViewerSocket(kind: 'ssh' | 'vnc', sessionId: string): WebSoc
   if (isDesktop) return new DesktopViewerSocket(kind, sessionId) as unknown as WebSocket
   const url = new URL(`/api/sessions/${sessionId}/ws`, window.location.href)
   url.protocol = url.protocol === 'https:' ? 'wss:' : 'ws:'
-  return new WebSocket(url)
+  const token = sessionToken()
+  return new WebSocket(url, token ? ['lightremote', `lightremote.auth.${token}`] : [])
 }
 
 class DesktopViewerSocket extends EventTarget {

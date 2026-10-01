@@ -55,8 +55,8 @@ user's work sessions and database.
 ### Saved connections
 
 The React API client sends a same-origin request with the current account
-cookie and CSRF token. Middleware establishes the owner. A handler validates
-the request and calls its service. The service checks ownership and settings,
+bearer session token and CSRF token. Middleware establishes the owner. A handler
+validates the request and calls its service. The service checks ownership and settings,
 encrypts supplied secrets, and writes through a repository. Responses expose
 connection metadata and proxy settings while hiding passwords and private keys.
 

@@ -8,8 +8,8 @@ on port 8080. Images support Linux amd64 and arm64 and run as UID/GID 10001.
 
 No environment variables are required for the default local HTTP installation.
 The [Compose file](../docker-compose.yaml) comments out settings already supplied
-by the image or server. Its only active environment setting is
-`COOKIE_SECURE=false`, for local HTTP.
+by the image or server. Uncomment `environment:` and the settings you want
+to override.
 
 Run:
 
@@ -64,7 +64,7 @@ Prereleases have their own version tag and do not update `latest`.
 
 For remote access, select the host interface with `HOST_BIND`. Put HTTPS at a
 reverse proxy, preserve the request Host, and allow WebSocket upgrades. Set
-`PUBLIC_ORIGIN` to the exact browser origin and `COOKIE_SECURE=true` for HTTPS.
+`PUBLIC_ORIGIN` to the exact browser origin and use HTTPS.
 Uncomment the `PUBLIC_ORIGIN` setting to forward it from `.env`. Without it,
 the server compares browser origins with the request Host. Complete initial
 installation before exposing a new instance publicly.

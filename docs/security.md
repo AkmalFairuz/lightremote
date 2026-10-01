@@ -32,27 +32,37 @@ An administrator disabling an account or resetting its password revokes login
 sessions and closes its work sessions. Administrators cannot disable their
 own account or remove their own admin role through the user-update route.
 
-## Cookies, CSRF, and origins
+## Session tokens, CSRF, and origins
 
-Login returns the user and `csrfToken`, then sets an `lr_session` cookie with
-HttpOnly, SameSite Strict, and the configured Secure flag. The database stores
-a SHA-256 digest of the random login token. Login sessions expire according
-to `SESSION_TTL`. `/api/auth/me` returns the current user and CSRF token with
-`Cache-Control: no-store`.
+Login and installation return the user, `csrfToken`, `token`, and `expiresAt`.
+The frontend stores only the token and expiry in `localStorage` under
+`lightremote.auth`, then sends `Authorization: Bearer <token>` on API requests.
+User details and CSRF tokens remain in memory. `/api/auth/me` validates the
+stored credential after reload and returns the identity and CSRF token.
+Authentication responses use `Cache-Control: no-store`.
 
-Authenticated mutating requests must send `X-CSRF-Token`. The frontend applies
-the token to its resource and file clients. Use HTTPS for account deployments
-and `COOKIE_SECURE=true`. Local HTTP development uses `COOKIE_SECURE=false`.
+The database stores a SHA-256 digest of the random session token. Sessions
+expire according to `SESSION_TTL`; logout and account revocation invalidate
+these same sessions. Authenticated mutations still require `X-CSRF-Token`.
+Use HTTPS for account deployments. Tokens in localStorage are accessible to
+application JavaScript, so injected scripts can read them. When browser storage
+is unavailable, login lasts only for the current page. Login and logout changes
+are synchronized across tabs.
 
-Browser WebSocket connections use the account cookie and require an Origin.
-With `PUBLIC_ORIGIN` configured, it must match that value. Otherwise, its host
-must match the request Host and use HTTP or HTTPS. Account viewer attachments
-are bounded by their login session expiry.
+Browser WebSockets offer `lightremote` and `lightremote.auth.<token>` in
+`Sec-WebSocket-Protocol`; the server selects only `lightremote` and authenticates
+before upgrading. Tokens are never placed in URLs. WebSocket requests require
+an Origin. With `PUBLIC_ORIGIN` configured, it must match that value. Otherwise,
+its host must match the request Host and use HTTP or HTTPS. Account viewer
+attachments are bounded by their login session expiry.
+
+Cookie authentication and `COOKIE_SECURE` configuration have been removed.
+Existing users must sign in again after updating; old cookies are ignored.
 
 ## Local mode
 
 Local mode uses a stable internal owner and a random CSRF token generated on
-each process start. `/api/auth/me` supplies both without a login cookie.
+each process start. `/api/auth/me` supplies both without an account token.
 Mutating requests still require that CSRF token.
 
 The standalone local-mode server requires a loopback listening IP. HTTP

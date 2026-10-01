@@ -28,7 +28,6 @@ type Config struct {
 	AdminEmail        string        `env:"ADMIN_EMAIL" envDefault:"admin@localhost"`
 	AdminPassword     string        `env:"ADMIN_PASSWORD"`
 	PublicOrigin      string        `env:"PUBLIC_ORIGIN"`
-	CookieSecure      bool          `env:"COOKIE_SECURE" envDefault:"true"`
 	SessionTTL        time.Duration `env:"SESSION_TTL" envDefault:"24h"`
 	MaxUploadBytes    int64         `env:"MAX_UPLOAD_BYTES" envDefault:"1073741824"`
 	DialTimeout       time.Duration `env:"DIAL_TIMEOUT" envDefault:"10s"`

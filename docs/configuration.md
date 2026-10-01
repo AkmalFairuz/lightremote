@@ -22,7 +22,6 @@ several settings that have empty defaults.
 | `ADMIN_EMAIL` | `admin@localhost` | Email for optional environment-based administrator bootstrap |
 | `ADMIN_PASSWORD` | Empty | Optional initial password; empty means first-run browser installation |
 | `PUBLIC_ORIGIN` | Empty | Allowed browser origin for WebSocket connections |
-| `COOKIE_SECURE` | `true` | Require HTTPS for the login cookie |
 | `SESSION_TTL` | `24h` | Account login-session lifetime |
 | `MAX_UPLOAD_BYTES` | `1073741824` | Maximum body size for one remote file upload, 1 GiB |
 | `DIAL_TIMEOUT` | `10s` | Timeout for outbound connection setup |

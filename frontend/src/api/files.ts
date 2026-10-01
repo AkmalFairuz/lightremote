@@ -1,3 +1,4 @@
+import { authenticatedFetch, authHeaders, handleUnauthorized, sessionToken } from './authSession'
 import { store } from '../state/store'
 import { isDesktop } from '../desktop/runtime'
 import type { FileEntry } from '../types'
@@ -78,8 +79,7 @@ async function uploadFile(url: string, file: File, onProgress?: TransferProgress
 
   async function pollProgress() {
     try {
-      const response = await fetch(progressURL, {
-        credentials: 'same-origin',
+      const response = await authenticatedFetch(progressURL, {
         cache: 'no-store',
         signal: controller.signal,
       })
@@ -100,13 +100,15 @@ async function uploadFile(url: string, file: File, onProgress?: TransferProgress
     await new Promise<void>((resolve, reject) => {
       const request = new XMLHttpRequest()
       request.open('PUT', uploadURL)
-      request.withCredentials = true
+      const requestToken = sessionToken()
       request.setRequestHeader('Content-Type', 'application/octet-stream')
       request.setRequestHeader('X-Upload-Size', String(file.size))
-      const token = store.getState().auth.csrfToken
-      if (token) request.setRequestHeader('X-CSRF-Token', token)
+      authHeaders(store.getState().auth.csrfToken).forEach((value, name) => {
+        request.setRequestHeader(name, value)
+      })
 
       request.onload = () => {
+        handleUnauthorized(request.status, requestToken)
         if (request.status >= 200 && request.status < 300) {
           onProgress?.(file.size, file.size)
           resolve()
@@ -140,7 +142,7 @@ async function downloadFile(
   expectedSize: number,
   onProgress?: TransferProgress,
 ): Promise<void> {
-  const response = await fetch(fileURL(id, '/download', path), { credentials: 'same-origin' })
+  const response = await authenticatedFetch(fileURL(id, '/download', path))
   if (!response.ok) throw await responseError(response)
   if (!response.body) throw new Error('The remote file could not be read.')
 
@@ -178,11 +180,9 @@ async function fileRequest<T>(
   body?: BodyInit,
   json = false,
 ): Promise<T> {
-  const headers = new Headers()
+  const headers = authHeaders(store.getState().auth.csrfToken)
   if (json) headers.set('Content-Type', 'application/json')
-  const token = store.getState().auth.csrfToken
-  if (token && method !== 'GET') headers.set('X-CSRF-Token', token)
-  const response = await fetch(url, { method, headers, body, credentials: 'same-origin' })
+  const response = await authenticatedFetch(url, { method, headers, body })
   if (!response.ok) {
     throw await responseError(response)
   }
@@ -195,7 +195,7 @@ async function fileRequest<T>(
 
 /** Reads a small UTF-8 file without allowing an oversized response into memory. */
 async function readText(id: string, path: string, maxBytes: number): Promise<string> {
-  const response = await fetch(fileURL(id, '/download', path), { credentials: 'same-origin' })
+  const response = await authenticatedFetch(fileURL(id, '/download', path))
   if (!response.ok) {
     throw await responseError(response)
   }

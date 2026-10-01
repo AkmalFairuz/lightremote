@@ -2,17 +2,13 @@ import { useEffect, useState } from 'react'
 import { useColorScheme } from '@mui/material/styles'
 import { Link, useNavigate } from 'react-router-dom'
 import { useLogoutMutation } from '../../api/auth'
-import { api } from '../../api/base'
-import { files } from '../../api/files'
 import { clearAuth } from '../../state/authSlice'
 import { useAppDispatch, useAppSelector } from '../../state/hooks'
-import { resetWorkspace } from '../../state/workspaceSlice'
 import { Alert, Button, DialogPresence, IconButton, Snackbar } from '../../ui'
 import { Glyph } from '../common/Glyph'
 import { UsersDialog } from '../users/UsersDialog'
 import { AccountPopover } from './AccountPopover'
 import { ChangePasswordDialog } from './ChangePasswordDialog'
-import { clearDetachedRegistry } from '../workspace/detachedTabs'
 import { ViewMenu, type ViewSection } from './ViewMenu'
 import { FileMenu, type FileSection } from './FileMenu'
 import { HelpMenu } from './HelpMenu'
@@ -43,7 +39,6 @@ export function Header({
   onOpenRecentConnection,
 }: HeaderProps) {
   const dispatch = useAppDispatch()
-  const userId = useAppSelector((state) => state.auth.user?.id ?? '')
   const localMode = useAppSelector((state) => state.auth.localMode)
   const navigate = useNavigate()
   const [logout] = useLogoutMutation()
@@ -154,10 +149,6 @@ export function Header({
       return
     }
     dispatch(clearAuth())
-    clearDetachedRegistry(userId)
-    files.clearCache()
-    dispatch(resetWorkspace())
-    dispatch(api.util.resetApiState())
     navigate('/', { replace: true })
   }
 

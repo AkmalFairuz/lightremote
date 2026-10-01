@@ -12,7 +12,7 @@
   ],
   "security": [
     {
-      "cookieAuth": []
+      "bearerAuth": []
     }
   ],
   "paths": {
@@ -101,7 +101,7 @@
         },
         "responses": {
           "200": {
-            "description": "Login cookie, account, and CSRF token",
+            "description": "Session token, expiry, account, and CSRF token",
             "content": {
               "application/json": {
                 "schema": {
@@ -161,7 +161,7 @@
         },
         "responses": {
           "200": {
-            "description": "Login cookie, account, and CSRF token",
+            "description": "Session token, expiry, account, and CSRF token",
             "content": {
               "application/json": {
                 "schema": {
@@ -188,7 +188,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/LoginResult"
+                  "$ref": "#/components/schemas/AuthIdentity"
                 }
               }
             }
@@ -204,7 +204,7 @@
         "summary": "Invalidate the current login session",
         "security": [
           {
-            "cookieAuth": [],
+            "bearerAuth": [],
             "csrfHeader": []
           }
         ],
@@ -223,7 +223,7 @@
         "summary": "Change the current account password",
         "security": [
           {
-            "cookieAuth": [],
+            "bearerAuth": [],
             "csrfHeader": []
           }
         ],
@@ -291,7 +291,7 @@
         "summary": "Create an account (admin)",
         "security": [
           {
-            "cookieAuth": [],
+            "bearerAuth": [],
             "csrfHeader": []
           }
         ],
@@ -361,7 +361,7 @@
         "summary": "Change an account's email, role, disabled state, or password (admin only)",
         "security": [
           {
-            "cookieAuth": [],
+            "bearerAuth": [],
             "csrfHeader": []
           }
         ],
@@ -442,7 +442,7 @@
         "summary": "Create a folder",
         "security": [
           {
-            "cookieAuth": [],
+            "bearerAuth": [],
             "csrfHeader": []
           }
         ],
@@ -476,7 +476,7 @@
         "summary": "Rename or move a folder",
         "security": [
           {
-            "cookieAuth": [],
+            "bearerAuth": [],
             "csrfHeader": []
           }
         ],
@@ -506,7 +506,7 @@
         "summary": "Delete an empty folder",
         "security": [
           {
-            "cookieAuth": [],
+            "bearerAuth": [],
             "csrfHeader": []
           }
         ],
@@ -546,7 +546,7 @@
         "summary": "Save a connection",
         "security": [
           {
-            "cookieAuth": [],
+            "bearerAuth": [],
             "csrfHeader": []
           }
         ],
@@ -599,7 +599,7 @@
         "description": "Omit secret to retain saved credentials when kind and authType stay the same. Omit proxy or set it to null for a direct connection. Omit proxy.password to retain it only when type, host, port, and username are unchanged.",
         "security": [
           {
-            "cookieAuth": [],
+            "bearerAuth": [],
             "csrfHeader": []
           }
         ],
@@ -629,7 +629,7 @@
         "summary": "Delete a connection and close its work sessions",
         "security": [
           {
-            "cookieAuth": [],
+            "bearerAuth": [],
             "csrfHeader": []
           }
         ],
@@ -654,7 +654,7 @@
         "description": "The backend decrypts and re-encrypts saved remote and proxy secrets for a new connection ID. The copy keeps its folder, remote settings, and approved SSH host key. Secrets are never returned in the response.",
         "security": [
           {
-            "cookieAuth": [],
+            "bearerAuth": [],
             "csrfHeader": []
           }
         ],
@@ -685,7 +685,7 @@
         "summary": "Move a connection into a folder or the root without closing its work sessions",
         "security": [
           {
-            "cookieAuth": [],
+            "bearerAuth": [],
             "csrfHeader": []
           }
         ],
@@ -741,7 +741,7 @@
         "summary": "Rename a connection without closing its work sessions",
         "security": [
           {
-            "cookieAuth": [],
+            "bearerAuth": [],
             "csrfHeader": []
           }
         ],
@@ -795,7 +795,7 @@
         "summary": "Inspect an SSH or SFTP host key without trusting it",
         "security": [
           {
-            "cookieAuth": [],
+            "bearerAuth": [],
             "csrfHeader": []
           }
         ],
@@ -827,7 +827,7 @@
         "description": "The server inspects the host key again and rejects approval if its SHA-256 fingerprint differs from the one submitted by the browser.",
         "security": [
           {
-            "cookieAuth": [],
+            "bearerAuth": [],
             "csrfHeader": []
           }
         ],
@@ -865,7 +865,7 @@
         "description": "A user may reserve up to 32 SSH or VNC work sessions.",
         "security": [
           {
-            "cookieAuth": [],
+            "bearerAuth": [],
             "csrfHeader": []
           }
         ],
@@ -946,7 +946,7 @@
         "summary": "Close a work session",
         "security": [
           {
-            "cookieAuth": [],
+            "bearerAuth": [],
             "csrfHeader": []
           }
         ],
@@ -968,7 +968,7 @@
       ],
       "get": {
         "summary": "Upgrade to an SSH or VNC WebSocket",
-        "description": "The browser Origin must match PUBLIC_ORIGIN, or the request host when unset. A new attachment replaces the previous browser viewer while preserving the remote session. Unattached sessions expire after two minutes.",
+        "description": "Browser clients offer lightremote and lightremote.auth.<token> in Sec-WebSocket-Protocol. The server selects only lightremote. Bearer Authorization is also accepted. Origin and session ownership are checked before upgrading.",
         "responses": {
           "101": {
             "description": "WebSocket upgrade"
@@ -992,7 +992,15 @@
             "serverBinary": "Standard RFB server stream",
             "serverClose": "1011 with a UTF-8 reason when upstream connection setup fails"
           }
-        }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "websocketAuth": []
+          }
+        ]
       }
     },
     "/api/connections/{connectionID}/files": {
@@ -1034,7 +1042,7 @@
         "summary": "Delete a remote file or empty directory",
         "security": [
           {
-            "cookieAuth": [],
+            "bearerAuth": [],
             "csrfHeader": []
           }
         ],
@@ -1137,7 +1145,7 @@
         "summary": "Stream a remote file upload",
         "security": [
           {
-            "cookieAuth": [],
+            "bearerAuth": [],
             "csrfHeader": []
           }
         ],
@@ -1197,7 +1205,7 @@
         "summary": "Create a remote directory",
         "security": [
           {
-            "cookieAuth": [],
+            "bearerAuth": [],
             "csrfHeader": []
           }
         ],
@@ -1227,7 +1235,7 @@
         "summary": "Rename or move a remote entry",
         "security": [
           {
-            "cookieAuth": [],
+            "bearerAuth": [],
             "csrfHeader": []
           }
         ],
@@ -1272,7 +1280,7 @@
         "description": "Keeps encrypted credentials in process memory. The returned connection has direct=true and is not listed or saved in a folder. Orphaned entries expire after 24 hours without access.",
         "security": [
           {
-            "cookieAuth": [],
+            "bearerAuth": [],
             "csrfHeader": []
           }
         ],
@@ -1306,7 +1314,7 @@
         "summary": "Delete an owned temporary connection and close its work sessions",
         "security": [
           {
-            "cookieAuth": [],
+            "bearerAuth": [],
             "csrfHeader": []
           }
         ],
@@ -1323,15 +1331,20 @@
   },
   "components": {
     "securitySchemes": {
-      "cookieAuth": {
-        "type": "apiKey",
-        "in": "cookie",
-        "name": "lr_session"
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer"
       },
       "csrfHeader": {
         "type": "apiKey",
         "in": "header",
         "name": "X-CSRF-Token"
+      },
+      "websocketAuth": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "Sec-WebSocket-Protocol",
+        "description": "Offer lightremote and lightremote.auth.<token>; only accepted for viewer WebSocket upgrades."
       }
     },
     "parameters": {
@@ -1522,23 +1535,27 @@
         }
       },
       "LoginResult": {
-        "type": "object",
-        "required": [
-          "user",
-          "csrfToken",
-          "localMode"
-        ],
-        "properties": {
-          "user": {
-            "$ref": "#/components/schemas/User"
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/AuthIdentity"
           },
-          "csrfToken": {
-            "type": "string"
-          },
-          "localMode": {
-            "type": "boolean"
+          {
+            "type": "object",
+            "required": [
+              "token",
+              "expiresAt"
+            ],
+            "properties": {
+              "token": {
+                "type": "string"
+              },
+              "expiresAt": {
+                "type": "string",
+                "format": "date-time"
+              }
+            }
           }
-        }
+        ]
       },
       "Folder": {
         "type": "object",
@@ -1970,6 +1987,25 @@
                 "$ref": "#/components/schemas/ProxyInput"
               }
             ]
+          }
+        }
+      },
+      "AuthIdentity": {
+        "type": "object",
+        "required": [
+          "user",
+          "csrfToken",
+          "localMode"
+        ],
+        "properties": {
+          "user": {
+            "$ref": "#/components/schemas/User"
+          },
+          "csrfToken": {
+            "type": "string"
+          },
+          "localMode": {
+            "type": "boolean"
           }
         }
       }

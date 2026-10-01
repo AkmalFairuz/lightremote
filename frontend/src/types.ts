@@ -10,10 +10,15 @@ export interface User {
   createdAt: string
 }
 
-export interface LoginResult {
+export interface AuthIdentity {
   user: User
   csrfToken: string
   localMode: boolean
+}
+
+export interface LoginResult extends AuthIdentity {
+  token: string
+  expiresAt: string
 }
 
 export interface Folder {

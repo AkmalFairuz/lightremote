@@ -22,7 +22,6 @@ Edit `.env` before starting the backend:
 - Leave `ADMIN_PASSWORD` empty to create the administrator in the first-run
   installation screen. Optionally set it and `ADMIN_EMAIL` to provision the
   administrator from configuration instead. Passwords need at least six bytes.
-- Set `COOKIE_SECURE=false` for local HTTP development.
 - Set `PUBLIC_ORIGIN=http://localhost:5173` for the frontend URL used below.
 
 Start the backend:
@@ -116,7 +115,7 @@ serve `frontend/dist/` through a static host with an SPA fallback to
 
 Route `/api` and `/healthz` to the backend on the same public origin. Allow
 WebSocket upgrades under `/api/sessions/*/ws`. Use HTTPS at the reverse proxy,
-set `PUBLIC_ORIGIN` to the browser origin, and keep `COOKIE_SECURE=true`.
+set `PUBLIC_ORIGIN` to the browser origin.
 Account mode supports this deployment.
 
 `GET /healthz` checks database connectivity. A healthy response is HTTP 204.
