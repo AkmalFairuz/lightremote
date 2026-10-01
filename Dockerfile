@@ -34,6 +34,7 @@ ENV LISTEN_ADDR=:8080 \
     LOCAL_MODE=false \
     DATABASE_DRIVER=sqlite \
     SQLITE_PATH=/data/lightremote.db \
+    ENCRYPTION_KEY_FILE=/data/vault.key \
     FRONTEND_DIR=/app/frontend
 USER 10001:10001
 EXPOSE 8080

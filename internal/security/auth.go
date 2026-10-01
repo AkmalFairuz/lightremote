@@ -20,6 +20,8 @@ const (
 
 var ErrInvalidCredentials = errors.New("invalid credentials")
 var ErrRateLimited = errors.New("too many login attempts")
+var ErrSetupComplete = errors.New("installation is already complete; sign in to continue")
+var ErrInvalidSetup = errors.New("enter a valid administrator email")
 
 type LoginResult struct {
 	Token     string
@@ -54,26 +56,60 @@ func NewAuthService(users *store.UserRepository, sessions *store.LoginSessionRep
 	}
 }
 
-// BootstrapAdmin creates the first administrator when the database has none.
+// BootstrapAdmin optionally preconfigures the administrator instead of browser installation.
 func (s *AuthService) BootstrapAdmin(ctx context.Context, email, password string) error {
-	count, err := s.users.AdminCount(ctx)
-	if err != nil || count > 0 {
+	if password == "" {
+		return nil
+	}
+	err := s.SetupAdmin(ctx, email, password)
+	if errors.Is(err, ErrSetupComplete) {
+		return nil
+	}
+	return err
+}
+
+// SetupRequired reports whether any account exists besides the local-mode owner.
+func (s *AuthService) SetupRequired(ctx context.Context) (bool, error) {
+	count, err := s.users.AccountCount(ctx, localUserID)
+	return count == 0, err
+}
+
+// AllowSetupAttempt bounds unauthenticated installation requests before password hashing.
+func (s *AuthService) AllowSetupAttempt(clientKey string) bool {
+	return s.allowAttempt("setup:" + clientKey)
+}
+
+// SetupAdmin creates the first administrator and rejects repeated installation requests.
+func (s *AuthService) SetupAdmin(ctx context.Context, email, password string) error {
+	required, err := s.SetupRequired(ctx)
+	if err != nil {
 		return err
 	}
-	if password == "" {
-		return errors.New("ADMIN_PASSWORD is required until an admin exists")
+	if !required {
+		return ErrSetupComplete
+	}
+	email = strings.ToLower(strings.TrimSpace(email))
+	if len(email) <= 3 || len(email) > 255 || !strings.Contains(email, "@") || strings.ContainsAny(email, " \t\r\n") || email == localUserEmail {
+		return ErrInvalidSetup
 	}
 	hash, err := HashPassword(password)
 	if err != nil {
 		return err
 	}
-	return s.users.Create(ctx, model.User{
+	created, err := s.users.CreateInitialAdmin(ctx, model.User{
 		ID:           uuid.NewString(),
-		Email:        strings.ToLower(email),
+		Email:        email,
 		PasswordHash: hash,
 		Role:         "admin",
 		CreatedAt:    time.Now().UTC(),
-	})
+	}, localUserID)
+	if err != nil {
+		return err
+	}
+	if !created {
+		return ErrSetupComplete
+	}
+	return nil
 }
 
 // Login verifies credentials and creates a revocable browser session.

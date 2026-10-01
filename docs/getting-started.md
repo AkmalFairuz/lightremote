@@ -12,15 +12,16 @@ Run these commands at the repository root:
 
 ```sh
 cp .env.example .env
-openssl rand -base64 32
 ```
 
 Edit `.env` before starting the backend:
 
-- Set `ENCRYPTION_KEY` to the generated value. Keep it across restarts so saved
-  credentials remain readable.
-- Set `ADMIN_PASSWORD` for the first administrator. Passwords need at least six
-  bytes. `ADMIN_EMAIL` in the example is `admin@example.com`.
+- Leave `ENCRYPTION_KEY` empty to generate and persist `vault.key` beside the
+  SQLite database. Startup logs a warning; keep the file with database backups.
+  Alternatively, supply a base64-encoded 32-byte key and keep that value stable.
+- Leave `ADMIN_PASSWORD` empty to create the administrator in the first-run
+  installation screen. Optionally set it and `ADMIN_EMAIL` to provision the
+  administrator from configuration instead. Passwords need at least six bytes.
 - Set `COOKIE_SECURE=false` for local HTTP development.
 - Set `PUBLIC_ORIGIN=http://localhost:5173` for the frontend URL used below.
 
@@ -30,9 +31,10 @@ Start the backend:
 go run ./cmd/lightremote
 ```
 
-Startup applies database migrations and creates the first administrator when
-the database has none. Once an administrator exists, `ADMIN_PASSWORD` can be
-removed. SQLite stores data at `./lightremote.db` relative to the backend's
+Startup applies database migrations and prepares the credential vault. With
+no account and no configured admin password, installation remains pending until
+you choose an email and password in the browser. Existing accounts are preserved.
+SQLite stores data at `./lightremote.db` relative to the backend's
 working directory. `SQLITE_PATH` selects another file.
 
 In a second terminal, start the frontend:
@@ -43,7 +45,8 @@ npm ci
 npm run dev
 ```
 
-Open `http://localhost:5173` and sign in with the configured administrator.
+Open `http://localhost:5173` and complete installation, or sign in if an account
+already exists.
 Vite forwards `/api` and `/healthz` to `http://127.0.0.1:8080`, including
 WebSockets. All browser requests stay on the frontend origin. Choose another
 frontend port only after updating `PUBLIC_ORIGIN` to match. A changed backend
@@ -58,7 +61,8 @@ LOCAL_MODE=true
 LISTEN_ADDR=127.0.0.1:8080
 ```
 
-Keep `ENCRYPTION_KEY` set. Local mode creates one stable internal owner and opens
+The same explicit or generated encryption key is used in local mode.
+Local mode creates one stable internal owner and opens
 the workspace without login or an Account menu. It requires no admin password.
 Login, logout, password, and user-management routes are unavailable. The
 frontend still obtains a CSRF token through `/api/auth/me`.

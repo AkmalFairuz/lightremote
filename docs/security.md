@@ -2,10 +2,13 @@
 
 ## Accounts and ownership
 
-Account mode creates its first administrator during startup and supports
-administrator-created users. Roles are `admin` and `user`. Account management
-routes require the admin role. Saved folders, connections, reusable keys,
-direct connections, and work sessions are owner-scoped.
+Account mode creates its first administrator through browser installation,
+or optionally during startup when `ADMIN_PASSWORD` is configured. Blank
+configuration never creates a blank-password account. Installation requires
+an email and password before access to the workspace and is disabled once
+any account exists, including disabled accounts. Roles are `admin` and `user`.
+Account management routes require the admin role. Saved folders, connections,
+reusable keys, direct connections, and work sessions are owner-scoped.
 
 Passwords use salted Argon2id hashes with constant-time verification. The
 minimum password length is six bytes. The stored format has fixed hash
@@ -15,6 +18,12 @@ The login limiter allows ten attempts per client address in ten minutes.
 Its process-local address map is bounded at 4096 entries. The handler derives
 the address from `RemoteAddr`, so a reverse proxy can cause clients to share
 one limiter entry.
+
+Installation requests have the same ten-attempt limit in a separate per-client
+bucket. First-account creation is serialized with a SQLite write transaction
+or a MySQL advisory lock; concurrent installation attempts cannot create a
+second initial administrator. The setup POST requires a matching browser
+Origin and JSON content type. Both setup endpoints are absent in local mode.
 
 A password change revokes other login sessions, closes the user's work
 sessions, and removes their direct connections. Logout revokes the current
@@ -59,8 +68,11 @@ viewer streams attach only to the local owner's sessions.
 ## Credential encryption
 
 [`internal/security/crypto.go`](../internal/security/crypto.go) implements an
-AES-256-GCM vault. `ENCRYPTION_KEY` must decode to 32 bytes. Each encrypted
-envelope includes a format version and random nonce. Associated data binds
+AES-256-GCM vault. A supplied `ENCRYPTION_KEY` must decode to 32 bytes. When
+omitted, the server warns in its log and uses a persistent randomly generated
+key file. See [key configuration](configuration.md#server-settings).
+Each encrypted envelope includes a format version and random nonce.
+Associated data binds
 remote credentials to the connection ID and proxy passwords to a separate
 `connectionID:proxy` context. Reusable key envelopes bind to their key ID.
 
@@ -70,8 +82,10 @@ responses omit credential material. Generated key pairs are intentionally
 returned to their requesting owner for download before optional storage.
 
 Changing or losing the vault key makes existing encrypted credentials
-unreadable. Back up the database and original key together. Desktop apps keep
-the key in `vault.key`, separate from the server environment. See
+unreadable. Back up the database with the original environment key or generated
+key file. The server refuses to generate a replacement for a missing file
+when encrypted credentials already exist. Desktop apps keep their key in
+`vault.key`, separate from the server environment. See
 [backups](storage.md#backups).
 
 ## SSH host trust

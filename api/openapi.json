@@ -3,7 +3,7 @@
   "info": {
     "title": "LightRemote API",
     "version": "0.1.0",
-    "description": "Browser-facing API for SSH, VNC, SFTP, FTP, and FTPS connections. With LOCAL_MODE=true, the server uses one local owner and does not register login, logout, password, or user-management endpoints."
+    "description": "Browser-facing API for SSH, VNC, SFTP, FTP, and FTPS connections. With LOCAL_MODE=true, the server uses one local owner and does not register setup, login, logout, password, or user-management endpoints."
   },
   "servers": [
     {
@@ -26,6 +26,107 @@
           },
           "503": {
             "description": "Database unavailable"
+          }
+        }
+      }
+    },
+    "/api/auth/setup": {
+      "get": {
+        "summary": "Check whether first-run administrator setup is required",
+        "description": "Account mode only. Disabled once any non-local account exists.",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Installation status; not cached",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "required"
+                  ],
+                  "properties": {
+                    "required": {
+                      "type": "boolean"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      },
+      "post": {
+        "summary": "Install the first administrator and sign in",
+        "description": "Account mode only. Requires a matching browser Origin and application/json. Installation cannot be repeated after an account exists.",
+        "security": [],
+        "parameters": [
+          {
+            "name": "Origin",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The configured PUBLIC_ORIGIN or the request Host with an HTTP(S) scheme"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "email",
+                  "password"
+                ],
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "format": "email"
+                  },
+                  "password": {
+                    "type": "string",
+                    "format": "password",
+                    "minLength": 6
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Login cookie, account, and CSRF token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoginResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "415": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
           }
         }
       }

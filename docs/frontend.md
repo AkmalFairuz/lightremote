@@ -36,6 +36,12 @@ Legacy login and settings URLs redirect to the main workspace.
 
 At startup, `/api/auth/me` supplies the user, CSRF token, and local-mode flag.
 Account login uses `/api/auth/login`. Authentication responses update Redux.
+When no account exists and no initial admin password was configured, the
+locked shell shows first-run installation. `/api/auth/setup` reports setup
+status and accepts the administrator email and password. The form confirms
+the password and signs in after successful installation. Existing accounts
+show the normal login dialog, and private workspace content stays unmounted
+until authentication succeeds. Local mode skips installation.
 An expired or missing login shows a login dialog over the locked shell.
 Server failures show a retry dialog.
 

@@ -6,21 +6,10 @@ on port 8080. Images support Linux amd64 and arm64 and run as UID/GID 10001.
 
 ## Run a published image
 
-At the repository root, copy `.env.example` to `.env` and generate an encryption
-key with `openssl rand -base64 32`. Set these values in `.env`:
-
-```dotenv
-ENCRYPTION_KEY=your-generated-key
-ADMIN_EMAIL=admin@example.com
-ADMIN_PASSWORD=your-initial-admin-password
-PUBLIC_ORIGIN=http://localhost:8080
-COOKIE_SECURE=false
-```
-
-The administrator password must be at least six bytes. Compose requires both
-the key and password to be nonempty; the server uses the password only when
-creating the first administrator. Keep the original encryption key across
-restarts and upgrades so saved remote credentials remain readable.
+No environment variables are required for the default local HTTP installation.
+The [Compose file](../docker-compose.yaml) comments out settings already supplied
+by the image or server. Its only active environment setting is
+`COOKIE_SECURE=false`, for local HTTP.
 
 Run:
 
@@ -29,18 +18,35 @@ docker compose pull
 docker compose up -d
 ```
 
-Open `http://localhost:8080`. Compose defaults to
+Open `http://localhost:8080` and complete the first-run installation screen.
+Enter your administrator email and a password of at least six characters,
+then confirm the password. Installation signs you in and cannot be repeated
+after an account exists. Existing installations show the normal login screen.
+Database and encryption settings use automatic defaults.
+
+Compose defaults to
 `ghcr.io/akmalfairuz/lightremote:latest`, which becomes available after the
 first stable GitHub release is published. If the GHCR package is private,
 authenticate with `docker login ghcr.io` using a personal access token (classic)
 with `read:packages`, or make the package public in its GitHub settings. See
 [GitHub's registry authentication documentation](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry#authenticating-to-the-container-registry).
 
-The [Compose file](../docker-compose.yml) uses account mode and a named volume
+The Compose service uses account mode and a named volume
 at `/data`; SQLite lives at `/data/lightremote.db`. Restarting or replacing the
 container preserves the volume. `docker compose down` also keeps it; adding
-`--volumes` removes the database. Back up the volume and encryption key together.
+`--volumes` removes the database and generated key. Back up the volume together.
 The image health check calls `/healthz`, which checks database connectivity.
+
+When `ENCRYPTION_KEY` is not specified, the server logs a warning and creates
+a random key at `/data/vault.key`, with owner-only permissions. Restarts reuse
+this file. If it is missing while encrypted credentials exist, startup fails
+and requests the original key instead of generating a replacement.
+
+To supply your own key, uncomment `ENCRYPTION_KEY` in Compose and set it in
+`.env`. It must be a base64-encoded 32-byte key; `openssl rand -base64 32`
+generates one for a fresh installation. Existing deployments that previously
+used `ENCRYPTION_KEY` must uncomment that setting and keep their original value.
+An explicit key takes precedence over the file and is not rotated automatically.
 
 ## Select an image or public address
 
@@ -59,12 +65,21 @@ Prereleases have their own version tag and do not update `latest`.
 For remote access, select the host interface with `HOST_BIND`. Put HTTPS at a
 reverse proxy, preserve the request Host, and allow WebSocket upgrades. Set
 `PUBLIC_ORIGIN` to the exact browser origin and `COOKIE_SECURE=true` for HTTPS.
-When changing the host port for local HTTP, update `PUBLIC_ORIGIN` to match.
+Uncomment the `PUBLIC_ORIGIN` setting to forward it from `.env`. Without it,
+the server compares browser origins with the request Host. Complete initial
+installation before exposing a new instance publicly.
 
-Compose sets the container's frontend path, SQLite path, account mode, and
-internal port explicitly. The server's remaining configurable settings are
+Compose inherits the image's frontend path, SQLite path, account mode,
+internal port, and generated-key path. To override a commented setting,
+uncomment its line; `.env` values are not automatically forwarded to the
+container. The server's remaining configurable settings are
 listed in [configuration](configuration.md). Using the image directly also
 allows the server's existing MySQL configuration; Compose does not add MySQL.
+
+You can optionally uncomment `ADMIN_EMAIL` and `ADMIN_PASSWORD` to provision
+the first administrator without the browser installer. A blank password leaves
+installation pending; it never creates an account with a blank password.
+The default email for environment-based bootstrap is `admin@localhost`.
 
 ## Build locally
 

@@ -53,7 +53,8 @@ go run ./cmd/lightremote migrate down
 `up` applies all pending versions and migrates legacy SSH keys. `down` rolls
 back one version. Stop the server before rollback and take a backup first.
 The command loads the regular server configuration, including
-`ENCRYPTION_KEY`, without starting the HTTP server.
+encryption-key settings, without starting the HTTP server. Migration up
+resolves the same explicit or persistent generated key used during startup.
 
 | Version | Addition | Rollback effect |
 | --- | --- | --- |
@@ -109,7 +110,10 @@ See [frontend](frontend.md#tabs-and-detached-windows).
 ## Backups
 
 For server installations, keep a consistent database backup and the original
-`ENCRYPTION_KEY`. Use a SQLite backup tool or copy the database while the app
+`ENCRYPTION_KEY` value or generated key file. Docker stores the generated key
+at `/data/vault.key` alongside the database on the persistent volume. Outside
+Docker, see [key-file defaults](configuration.md#server-settings).
+Use a SQLite backup tool or copy the database while the app
 is stopped. MySQL installations should use their normal database backup
 procedure.
 

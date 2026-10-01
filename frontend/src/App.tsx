@@ -2,8 +2,9 @@ import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { Dialog as MuiDialog } from '@mui/material'
 import { Button, CircularProgress, DialogActions, DialogContent, Typography } from './ui'
 import { lazy, Suspense, useEffect, type ReactNode } from 'react'
-import { useMeQuery } from './api/auth'
+import { useMeQuery, useSetupStatusQuery } from './api/auth'
 import { LoginDialog } from './components/shell/LoginDialog'
+import { SetupDialog } from './components/shell/SetupDialog'
 import { LockedShell } from './components/shell/LockedShell'
 import { useAppDispatch, useAppSelector } from './state/hooks'
 import { setAuth } from './state/authSlice'
@@ -32,13 +33,30 @@ function AuthGate({ children, detached = false }: { children: ReactNode; detache
   const { data, error, isLoading, isFetching, isError, refetch } = useMeQuery(undefined, {
     skip: Boolean(user) || signedOut,
   })
+  const checkingSetup = !user && (signedOut || isUnauthorized(error))
+  const {
+    data: installation,
+    error: setupError,
+    isError: setupFailed,
+    refetch: refetchSetup,
+  } = useSetupStatusQuery(undefined, { skip: !checkingSetup })
 
   useEffect(() => {
     if (!user && !signedOut && data && !isFetching && !isError) dispatch(setAuth(data))
   }, [data, dispatch, isError, isFetching, signedOut, user])
 
   if (user) return children
-  if (signedOut || isUnauthorized(error)) {
+  if (checkingSetup && !installation && !setupFailed) {
+    return <LockedShell checkingSession />
+  }
+  if (checkingSetup && installation?.required && !setupFailed) {
+    return (
+      <LockedShell>
+        <SetupDialog />
+      </LockedShell>
+    )
+  }
+  if (checkingSetup && installation && !setupFailed) {
     return detached ? (
       <Navigate to="/" replace />
     ) : (
@@ -47,7 +65,10 @@ function AuthGate({ children, detached = false }: { children: ReactNode; detache
       </LockedShell>
     )
   }
-  if (isError || (!isLoading && !data && !isFetching)) {
+  if (
+    (checkingSetup && setupFailed) ||
+    (!checkingSetup && (isError || (!isLoading && !data && !isFetching)))
+  ) {
     return (
       <LockedShell>
         <MuiDialog open fullWidth maxWidth="xs" aria-labelledby="server-error-title">
@@ -55,10 +76,10 @@ function AuthGate({ children, detached = false }: { children: ReactNode; detache
             <Typography component="h1" variant="h6" id="server-error-title">
               Server unavailable
             </Typography>
-            <Typography>{errorMessage(error)}</Typography>
+            <Typography>{errorMessage(checkingSetup ? setupError : error)}</Typography>
           </DialogContent>
           <DialogActions>
-            <Button onClick={() => refetch()}>Retry</Button>
+            <Button onClick={() => (checkingSetup ? refetchSetup() : refetch())}>Retry</Button>
           </DialogActions>
         </MuiDialog>
       </LockedShell>

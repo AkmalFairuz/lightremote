@@ -165,6 +165,11 @@ func (m *AuthMiddleware) RequireAdmin(next http.Handler) http.Handler {
 
 // ValidOrigin checks the browser origin before a WebSocket upgrade.
 func (m *AuthMiddleware) ValidOrigin(r *http.Request) bool {
+	return validOrigin(r, m.origin)
+}
+
+// validOrigin checks same-origin browser requests against an optional configured origin.
+func validOrigin(r *http.Request, expected string) bool {
 	value := r.Header.Get("Origin")
 	if value == "" {
 		return false
@@ -173,8 +178,8 @@ func (m *AuthMiddleware) ValidOrigin(r *http.Request) bool {
 	if err != nil || parsed.Host == "" {
 		return false
 	}
-	if m.origin != "" {
-		return strings.TrimRight(value, "/") == strings.TrimRight(m.origin, "/")
+	if expected != "" {
+		return strings.TrimRight(value, "/") == strings.TrimRight(expected, "/")
 	}
 	return parsed.Host == r.Host && (parsed.Scheme == "https" || parsed.Scheme == "http")
 }

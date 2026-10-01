@@ -30,6 +30,8 @@ const (
 
 const passwordHashAlgorithm = "argon2id"
 
+var ErrPasswordTooShort = errors.New("password must be at least 6 characters")
+
 type Vault struct {
 	aead cipher.AEAD
 }
@@ -69,7 +71,7 @@ func (v *Vault) Open(data []byte, associated string) ([]byte, error) {
 // HashPassword derives a salted Argon2id password hash.
 func HashPassword(password string) (string, error) {
 	if len(password) < minimumPasswordSize {
-		return "", errors.New("password must be at least 6 characters")
+		return "", ErrPasswordTooShort
 	}
 	salt := make([]byte, passwordSaltBytes)
 	if _, err := io.ReadFull(rand.Reader, salt); err != nil {

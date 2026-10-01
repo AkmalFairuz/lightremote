@@ -33,6 +33,8 @@ func Router(routes Routes) http.Handler {
 	})
 	router.Route("/api", func(api chi.Router) {
 		if !routes.Middleware.LocalMode() {
+			api.Get("/auth/setup", routes.Auth.SetupStatus)
+			api.Post("/auth/setup", routes.Auth.Setup)
 			api.Post("/auth/login", routes.Auth.Login)
 		}
 		api.Group(func(authenticated chi.Router) {

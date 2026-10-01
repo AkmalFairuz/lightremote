@@ -2,6 +2,8 @@ package store
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"time"
 
 	"github.com/akmalfairuz/lightremote/internal/model"
@@ -23,6 +25,71 @@ func (r *UserRepository) AdminCount(ctx context.Context) (int, error) {
 	err := r.db.GetContext(ctx, &count,
 		"SELECT COUNT(*) FROM users WHERE role = 'admin' AND disabled = FALSE")
 	return count, err
+}
+
+// AccountCount includes disabled accounts so installation never reopens after account changes.
+func (r *UserRepository) AccountCount(ctx context.Context, excludedID string) (int, error) {
+	var count int
+	err := r.db.GetContext(ctx, &count, "SELECT COUNT(*) FROM users WHERE id <> ?", excludedID)
+	return count, err
+}
+
+// CreateInitialAdmin serializes first-account creation across server processes.
+func (r *UserRepository) CreateInitialAdmin(ctx context.Context, user model.User, excludedID string) (bool, error) {
+	conn, err := r.db.Connx(ctx)
+	if err != nil {
+		return false, err
+	}
+	defer conn.Close()
+	committed := false
+	switch r.db.DriverName() {
+	case "sqlite":
+		if _, err := conn.ExecContext(ctx, "BEGIN IMMEDIATE"); err != nil {
+			return false, err
+		}
+		defer func() {
+			if !committed {
+				cleanup, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+				defer cancel()
+				_, _ = conn.ExecContext(cleanup, "ROLLBACK")
+			}
+		}()
+	case "mysql":
+		var acquired int
+		if err := conn.GetContext(ctx, &acquired, "SELECT GET_LOCK('lightremote_initial_admin', 30)"); err != nil {
+			return false, err
+		}
+		if acquired != 1 {
+			return false, errors.New("timed out waiting for initial administrator lock")
+		}
+		defer func() {
+			cleanup, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+			defer cancel()
+			var released int
+			_ = conn.GetContext(cleanup, &released, "SELECT RELEASE_LOCK('lightremote_initial_admin')")
+		}()
+	default:
+		return false, fmt.Errorf("unsupported database driver %q", r.db.DriverName())
+	}
+	var count int
+	if err := conn.GetContext(ctx, &count, "SELECT COUNT(*) FROM users WHERE id <> ?", excludedID); err != nil {
+		return false, err
+	}
+	if count > 0 {
+		return false, nil
+	}
+	if _, err := conn.ExecContext(ctx, `
+		INSERT INTO users(id, email, password_hash, role, disabled, created_at)
+		VALUES (?, ?, ?, ?, ?, ?)`, user.ID, user.Email, user.PasswordHash, user.Role, user.Disabled, user.CreatedAt); err != nil {
+		return false, err
+	}
+	if r.db.DriverName() == "sqlite" {
+		if _, err := conn.ExecContext(ctx, "COMMIT"); err != nil {
+			return false, err
+		}
+		committed = true
+	}
+	return true, nil
 }
 
 // Create inserts an account.

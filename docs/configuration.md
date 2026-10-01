@@ -17,9 +17,10 @@ several settings that have empty defaults.
 | `LOCAL_MODE` | `false` | Use a stable local owner without account login |
 | `DATABASE_DRIVER` | `sqlite` | Select `sqlite` or `mysql` |
 | `SQLITE_PATH` | `./lightremote.db` | Database file relative to the working directory |
-| `ENCRYPTION_KEY` | Required | Base64-encoded 32-byte credential encryption key |
-| `ADMIN_EMAIL` | `admin@localhost` | Email for the initial administrator |
-| `ADMIN_PASSWORD` | Empty | Required in account mode until an administrator exists |
+| `ENCRYPTION_KEY` | Empty | Optional base64-encoded 32-byte credential encryption key |
+| `ENCRYPTION_KEY_FILE` | Beside SQLite database, or `./vault.key` for MySQL | Persistent generated key file used when `ENCRYPTION_KEY` is empty |
+| `ADMIN_EMAIL` | `admin@localhost` | Email for optional environment-based administrator bootstrap |
+| `ADMIN_PASSWORD` | Empty | Optional initial password; empty means first-run browser installation |
 | `PUBLIC_ORIGIN` | Empty | Allowed browser origin for WebSocket connections |
 | `COOKIE_SECURE` | `true` | Require HTTPS for the login cookie |
 | `SESSION_TTL` | `24h` | Account login-session lifetime |
@@ -29,6 +30,13 @@ several settings that have empty defaults.
 `SESSION_TTL`, `MAX_UPLOAD_BYTES`, and `DIAL_TIMEOUT` must be positive.
 Durations use Go duration syntax such as `10s` and `24h`. The vault validates
 the decoded encryption key during startup.
+
+In account mode, an empty `ADMIN_PASSWORD` leaves first-run installation to
+the web app, where the administrator chooses an email and password. There is
+no blank-password account. A supplied password preconfigures the first
+administrator using `ADMIN_EMAIL`. Existing accounts always disable the
+installer, including when accounts have been disabled or changed roles.
+Local mode does not register installation endpoints.
 
 When `FRONTEND_DIR` is set, the standalone server requires a readable
 `index.html` in that directory and serves the browser workspace on the same
@@ -45,8 +53,22 @@ check and ignores `PUBLIC_ORIGIN`.
 `127.0.0.1:8080` or `[::1]:8080`. Local HTTP hosts may be loopback IPs or
 `localhost`. See [security](security.md#local-mode).
 
-`ENCRYPTION_KEY` is required by the server configuration loader for migration
-commands as well. Keep the original key to decrypt saved credentials.
+When `ENCRYPTION_KEY` is empty, startup logs a warning and loads a persistent
+key from `ENCRYPTION_KEY_FILE`. If that setting is also empty, SQLite uses
+`vault.key` beside the database; MySQL uses `./vault.key` in the working
+directory. Docker defaults to `/data/vault.key` on its persistent volume.
+The key directory must already exist and be writable when generating a key.
+
+For a fresh database, the server generates a random 32-byte key and saves it
+with owner-only permissions. It reuses the file across restarts. Invalid,
+unreadable, or overly permissive files cause startup to fail. If the file is
+missing but encrypted credentials already exist, restore the original key
+file or set the original `ENCRYPTION_KEY`; a replacement is not generated.
+A nonempty `ENCRYPTION_KEY` takes precedence and is validated without falling
+back to a file. Keep that value consistent if multiple servers share a database.
+
+`migrate up` uses the same key resolution for credential migration.
+`migrate down` does not require an encryption key.
 
 ## Database settings
 

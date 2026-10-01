@@ -13,24 +13,25 @@ import (
 )
 
 type Config struct {
-	ListenAddr     string        `env:"LISTEN_ADDR" envDefault:":8080"`
-	FrontendDir    string        `env:"FRONTEND_DIR"`
-	LocalMode      bool          `env:"LOCAL_MODE" envDefault:"false"`
-	DatabaseDriver string        `env:"DATABASE_DRIVER" envDefault:"sqlite"`
-	SQLitePath     string        `env:"SQLITE_PATH" envDefault:"./lightremote.db"`
-	MySQLHost      string        `env:"MYSQL_HOST"`
-	MySQLPort      int           `env:"MYSQL_PORT" envDefault:"3306"`
-	MySQLUser      string        `env:"MYSQL_USER"`
-	MySQLPassword  string        `env:"MYSQL_PASSWORD"`
-	MySQLDatabase  string        `env:"MYSQL_DATABASE"`
-	EncryptionKey  string        `env:"ENCRYPTION_KEY,required"`
-	AdminEmail     string        `env:"ADMIN_EMAIL" envDefault:"admin@localhost"`
-	AdminPassword  string        `env:"ADMIN_PASSWORD"`
-	PublicOrigin   string        `env:"PUBLIC_ORIGIN"`
-	CookieSecure   bool          `env:"COOKIE_SECURE" envDefault:"true"`
-	SessionTTL     time.Duration `env:"SESSION_TTL" envDefault:"24h"`
-	MaxUploadBytes int64         `env:"MAX_UPLOAD_BYTES" envDefault:"1073741824"`
-	DialTimeout    time.Duration `env:"DIAL_TIMEOUT" envDefault:"10s"`
+	ListenAddr        string        `env:"LISTEN_ADDR" envDefault:":8080"`
+	FrontendDir       string        `env:"FRONTEND_DIR"`
+	LocalMode         bool          `env:"LOCAL_MODE" envDefault:"false"`
+	DatabaseDriver    string        `env:"DATABASE_DRIVER" envDefault:"sqlite"`
+	SQLitePath        string        `env:"SQLITE_PATH" envDefault:"./lightremote.db"`
+	MySQLHost         string        `env:"MYSQL_HOST"`
+	MySQLPort         int           `env:"MYSQL_PORT" envDefault:"3306"`
+	MySQLUser         string        `env:"MYSQL_USER"`
+	MySQLPassword     string        `env:"MYSQL_PASSWORD"`
+	MySQLDatabase     string        `env:"MYSQL_DATABASE"`
+	EncryptionKey     string        `env:"ENCRYPTION_KEY"`
+	EncryptionKeyFile string        `env:"ENCRYPTION_KEY_FILE"`
+	AdminEmail        string        `env:"ADMIN_EMAIL" envDefault:"admin@localhost"`
+	AdminPassword     string        `env:"ADMIN_PASSWORD"`
+	PublicOrigin      string        `env:"PUBLIC_ORIGIN"`
+	CookieSecure      bool          `env:"COOKIE_SECURE" envDefault:"true"`
+	SessionTTL        time.Duration `env:"SESSION_TTL" envDefault:"24h"`
+	MaxUploadBytes    int64         `env:"MAX_UPLOAD_BYTES" envDefault:"1073741824"`
+	DialTimeout       time.Duration `env:"DIAL_TIMEOUT" envDefault:"10s"`
 }
 
 // LoadConfig loads optional local defaults and validates required process settings.

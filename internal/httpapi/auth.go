@@ -54,6 +54,12 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		writeError(w, 500, "internal", "could not create session")
 		return
 	}
+	h.writeLogin(w, result)
+}
+
+// writeLogin establishes the session cookie and shared login response.
+func (h *AuthHandler) writeLogin(w http.ResponseWriter, result security.LoginResult) {
+	w.Header().Set("Cache-Control", "no-store")
 	http.SetCookie(w, &http.Cookie{
 		Name:     "lr_session",
 		Value:    result.Token,

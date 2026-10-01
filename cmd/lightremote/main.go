@@ -97,7 +97,7 @@ func migrate(ctx context.Context, cfg config.Config, command string) error {
 	if err := migrations.Up(ctx, db); err != nil {
 		return err
 	}
-	vault, err := security.NewVault(cfg.EncryptionKey)
+	vault, err := security.NewConfiguredVault(ctx, cfg, db)
 	if err != nil {
 		return err
 	}

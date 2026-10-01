@@ -24,8 +24,10 @@ flowchart TD
 
 Shared startup opens the selected database, applies schema migrations, creates
 the credential vault, and migrates legacy SSH keys. Account mode bootstraps an
-administrator and cleans expired login sessions hourly. Local mode provisions
-a stable internal owner and generates a process-scoped CSRF token.
+administrator when an initial password is configured, otherwise it exposes
+first-run browser installation, and cleans expired login sessions hourly.
+Local mode provisions a stable internal owner and generates a process-scoped
+CSRF token.
 
 The standalone server handles termination signals and gives HTTP shutdown ten
 seconds. Desktop shutdown cancels its runtime context and closes the local
