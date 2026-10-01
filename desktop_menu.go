@@ -61,6 +61,7 @@ func installMacMenu(app *application.App, mainWindow *application.WebviewWindow,
 
 	menu.AddRole(application.WindowMenu)
 	help := menu.AddSubmenu("Help")
+	help.Add("About LightRemote").OnClick(emit("help:about"))
 	help.Add("Source Code").OnClick(emit("help:source"))
 	app.Menu.SetApplicationMenu(menu)
 }

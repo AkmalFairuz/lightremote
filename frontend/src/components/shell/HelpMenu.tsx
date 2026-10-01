@@ -5,9 +5,10 @@ import { desktopRuntime } from '../../desktop/runtime'
 interface HelpMenuProps {
   anchorEl: HTMLElement | null
   onClose: () => void
+  onAbout: () => void
 }
 
-export function HelpMenu({ anchorEl, onClose }: HelpMenuProps) {
+export function HelpMenu({ anchorEl, onClose, onAbout }: HelpMenuProps) {
   return (
     <Popover
       open={Boolean(anchorEl)}
@@ -19,6 +20,17 @@ export function HelpMenu({ anchorEl, onClose }: HelpMenuProps) {
       slotProps={{ paper: { className: 'help-popover' } }}
     >
       <MenuList dense aria-label="Help links">
+        <MenuItem
+          onClick={() => {
+            onClose()
+            onAbout()
+          }}
+        >
+          <ListItemIcon>
+            <Glyph name="info-outline" size={17} />
+          </ListItemIcon>
+          About LightRemote
+        </MenuItem>
         <MenuItem
           component="a"
           href="https://github.com/AkmalFairuz/lightremote"

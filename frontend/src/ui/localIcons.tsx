@@ -30,6 +30,7 @@ import iconFontDownloadOutline from '@iconify-icons/material-symbols/font-downlo
 import iconGroupOutline from '@iconify-icons/material-symbols/group-outline'
 import iconHistory from '@iconify-icons/material-symbols/history'
 import iconImageOutline from '@iconify-icons/material-symbols/image-outline'
+import iconInfoOutline from '@iconify-icons/material-symbols/info-outline'
 import iconKey from '@iconify-icons/material-symbols/key'
 import iconKeyOutline from '@iconify-icons/material-symbols/key-outline'
 import iconKeyboardArrowDown from '@iconify-icons/material-symbols/keyboard-arrow-down'
@@ -90,6 +91,7 @@ const icons = {
   'group-outline': iconGroupOutline,
   history: iconHistory,
   'image-outline': iconImageOutline,
+  'info-outline': iconInfoOutline,
   key: iconKey,
   'key-outline': iconKeyOutline,
   'keyboard-arrow-down': iconKeyboardArrowDown,

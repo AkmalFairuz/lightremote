@@ -12,6 +12,7 @@ import { ChangePasswordDialog } from './ChangePasswordDialog'
 import { ViewMenu, type ViewSection } from './ViewMenu'
 import { FileMenu, type FileSection } from './FileMenu'
 import { HelpMenu } from './HelpMenu'
+import { AboutDialog } from './AboutDialog'
 import type { Connection } from '../../types'
 import { errorMessage } from '../../types'
 import { SSHKeyManagerDialog } from '../sshkeys/SSHKeyManagerDialog'
@@ -51,6 +52,7 @@ export function Header({
   const [accountAnchor, setAccountAnchor] = useState<HTMLElement | null>(null)
   const [accountDialog, setAccountDialog] = useState<'password' | 'users' | null>(null)
   const [sshKeysOpen, setSSHKeysOpen] = useState(false)
+  const [aboutOpen, setAboutOpen] = useState(false)
   const [logoutError, setLogoutError] = useState<string | null>(null)
 
   useEffect(() => {
@@ -79,6 +81,7 @@ export function Header({
       if (action === 'help:source') {
         void desktopRuntime?.Browser.OpenURL('https://github.com/AkmalFairuz/lightremote')
       }
+      if (action === 'help:about') setAboutOpen(true)
     })
   }, [onOpenConnection, onNewDirectConnection, onOpenRecentConnection, recentConnections, setMode])
 
@@ -256,7 +259,14 @@ export function Header({
         onSection={setViewSection}
         onClose={() => setViewAnchor(null)}
       />
-      <HelpMenu anchorEl={helpAnchor} onClose={() => setHelpAnchor(null)} />
+      <HelpMenu
+        anchorEl={helpAnchor}
+        onClose={() => setHelpAnchor(null)}
+        onAbout={() => setAboutOpen(true)}
+      />
+      <DialogPresence>
+        {aboutOpen && <AboutDialog onClose={() => setAboutOpen(false)} />}
+      </DialogPresence>
       <DialogPresence>
         {sshKeysOpen && <SSHKeyManagerDialog onClose={() => setSSHKeysOpen(false)} />}
       </DialogPresence>
