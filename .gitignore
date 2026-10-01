@@ -17,3 +17,4 @@ coverage.out
 *.p12
 *.pfx
 *.syso
+data/

@@ -111,7 +111,7 @@ See [frontend](frontend.md#tabs-and-detached-windows).
 
 For server installations, keep a consistent database backup and the original
 `ENCRYPTION_KEY` value or generated key file. Docker stores the generated key
-at `/data/vault.key` alongside the database on the persistent volume. Outside
+at `/data/vault.key` alongside the database in the local `./data` directory. Outside
 Docker, see [key-file defaults](configuration.md#server-settings).
 Use a SQLite backup tool or copy the database while the app
 is stopped. MySQL installations should use their normal database backup

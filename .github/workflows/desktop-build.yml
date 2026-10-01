@@ -4,6 +4,11 @@ on:
   push:
     branches: [feature/wails]
   pull_request:
+  release:
+    types: [published]
+
+permissions:
+  contents: read
 
 jobs:
   build:
@@ -77,3 +82,53 @@ jobs:
           path: lightremote-${{ matrix.os }}-${{ matrix.arch }}.tar.gz
           if-no-files-found: error
           retention-days: 14
+
+  publish-release:
+    name: Publish desktop release assets
+    if: github.event_name == 'release' && github.event.action == 'published'
+    needs: build
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: lightremote-*
+          path: release-artifacts
+      - name: Upload assets to GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        shell: bash
+        run: |
+          for artifact_dir in release-artifacts/lightremote-*; do
+            artifact_name="${artifact_dir##*/}"
+            arch="${artifact_name##*-}"
+            case "$artifact_name" in
+              lightremote-macos-*)
+                platform=macos
+                extension=dmg
+                ;;
+              lightremote-windows-*)
+                platform=windows
+                extension=tar.gz
+                ;;
+              lightremote-ubuntu-*)
+                platform=linux
+                extension=tar.gz
+                ;;
+              *)
+                echo "Unexpected build artifact: $artifact_name" >&2
+                exit 1
+                ;;
+            esac
+            files=("$artifact_dir"/*)
+            if [[ ${#files[@]} -ne 1 ]]; then
+              echo "Expected one file in $artifact_dir" >&2
+              exit 1
+            fi
+            asset="lightremote-$platform-$arch.$extension"
+            cp "${files[0]}" "$asset"
+            gh release upload "$GITHUB_REF_NAME" "$asset" --clobber
+          done

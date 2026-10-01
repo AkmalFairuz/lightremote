@@ -27,3 +27,4 @@ frontend/bindings
 **/.DS_Store
 **/coverage.out
 **/*.log
+data/

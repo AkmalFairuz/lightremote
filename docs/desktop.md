@@ -127,15 +127,18 @@ users is rejected.
 ## CI artifacts and troubleshooting
 
 The [desktop workflow](../.github/workflows/desktop-build.yml) builds amd64 and
-arm64 on native macOS, Windows, and Linux runners. It runs on pull requests
-and pushes to `feature/wails`. macOS jobs upload a `.dmg` containing
-`LightRemote.app` and an Applications shortcut. Packaging validates the plist,
-architecture, signature, background, and mounted disk image contents before
-upload.
-Windows and Linux jobs upload a `.tar.gz` containing the compiled executable.
-All artifacts have a 14-day retention period.
+arm64 on native macOS, Windows, and Linux runners. It runs on pull requests,
+pushes to `feature/wails`, and published GitHub releases. macOS jobs create a
+`.dmg` containing `LightRemote.app` and an Applications shortcut. Packaging
+validates the plist, architecture, signature, background, and mounted disk
+image contents before upload. Windows and Linux jobs package the compiled
+executable in a `.tar.gz`. Pull request and branch builds upload Actions
+artifacts with a 14-day retention period. Published releases attach six assets
+for direct platform and architecture downloads.
 
-Extract the GitHub artifact download to access the `.dmg` or `.tar.gz`.
+Extract the GitHub Actions artifact or release `.tar.gz` download to access the
+platform executable. Release assets are named `lightremote-<platform>-<arch>`
+with `.dmg` for macOS and `.tar.gz` for Windows and Linux.
 On macOS, open the disk image and drag `LightRemote.app` into Applications.
 On Windows and Linux, extract the `.tar.gz` before launching the executable.
 

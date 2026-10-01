@@ -1,28 +1,25 @@
 services:
   lightremote:
-    image: ${LIGHTREMOTE_IMAGE:-ghcr.io/akmalfairuz/lightremote:latest}
+    image: ghcr.io/akmalfairuz/lightremote:latest
     restart: unless-stopped
     stop_grace_period: 15s
     ports:
-      - "${HOST_BIND:-127.0.0.1}:${HOST_PORT:-8080}:8080"
+      - "8080:8080"
     # environment:
       # These values are already supplied by the image or server defaults.
-      # Uncomment a setting to override it or forward its value from .env.
+      # Uncomment environment and a setting to override its value here.
       # LISTEN_ADDR: ":8080"
       # LOCAL_MODE: "false"
       # DATABASE_DRIVER: sqlite
       # SQLITE_PATH: /data/lightremote.db
       # FRONTEND_DIR: /app/frontend
-      # ENCRYPTION_KEY: "${ENCRYPTION_KEY:-}"
-      # ENCRYPTION_KEY_FILE: "${ENCRYPTION_KEY_FILE:-/data/vault.key}"
-      # ADMIN_EMAIL: "${ADMIN_EMAIL:-admin@localhost}"
-      # ADMIN_PASSWORD: "${ADMIN_PASSWORD:-}"
-      # PUBLIC_ORIGIN: "${PUBLIC_ORIGIN:-}"
-      # SESSION_TTL: "${SESSION_TTL:-24h}"
-      # MAX_UPLOAD_BYTES: "${MAX_UPLOAD_BYTES:-1073741824}"
-      # DIAL_TIMEOUT: "${DIAL_TIMEOUT:-10s}"
+      # ENCRYPTION_KEY: ""
+      # ENCRYPTION_KEY_FILE: "/data/vault.key"
+      # ADMIN_EMAIL: "admin@localhost"
+      # ADMIN_PASSWORD: ""
+      # PUBLIC_ORIGIN: ""
+      # SESSION_TTL: "24h"
+      # MAX_UPLOAD_BYTES: "1073741824"
+      # DIAL_TIMEOUT: "10s"
     volumes:
-      - lightremote-data:/data
-
-volumes:
-  lightremote-data:
+      - ./data:/data

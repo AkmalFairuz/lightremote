@@ -11,6 +11,15 @@ The [Compose file](../docker-compose.yaml) comments out settings already supplie
 by the image or server. Uncomment `environment:` and the settings you want
 to override.
 
+Prepare the local data directory. On Linux, give the container's UID/GID 10001
+write access before starting it:
+
+```sh
+mkdir -p data
+sudo chown 10001:10001 data
+sudo chmod 700 data
+```
+
 Run:
 
 ```sh
@@ -31,10 +40,12 @@ authenticate with `docker login ghcr.io` using a personal access token (classic)
 with `read:packages`, or make the package public in its GitHub settings. See
 [GitHub's registry authentication documentation](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry#authenticating-to-the-container-registry).
 
-The Compose service uses account mode and a named volume
-at `/data`; SQLite lives at `/data/lightremote.db`. Restarting or replacing the
-container preserves the volume. `docker compose down` also keeps it; adding
-`--volumes` removes the database and generated key. Back up the volume together.
+The Compose service uses account mode and mounts the local `./data` directory
+at `/data`. SQLite lives at `./data/lightremote.db`, and the generated encryption
+key lives at `./data/vault.key`. Restarting or replacing the container and
+`docker compose down --volumes` preserve this directory. Back up its database
+and key together. When switching an existing deployment from the named volume,
+copy its database and key into `./data` before starting the updated service.
 The image health check calls `/healthz`, which checks database connectivity.
 
 When `ENCRYPTION_KEY` is not specified, the server logs a warning and creates
@@ -42,38 +53,35 @@ a random key at `/data/vault.key`, with owner-only permissions. Restarts reuse
 this file. If it is missing while encrypted credentials exist, startup fails
 and requests the original key instead of generating a replacement.
 
-To supply your own key, uncomment `ENCRYPTION_KEY` in Compose and set it in
-`.env`. It must be a base64-encoded 32-byte key; `openssl rand -base64 32`
-generates one for a fresh installation. Existing deployments that previously
+To supply your own key, uncomment `environment:` and `ENCRYPTION_KEY` in
+Compose and set the key directly in that file. It must be a base64-encoded
+32-byte key; `openssl rand -base64 32` generates one for a fresh installation. Existing deployments that previously
 used `ENCRYPTION_KEY` must uncomment that setting and keep their original value.
 An explicit key takes precedence over the file and is not rotated automatically.
 
 ## Select an image or public address
 
-These Compose variables can be set in `.env` or the shell:
+Edit the literal values in `docker-compose.yaml` to change the image or address:
 
-| Variable | Default | Purpose |
+| Setting | Default | Purpose |
 | --- | --- | --- |
-| `LIGHTREMOTE_IMAGE` | `ghcr.io/akmalfairuz/lightremote:latest` | Published release tag or locally built image |
-| `HOST_BIND` | `127.0.0.1` | Host interface for the published HTTP port |
-| `HOST_PORT` | `8080` | Host HTTP port; the container still listens on 8080 |
+| `image` | `ghcr.io/akmalfairuz/lightremote:latest` | Published release tag or locally built image |
+| `ports` | `8080:8080` | Host HTTP port on all interfaces; the container listens on 8080 |
 
-For a particular release, set `LIGHTREMOTE_IMAGE` to its image tag, such as
+For a particular release, set `image` to its image tag, such as
 `ghcr.io/akmalfairuz/lightremote:v1.2.3`, then pull and recreate the service.
 Prereleases have their own version tag and do not update `latest`.
 
-For remote access, select the host interface with `HOST_BIND`. Put HTTPS at a
-reverse proxy, preserve the request Host, and allow WebSocket upgrades. Set
-`PUBLIC_ORIGIN` to the exact browser origin and use HTTPS.
-Uncomment the `PUBLIC_ORIGIN` setting to forward it from `.env`. Without it,
-the server compares browser origins with the request Host. Complete initial
-installation before exposing a new instance publicly.
+The published port binds to all host interfaces. For remote access, put HTTPS
+at a reverse proxy, preserve the request Host, and allow WebSocket upgrades.
+Uncomment `environment:` and `PUBLIC_ORIGIN`, then set the exact browser origin
+as its value. Without it, the server compares browser origins with the request
+Host. Complete initial installation before exposing a new instance publicly.
 
 Compose inherits the image's frontend path, SQLite path, account mode,
 internal port, and generated-key path. To override a commented setting,
-uncomment its line; `.env` values are not automatically forwarded to the
-container. The server's remaining configurable settings are
-listed in [configuration](configuration.md). Using the image directly also
+uncomment `environment:` and its line, then edit the literal value. The server's
+remaining configurable settings are listed in [configuration](configuration.md). Using the image directly also
 allows the server's existing MySQL configuration; Compose does not add MySQL.
 
 You can optionally uncomment `ADMIN_EMAIL` and `ADMIN_PASSWORD` to provision
@@ -87,7 +95,12 @@ To use the Dockerfile before a release is available:
 
 ```sh
 docker build -t lightremote:local .
-LIGHTREMOTE_IMAGE=lightremote:local docker compose up -d
+```
+
+Set `image: lightremote:local` in `docker-compose.yaml`, then run:
+
+```sh
+docker compose up -d
 ```
 
 The build installs frontend dependencies from the lockfile, creates a browser
