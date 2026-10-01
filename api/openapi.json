@@ -968,7 +968,7 @@
       ],
       "get": {
         "summary": "Upgrade to an SSH or VNC WebSocket",
-        "description": "Browser clients offer lightremote and lightremote.auth.<token> in Sec-WebSocket-Protocol. The server selects only lightremote. Bearer Authorization is also accepted. Origin and session ownership are checked before upgrading.",
+        "description": "The browser Origin must match PUBLIC_ORIGIN, or the request host when unset. A new attachment replaces the previous browser viewer while preserving the remote session. Unattached sessions expire after two minutes. Browser clients authenticate by offering lightremote and lightremote.auth.<token> in Sec-WebSocket-Protocol; the server selects only lightremote. Bearer Authorization is also accepted.",
         "responses": {
           "101": {
             "description": "WebSocket upgrade"
@@ -1535,27 +1535,32 @@
         }
       },
       "LoginResult": {
-        "allOf": [
-          {
-            "$ref": "#/components/schemas/AuthIdentity"
+        "type": "object",
+        "required": [
+          "user",
+          "csrfToken",
+          "localMode",
+          "token",
+          "expiresAt"
+        ],
+        "properties": {
+          "user": {
+            "$ref": "#/components/schemas/User"
           },
-          {
-            "type": "object",
-            "required": [
-              "token",
-              "expiresAt"
-            ],
-            "properties": {
-              "token": {
-                "type": "string"
-              },
-              "expiresAt": {
-                "type": "string",
-                "format": "date-time"
-              }
-            }
+          "csrfToken": {
+            "type": "string"
+          },
+          "localMode": {
+            "type": "boolean"
+          },
+          "token": {
+            "type": "string"
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time"
           }
-        ]
+        }
       },
       "Folder": {
         "type": "object",

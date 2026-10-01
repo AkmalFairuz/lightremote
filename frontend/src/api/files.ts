@@ -180,7 +180,7 @@ async function fileRequest<T>(
   body?: BodyInit,
   json = false,
 ): Promise<T> {
-  const headers = authHeaders(store.getState().auth.csrfToken)
+  const headers = authHeaders(method === 'GET' ? null : store.getState().auth.csrfToken)
   if (json) headers.set('Content-Type', 'application/json')
   const response = await authenticatedFetch(url, { method, headers, body })
   if (!response.ok) {
