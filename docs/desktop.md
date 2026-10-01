@@ -128,19 +128,23 @@ users is rejected.
 
 The [desktop workflow](../.github/workflows/desktop-build.yml) builds amd64 and
 arm64 on native macOS, Windows, and Linux runners. It runs on pull requests,
-pushes to `feature/wails`, and published GitHub releases. macOS jobs create a
+pushes to `master`, tag pushes, and published GitHub releases. macOS jobs create a
 `.dmg` containing `LightRemote.app` and an Applications shortcut. Packaging
 validates the plist, architecture, signature, background, and mounted disk
 image contents before upload. Windows and Linux jobs package the compiled
-executable in a `.tar.gz`. Pull request and branch builds upload Actions
-artifacts with a 14-day retention period. Published releases attach six assets
-for direct platform and architecture downloads.
+executable in a `.tar.gz`, and Windows jobs also provide a direct `.exe` download.
+Pull request and branch builds upload Actions artifacts with a 14-day retention
+period. Tag and release builds automatically attach desktop downloads and
+[browser-mode bundles](browser-release.md) for each platform and architecture
+using a GitHub release action. A tag push creates the release if it does not
+already exist; published releases receive the assets on the existing release.
 
 Extract the GitHub Actions artifact or release `.tar.gz` download to access the
 platform executable. Release assets are named `lightremote-<platform>-<arch>`
-with `.dmg` for macOS and `.tar.gz` for Windows and Linux.
+with `.dmg` for macOS, `.exe` or `.tar.gz` for Windows, and `.tar.gz` for Linux.
 On macOS, open the disk image and drag `LightRemote.app` into Applications.
-On Windows and Linux, extract the `.tar.gz` before launching the executable.
+On Windows, download the `.exe` directly or extract the `.tar.gz`.
+On Linux, extract the `.tar.gz` before launching the executable.
 
 Startup logging goes to `lightremote.log` in the platform data directory.
 Windows also displays a startup-error dialog. For startup failures, read the

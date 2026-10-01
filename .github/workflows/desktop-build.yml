@@ -2,7 +2,8 @@ name: Desktop build
 
 on:
   push:
-    branches: [feature/wails]
+    branches: [master]
+    tags: ['**']
   pull_request:
   release:
     types: [published]
@@ -18,16 +19,22 @@ jobs:
       matrix:
         include:
           - os: macos-15-intel
+            platform: macos
             arch: amd64
           - os: macos-15
+            platform: macos
             arch: arm64
           - os: windows-2025
+            platform: windows
             arch: amd64
           - os: windows-11-arm
+            platform: windows
             arch: arm64
           - os: ubuntu-24.04
+            platform: linux
             arch: amd64
           - os: ubuntu-24.04-arm
+            platform: linux
             arch: arm64
     runs-on: ${{ matrix.os }}
     steps:
@@ -57,37 +64,99 @@ jobs:
       - name: Build and package macOS app
         if: runner.os == 'macOS'
         run: wails3 task darwin:package TARGET_ARCH=${{ matrix.arch }}
-      - name: Archive compiled app
-        if: runner.os != 'macOS'
+      - name: Package desktop downloads
         shell: bash
+        env:
+          ASSET_NAME: lightremote-${{ matrix.platform }}-${{ matrix.arch }}
+          TARGET_ARCH: ${{ matrix.arch }}
         run: |
-          binary=lightremote-desktop
-          if [[ "$RUNNER_OS" == "Windows" ]]; then
-            binary=lightremote-desktop.exe
+          mkdir -p release-assets
+          if [[ "$RUNNER_OS" == "macOS" ]]; then
+            cp "bin/lightremote-darwin-$TARGET_ARCH.dmg" "release-assets/$ASSET_NAME.dmg"
+          else
+            binary=lightremote-desktop
+            if [[ "$RUNNER_OS" == "Windows" ]]; then
+              binary=lightremote-desktop.exe
+              cp "bin/$binary" "release-assets/$ASSET_NAME.exe"
+            fi
+            tar -czf "release-assets/$ASSET_NAME.tar.gz" -C bin "$binary"
           fi
-          tar -czf "lightremote-${{ matrix.os }}-${{ matrix.arch }}.tar.gz" -C bin "$binary"
-      - name: Upload macOS disk image
-        if: runner.os == 'macOS'
+      - name: Upload desktop downloads
         uses: actions/upload-artifact@v4
         with:
-          name: lightremote-${{ matrix.os }}-${{ matrix.arch }}
-          path: bin/lightremote-darwin-${{ matrix.arch }}.dmg
+          name: lightremote-desktop-${{ matrix.platform }}-${{ matrix.arch }}
+          path: release-assets/*
           if-no-files-found: error
           retention-days: 14
-      - name: Upload compiled app
-        if: runner.os != 'macOS'
+
+  browser-build:
+    name: Build browser release bundles
+    if: github.event_name == 'release' || (github.event_name == 'push' && github.ref_type == 'tag')
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.26'
+          cache: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Build browser frontend
+        working-directory: frontend
+        env:
+          VITE_DESKTOP: 'false'
+        run: npm ci && npm run build
+      - name: Build and package browser servers
+        shell: bash
+        env:
+          CGO_ENABLED: '0'
+        run: |
+          mkdir -p release-assets
+          for target in darwin/amd64 darwin/arm64 linux/amd64 linux/arm64 windows/amd64 windows/arm64; do
+            goos="${target%/*}"
+            arch="${target#*/}"
+            platform="$goos"
+            if [[ "$goos" == "darwin" ]]; then
+              platform=macos
+            fi
+            bundle="browser-bundles/$platform-$arch"
+            mkdir -p "$bundle"
+            binary=lightremote
+            if [[ "$goos" == "windows" ]]; then
+              binary=lightremote.exe
+            fi
+            GOOS="$goos" GOARCH="$arch" go build -trimpath -buildvcs=false -ldflags="-s -w" -o "$bundle/$binary" ./cmd/lightremote
+            cp -R frontend/dist "$bundle/frontend"
+            sed -e 's|^FRONTEND_DIR=.*|FRONTEND_DIR=./frontend|' \
+                -e 's|^PUBLIC_ORIGIN=.*|PUBLIC_ORIGIN=http://localhost:8080|' \
+                .env.example > "$bundle/.env.example"
+            cp docs/browser-release.md "$bundle/README.md"
+            asset="lightremote-browser-$platform-$arch"
+            if [[ "$goos" == "windows" ]]; then
+              (cd "$bundle" && zip -qr "$GITHUB_WORKSPACE/release-assets/$asset.zip" .)
+            else
+              tar -czf "release-assets/$asset.tar.gz" -C "$bundle" .
+            fi
+          done
+      - name: Upload browser bundles
         uses: actions/upload-artifact@v4
         with:
-          name: lightremote-${{ matrix.os }}-${{ matrix.arch }}
-          path: lightremote-${{ matrix.os }}-${{ matrix.arch }}.tar.gz
+          name: lightremote-browser
+          path: release-assets/*
           if-no-files-found: error
           retention-days: 14
 
   publish-release:
-    name: Publish desktop release assets
-    if: github.event_name == 'release' && github.event.action == 'published'
-    needs: build
+    name: Publish desktop and browser release assets
+    if: github.event_name == 'release' || (github.event_name == 'push' && github.ref_type == 'tag')
+    needs: [build, browser-build]
     runs-on: ubuntu-24.04
+    concurrency:
+      group: lightremote-release-${{ github.event.release.tag_name || github.ref_name }}
+      cancel-in-progress: false
     permissions:
       contents: write
     steps:
@@ -96,39 +165,11 @@ jobs:
         with:
           pattern: lightremote-*
           path: release-artifacts
+          merge-multiple: true
       - name: Upload assets to GitHub release
-        env:
-          GH_TOKEN: ${{ github.token }}
-          GH_REPO: ${{ github.repository }}
-        shell: bash
-        run: |
-          for artifact_dir in release-artifacts/lightremote-*; do
-            artifact_name="${artifact_dir##*/}"
-            arch="${artifact_name##*-}"
-            case "$artifact_name" in
-              lightremote-macos-*)
-                platform=macos
-                extension=dmg
-                ;;
-              lightremote-windows-*)
-                platform=windows
-                extension=tar.gz
-                ;;
-              lightremote-ubuntu-*)
-                platform=linux
-                extension=tar.gz
-                ;;
-              *)
-                echo "Unexpected build artifact: $artifact_name" >&2
-                exit 1
-                ;;
-            esac
-            files=("$artifact_dir"/*)
-            if [[ ${#files[@]} -ne 1 ]]; then
-              echo "Expected one file in $artifact_dir" >&2
-              exit 1
-            fi
-            asset="lightremote-$platform-$arch.$extension"
-            cp "${files[0]}" "$asset"
-            gh release upload "$GITHUB_REF_NAME" "$asset" --clobber
-          done
+        uses: softprops/action-gh-release@v3
+        with:
+          tag_name: ${{ github.event.release.tag_name || github.ref_name }}
+          files: release-artifacts/*
+          fail_on_unmatched_files: true
+          generate_release_notes: ${{ github.event_name == 'push' }}

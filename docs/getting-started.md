@@ -96,6 +96,10 @@ See [configuration](configuration.md) for the complete settings and
 
 ## Web deployment
 
+For a prebuilt server with the frontend included, download a
+[browser release bundle](browser-release.md) for your operating system and
+architecture. GitHub Actions attaches these bundles to tag and release builds.
+
 For a single-container deployment with the frontend included, see
 [Docker deployment](docker.md).
 
