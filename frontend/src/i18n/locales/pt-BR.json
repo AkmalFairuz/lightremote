@@ -399,5 +399,7 @@
   "errors.rateLimited": "Muitas solicitações. Tente novamente mais tarde.",
   "errors.setupComplete": "Esta instalação já está configurada.",
   "errors.setupAccountCreated": "Administrador criado. Entre com a senha escolhida.",
-  "errors.unsupported": "O servidor remoto não suporta esta operação."
+  "errors.unsupported": "O servidor remoto não suporta esta operação.",
+  "connections.telnetTerminal": "Terminal Telnet",
+  "connections.telnetManualLogin": "Digite suas credenciais de acesso quando solicitado no terminal."
 }

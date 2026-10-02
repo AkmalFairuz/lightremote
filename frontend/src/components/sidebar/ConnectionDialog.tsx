@@ -52,7 +52,13 @@ interface ConnectionDialogProps {
   onSavedAndConnect?: (connection: Connection) => void
 }
 
-const defaultPorts: Record<ConnectionKind, number> = { ssh: 22, sftp: 22, ftp: 21, vnc: 5900 }
+const defaultPorts: Record<ConnectionKind, number> = {
+  ssh: 22,
+  sftp: 22,
+  ftp: 21,
+  vnc: 5900,
+  telnet: 23,
+}
 
 type VncAccessMode = 'full' | 'read_only' | 'read_only_files'
 
@@ -133,7 +139,11 @@ export function ConnectionDialog({
     if (next === kind) return
     setKind(next)
     setPort(String(defaultPorts[next]))
-    setAuthType('password')
+    setAuthType(next === 'telnet' ? 'none' : 'password')
+    if (next === 'telnet') {
+      setUsername('')
+      setPassword('')
+    }
     setSSHKeyId('')
     setFtpTls(false)
   }
@@ -178,8 +188,8 @@ export function ConnectionDialog({
       folderId: direct ? null : folderId || null,
       host,
       port: portNumber,
-      username,
-      authType,
+      username: kind === 'telnet' ? '' : username,
+      authType: kind === 'telnet' ? 'none' : authType,
       sshKeyId: authType === 'private_key' ? sshKeyId : null,
       proxy: proxyEnabled ? { ...proxy } : null,
     }
@@ -251,6 +261,7 @@ export function ConnectionDialog({
                       onChange={(event) => changeKind(event.target.value as ConnectionKind)}
                     >
                       <MenuItem value="ssh">{t('connections.sshTerminal')}</MenuItem>
+                      <MenuItem value="telnet">{t('connections.telnetTerminal')}</MenuItem>
                       <MenuItem value="vnc">{t('connections.vncDesktop')}</MenuItem>
                       <MenuItem value="sftp">{t('connections.sftpFiles')}</MenuItem>
                       <MenuItem value="ftp">{t('connections.ftpFiles')}</MenuItem>
@@ -272,26 +283,30 @@ export function ConnectionDialog({
                       htmlInput: { inputMode: 'numeric', pattern: '[0-9]{1,5}', maxLength: 5 },
                     }}
                   />
-                  <TextField
-                    label={t('connections.username')}
-                    value={username}
-                    onChange={(event) => setUsername(event.target.value)}
-                    required={kind !== 'vnc'}
-                  />
-                  <TextField
-                    select
-                    label={t('connections.authentication')}
-                    value={authType}
-                    onChange={(event) => setAuthType(event.target.value as AuthType)}
-                  >
-                    {kind === 'vnc' && (
-                      <MenuItem value="none">{t('connections.noPassword')}</MenuItem>
-                    )}
-                    <MenuItem value="password">{t('shell.password')}</MenuItem>
-                    {(kind === 'ssh' || kind === 'sftp') && (
-                      <MenuItem value="private_key">{t('connections.privateKey')}</MenuItem>
-                    )}
-                  </TextField>
+                  {kind !== 'telnet' && (
+                    <>
+                      <TextField
+                        label={t('connections.username')}
+                        value={username}
+                        onChange={(event) => setUsername(event.target.value)}
+                        required={kind !== 'vnc'}
+                      />
+                      <TextField
+                        select
+                        label={t('connections.authentication')}
+                        value={authType}
+                        onChange={(event) => setAuthType(event.target.value as AuthType)}
+                      >
+                        {kind === 'vnc' && (
+                          <MenuItem value="none">{t('connections.noPassword')}</MenuItem>
+                        )}
+                        <MenuItem value="password">{t('shell.password')}</MenuItem>
+                        {(kind === 'ssh' || kind === 'sftp') && (
+                          <MenuItem value="private_key">{t('connections.privateKey')}</MenuItem>
+                        )}
+                      </TextField>
+                    </>
+                  )}
                   {!direct && (
                     <TextField
                       className="connection-folder-field"
@@ -359,6 +374,7 @@ export function ConnectionDialog({
                     </TextField>
                   )}
                 </div>
+                {kind === 'telnet' && <p>{t('connections.telnetManualLogin')}</p>}
                 {kind === 'ftp' && (
                   <FormControlLabel
                     control={

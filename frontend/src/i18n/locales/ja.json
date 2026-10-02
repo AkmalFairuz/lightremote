@@ -381,5 +381,7 @@
   "errors.rateLimited": "リクエストが多すぎます。後で再試行してください。",
   "errors.setupComplete": "このインストールは設定済みです。",
   "errors.setupAccountCreated": "管理者を作成しました。設定したパスワードでサインインしてください。",
-  "errors.unsupported": "リモートサーバーはこの操作をサポートしていません。"
+  "errors.unsupported": "リモートサーバーはこの操作をサポートしていません。",
+  "connections.telnetTerminal": "Telnet ターミナル",
+  "connections.telnetManualLogin": "ターミナルのプロンプトでログイン情報を入力してください。"
 }

@@ -10,7 +10,7 @@ app. Both use the same React interface and backend services.
 | [Architecture](architecture.md) | Entry points, backend layers, API flows, and state ownership |
 | [Frontend](frontend.md) | Components, connections, tabs, detached windows, and files |
 | [Localization](localization.md) | Supported languages, language preferences, and translation contributions |
-| [Protocols](protocols.md) | SSH, VNC, file transfers, and outbound proxies |
+| [Protocols](protocols.md) | SSH, Telnet, VNC, file transfers, and outbound proxies |
 | [Security](security.md) | Accounts, session tokens, CSRF, credentials, and host trust |
 | [Storage](storage.md) | Databases, migrations, backups, and temporary state |
 | [Desktop](desktop.md) | Native builds, streams, platform integration, and troubleshooting |

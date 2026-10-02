@@ -408,5 +408,7 @@
   "errors.rateLimited": "Слишком много запросов. Повторите позже.",
   "errors.setupComplete": "Эта установка уже настроена.",
   "errors.setupAccountCreated": "Администратор создан. Войдите с выбранным паролем.",
-  "errors.unsupported": "Удалённый сервер не поддерживает эту операцию."
+  "errors.unsupported": "Удалённый сервер не поддерживает эту операцию.",
+  "connections.telnetTerminal": "Терминал Telnet",
+  "connections.telnetManualLogin": "Введите учётные данные, когда в терминале появится запрос."
 }

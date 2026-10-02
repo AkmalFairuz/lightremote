@@ -65,7 +65,7 @@ export function TabSurface({
       if (!panel || !content?.contains(panel)) return
 
       const tab = tabs.find((item) => item.id === panel.dataset.tabId)
-      if (!tab || (tab.kind !== 'ssh' && tab.kind !== 'vnc')) return
+      if (!tab || (tab.kind !== 'ssh' && tab.kind !== 'telnet' && tab.kind !== 'vnc')) return
 
       event.preventDefault()
       event.stopPropagation()

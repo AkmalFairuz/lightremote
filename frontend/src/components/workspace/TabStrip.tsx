@@ -73,7 +73,7 @@ export function TabStrip({
           >
             <Glyph
               name={
-                tab.kind === 'ssh'
+                tab.kind === 'ssh' || tab.kind === 'telnet'
                   ? 'terminal'
                   : tab.kind === 'vnc'
                     ? 'desktop-windows-outline'

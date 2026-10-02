@@ -11,7 +11,7 @@ flowchart TD
     HTTP --> Services[Shared Go services]
     Native --> Services
     Services --> Database[SQLite or MySQL]
-    Services --> Remote[SSH, VNC, SFTP, FTP and FTPS servers]
+    Services --> Remote[SSH, Telnet, VNC, SFTP, FTP and FTPS servers]
 ```
 
 ## Entry points and startup
@@ -44,8 +44,8 @@ user's work sessions and database.
 | `internal/security` | Argon2id passwords, AES-GCM vault, login sessions, and local identity |
 | `internal/store` | SQLx repositories for SQLite and MySQL |
 | `internal/store/migrations` | Ordered schema changes and engine-specific migration locking |
-| `internal/work` | Process-local work reservations, viewer handoff, SSH shells, replay, and traffic counters |
-| `internal/remote` | Outbound dialing, proxies, SSH/SFTP/FTP, RFB bridging, and VNC file protocols |
+| `internal/work` | Process-local work reservations, viewer handoff, terminal sessions, replay, and traffic counters |
+| `internal/remote` | Outbound dialing, proxies, SSH/Telnet/SFTP/FTP, RFB bridging, and VNC file protocols |
 | `internal/desktop` | Wails stream adapter for the shared viewer interface |
 | `internal/desktopdata` | Desktop SQLite location and persistent vault key |
 | `internal/model` | Shared connection, folder, user, secret, and file data shapes |
@@ -65,21 +65,21 @@ Its encrypted credentials and connection metadata stay in process memory.
 Direct connections use the same host-trust, viewer, and file routes as saved
 connections. See [temporary state](storage.md#temporary-state).
 
-### SSH and VNC viewers
+### SSH, Telnet and VNC viewers
 
 1. Reserve a work session with `POST /api/connections/{connectionID}/sessions`.
 2. Attach the browser to `/api/sessions/{sessionID}/ws`, or attach a native Wails
    stream in desktop mode.
 3. Resolve the owned connection and decrypt its credentials in the backend.
-4. Start or reuse the remote SSH shell or VNC bridge and forward viewer traffic.
+4. Start or reuse the remote terminal or VNC bridge and forward viewer traffic.
 
 The session reservation does not establish the upstream connection. Viewer
 attachment performs that work. Each session has one active viewer. A new
 attachment closes the previous viewer and waits up to five seconds for release.
 
-SSH uses a persistent shell with bounded output replay. The frontend detachment
-workflow preserves that session. VNC detachment creates a fresh work session
-and upstream connection. The frontend renders terminal bytes through xterm.js
+SSH and Telnet use persistent terminals with bounded output replay. The frontend
+detachment workflow preserves that session. VNC detachment creates a fresh work
+session and upstream connection. The frontend renders terminal bytes through xterm.js
 and framebuffer data through noVNC. See [protocols](protocols.md).
 
 ### Remote files

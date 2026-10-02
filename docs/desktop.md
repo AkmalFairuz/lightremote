@@ -2,7 +2,7 @@
 
 The Wails v3 desktop app runs the React workspace and shared Go services in
 local mode. It needs no separate HTTP server or login. API requests use the
-Wails asset server, and SSH/VNC viewers use native streams.
+Wails asset server, and SSH/Telnet/VNC viewers use native streams.
 
 ## Build
 
@@ -92,7 +92,7 @@ viewer interface for browser WebSockets and Wails sockets.
 [`internal/desktop/stream.go`](../internal/desktop/stream.go) adapts native
 streams to the backend `ViewerTransport` interface.
 
-The app registers `ssh` and `vnc` streams. The first message is a JSON hello
+The app registers `ssh`, `telnet` and `vnc` streams. The first message is a JSON hello
 containing `sessionId`, limited to 1024 bytes. Later messages carry a one-byte
 prefix followed by the payload:
 
@@ -103,7 +103,7 @@ prefix followed by the payload:
 | `2` | Backend close reason |
 
 The adapter acknowledges attachment and resolves the session against the local
-owner. Shared viewer code handles SSH controls and VNC forwarding. Native
+owner. Shared viewer code handles terminal controls and VNC forwarding. Native
 streams avoid browser WebSocket upgrades while preserving protocol behavior.
 
 ## Data and backups

@@ -1,6 +1,6 @@
 import { translateMessage } from './i18n'
 import { localizedApiMessage } from './i18n/errors'
-export type ConnectionKind = 'ssh' | 'vnc' | 'sftp' | 'ftp'
+export type ConnectionKind = 'ssh' | 'telnet' | 'vnc' | 'sftp' | 'ftp'
 export type AuthType = 'none' | 'password' | 'private_key'
 export type VncEncoding = 'auto' | 'copyrect' | 'tight' | 'zlib' | 'hextile' | 'zrle' | 'raw'
 
@@ -93,7 +93,7 @@ export interface GeneratedSSHKey {
 export interface WorkSession {
   id: string
   connectionId: string
-  kind: 'ssh' | 'vnc'
+  kind: 'ssh' | 'telnet' | 'vnc'
   createdAt: string
 }
 

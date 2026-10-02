@@ -426,5 +426,7 @@
   "errors.rateLimited": "طلبات كثيرة جدًا. أعد المحاولة لاحقًا.",
   "errors.setupComplete": "تم إعداد هذا التثبيت بالفعل.",
   "errors.setupAccountCreated": "تم إنشاء المسؤول. سجّل الدخول بكلمة المرور التي اخترتها.",
-  "errors.unsupported": "الخادم البعيد لا يدعم هذه العملية."
+  "errors.unsupported": "الخادم البعيد لا يدعم هذه العملية.",
+  "connections.telnetTerminal": "طرفية Telnet",
+  "connections.telnetManualLogin": "أدخل بيانات تسجيل الدخول عند طلبها في الطرفية."
 }

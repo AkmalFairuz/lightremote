@@ -115,6 +115,9 @@ func (h *FileHandler) DownloadLocal(ctx context.Context, ownerID, connectionID, 
 	if connection.Kind == "ssh" {
 		return errors.New("use an SFTP connection for SSH files")
 	}
+	if connection.Kind == "telnet" {
+		return remote.ErrUnsupported
+	}
 	if connection.Kind == "vnc" && !connection.VNCFileTransfer {
 		return errors.New("file transfer is disabled for this VNC connection")
 	}
@@ -320,6 +323,10 @@ func (h *FileHandler) openClient(w http.ResponseWriter, r *http.Request) (remote
 	}
 	if connection.Kind == "ssh" {
 		writeError(w, 400, "invalid_connection", "use an SFTP connection for SSH files")
+		return nil, false
+	}
+	if connection.Kind == "telnet" {
+		writeError(w, 400, "invalid_connection", "remote server does not support this file operation")
 		return nil, false
 	}
 	if connection.Kind == "vnc" && !connection.VNCFileTransfer {

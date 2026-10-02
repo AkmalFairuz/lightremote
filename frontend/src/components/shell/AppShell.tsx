@@ -103,7 +103,7 @@ export function AppShell() {
 
   async function openVerifiedConnection(connection: Connection, tabId: string) {
     if (!currentTab(tabId)) return
-    if (connection.kind === 'ssh' || connection.kind === 'vnc') {
+    if (connection.kind === 'ssh' || connection.kind === 'telnet' || connection.kind === 'vnc') {
       try {
         const session = await createSession(connection.id).unwrap()
         if (currentTab(tabId)?.status !== 'connecting') {

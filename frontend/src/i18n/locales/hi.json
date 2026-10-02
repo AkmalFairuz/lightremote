@@ -390,5 +390,7 @@
   "errors.rateLimited": "बहुत अधिक अनुरोध। बाद में फिर कोशिश करें।",
   "errors.setupComplete": "यह इंस्टॉलेशन पहले से सेट है।",
   "errors.setupAccountCreated": "व्यवस्थापक बन गया। चुने गए पासवर्ड से साइन इन करें।",
-  "errors.unsupported": "रिमोट सर्वर यह प्रक्रिया समर्थित नहीं करता।"
+  "errors.unsupported": "रिमोट सर्वर यह प्रक्रिया समर्थित नहीं करता।",
+  "connections.telnetTerminal": "Telnet टर्मिनल",
+  "connections.telnetManualLogin": "टर्मिनल में संकेत मिलने पर अपनी लॉगिन जानकारी दर्ज करें।"
 }

@@ -264,6 +264,9 @@ func runDesktop(wailsLogger *slog.Logger) error {
 	app.HandleStream("ssh", func(conn *application.StreamConn) {
 		desktop.ServeViewer(conn, runtime.Routes.Work)
 	})
+	app.HandleStream("telnet", func(conn *application.StreamConn) {
+		desktop.ServeViewer(conn, runtime.Routes.Work)
+	})
 	app.HandleStream("vnc", func(conn *application.StreamConn) {
 		desktop.ServeViewer(conn, runtime.Routes.Work)
 	})

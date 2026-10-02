@@ -3,7 +3,7 @@
   "info": {
     "title": "LightRemote API",
     "version": "0.1.0",
-    "description": "Browser-facing API for SSH, VNC, SFTP, FTP, and FTPS connections. With LOCAL_MODE=true, the server uses one local owner and does not register setup, login, logout, password, or user-management endpoints."
+    "description": "Browser-facing API for SSH, Telnet, VNC, SFTP, FTP, and FTPS connections. With LOCAL_MODE=true, the server uses one local owner and does not register setup, login, logout, password, or user-management endpoints."
   },
   "servers": [
     {
@@ -596,7 +596,7 @@
       },
       "put": {
         "summary": "Replace connection settings",
-        "description": "Omit secret to retain saved credentials when kind and authType stay the same. Omit proxy or set it to null for a direct connection. Omit proxy.password to retain it only when type, host, port, and username are unchanged.",
+        "description": "Omit secret to retain saved credentials when kind and authType stay the same. Omit proxy or set it to null for a direct connection. Omit proxy.password to retain it only when type, host, port, and username are unchanged. Switching to Telnet requires no remote secret and clears saved remote credentials and host trust.",
         "security": [
           {
             "bearerAuth": [],
@@ -861,8 +861,8 @@
         }
       ],
       "post": {
-        "summary": "Reserve an SSH or VNC work session",
-        "description": "A user may reserve up to 32 SSH or VNC work sessions.",
+        "summary": "Reserve an SSH, Telnet or VNC work session",
+        "description": "A user may reserve up to 32 SSH, Telnet or VNC work sessions.",
         "security": [
           {
             "bearerAuth": [],
@@ -967,7 +967,7 @@
         }
       ],
       "get": {
-        "summary": "Upgrade to an SSH or VNC WebSocket",
+        "summary": "Upgrade to an SSH, Telnet or VNC WebSocket",
         "description": "The browser Origin must match PUBLIC_ORIGIN, or the request host when unset. A new attachment replaces the previous browser viewer while preserving the remote session. Unattached sessions expire after two minutes. Browser clients authenticate by offering lightremote and lightremote.auth.<token> in Sec-WebSocket-Protocol; the server selects only lightremote. Bearer Authorization is also accepted.",
         "responses": {
           "101": {
@@ -991,6 +991,12 @@
             "browserBinary": "Standard RFB client stream",
             "serverBinary": "Standard RFB server stream",
             "serverClose": "1011 with a UTF-8 reason when upstream connection setup fails"
+          },
+          "telnet": {
+            "browserBinary": "Raw terminal input bytes",
+            "serverBinary": "Terminal output with Telnet negotiation commands removed",
+            "browserText": "{\"type\":\"resize\",\"rows\":24,\"cols\":80}",
+            "serverText": "{\"type\":\"ready\",\"message\":\"\"} or {\"type\":\"error\",\"message\":\"...\"}"
           }
         },
         "security": [
@@ -1704,6 +1710,7 @@
             "type": "string",
             "enum": [
               "ssh",
+              "telnet",
               "vnc",
               "sftp",
               "ftp"
@@ -1771,7 +1778,8 @@
               }
             ]
           }
-        }
+        },
+        "description": "Telnet uses authType none and an empty or omitted username. Omit remote secret and sshKeyId; login is entered manually in the terminal."
       },
       "Connection": {
         "allOf": [
@@ -1855,6 +1863,7 @@
             "type": "string",
             "enum": [
               "ssh",
+              "telnet",
               "vnc"
             ]
           },
@@ -1928,6 +1937,7 @@
             "type": "string",
             "enum": [
               "ssh",
+              "telnet",
               "vnc",
               "sftp",
               "ftp"
@@ -1993,7 +2003,8 @@
               }
             ]
           }
-        }
+        },
+        "description": "Telnet uses authType none and an empty or omitted username. Omit remote secret and sshKeyId; login is entered manually in the terminal."
       },
       "AuthIdentity": {
         "type": "object",

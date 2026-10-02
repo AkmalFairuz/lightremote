@@ -6,7 +6,7 @@ import { Glyph } from '../common/Glyph'
 import { clampZoom, zoomBounds, zoomStep } from '../../utils/zoom'
 
 interface ZoomControlsProps {
-  kind: 'ssh' | 'vnc'
+  kind: 'ssh' | 'telnet' | 'vnc'
   zoom: number
   onChange: (zoom: number) => void
 }

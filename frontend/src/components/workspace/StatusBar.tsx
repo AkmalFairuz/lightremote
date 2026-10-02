@@ -117,7 +117,7 @@ export function StatusBar({
           </Button>
         </div>
       )}
-      {tab && (tab.kind === 'ssh' || tab.kind === 'vnc') && (
+      {tab && (tab.kind === 'ssh' || tab.kind === 'telnet' || tab.kind === 'vnc') && (
         <ZoomControls kind={tab.kind} zoom={tab.zoom ?? defaultZoom} onChange={onZoom} />
       )}
       <div className={showBandwidth ? 'status-metrics status-bandwidth' : 'status-metrics'}>

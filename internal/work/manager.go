@@ -42,8 +42,8 @@ type Session struct {
 	viewerClose  func()
 	viewerDone   chan struct{}
 	cleanupTimer *time.Timer
-	sshMu        sync.Mutex
-	ssh          *SSHRuntime
+	terminalMu   sync.Mutex
+	terminal     TerminalRuntime
 	vncMu        sync.Mutex
 	vnc          *remote.VNCBridge
 	received     atomic.Int64
@@ -104,18 +104,27 @@ func (s *Session) Attach(closeViewer func(), onDetached func()) (context.Context
 	return ctx, finish, nil
 }
 
-// EnsureSSH starts the remote shell once for this work session.
-func (s *Session) EnsureSSH(ctx context.Context, connection model.Connection, secret model.RemoteSecret, timeout time.Duration) (*SSHRuntime, error) {
-	s.sshMu.Lock()
-	defer s.sshMu.Unlock()
-	if s.ssh != nil {
-		return s.ssh, nil
+// EnsureTerminal starts the remote terminal once for this work session.
+func (s *Session) EnsureTerminal(ctx context.Context, connection model.Connection, secret model.RemoteSecret, timeout time.Duration) (TerminalRuntime, error) {
+	s.terminalMu.Lock()
+	defer s.terminalMu.Unlock()
+	if s.terminal != nil {
+		return s.terminal, nil
 	}
-	runtime, err := StartSSH(ctx, connection, secret, timeout)
+	var runtime TerminalRuntime
+	var err error
+	switch connection.Kind {
+	case "ssh":
+		runtime, err = StartSSH(ctx, connection, secret, timeout)
+	case "telnet":
+		runtime, err = StartTelnet(ctx, connection, secret, timeout)
+	default:
+		return nil, errors.New("terminal connection required")
+	}
 	if err != nil {
 		return nil, err
 	}
-	s.ssh = runtime
+	s.terminal = runtime
 	return runtime, nil
 }
 
@@ -156,11 +165,11 @@ func (s *Session) closeResourcesLocked() {
 		s.viewerClose()
 	}
 	s.viewerMu.Unlock()
-	s.sshMu.Lock()
-	if s.ssh != nil {
-		s.ssh.Close()
+	s.terminalMu.Lock()
+	if s.terminal != nil {
+		s.terminal.Close()
 	}
-	s.sshMu.Unlock()
+	s.terminalMu.Unlock()
 	s.vncMu.Lock()
 	if s.vnc != nil {
 		_ = s.vnc.Close()
@@ -224,7 +233,7 @@ func NewManager() *Manager {
 	return &Manager{sessions: make(map[string]*Session)}
 }
 
-// Create reserves one of a user's 32 SSH or VNC work slots.
+// Create reserves one of a user's 32 terminal or VNC work slots.
 func (m *Manager) Create(userID, connectionID, kind string) (*Session, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()

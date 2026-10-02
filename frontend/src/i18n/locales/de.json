@@ -390,5 +390,7 @@
   "errors.rateLimited": "Zu viele Anfragen. Versuchen Sie es später erneut.",
   "errors.setupComplete": "Diese Installation ist bereits eingerichtet.",
   "errors.setupAccountCreated": "Administrator erstellt. Melden Sie sich mit dem gewählten Passwort an.",
-  "errors.unsupported": "Der entfernte Server unterstützt diese Operation nicht."
+  "errors.unsupported": "Der entfernte Server unterstützt diese Operation nicht.",
+  "connections.telnetTerminal": "Telnet-Terminal",
+  "connections.telnetManualLogin": "Geben Sie Ihre Anmeldedaten ein, wenn Sie im Terminal dazu aufgefordert werden."
 }

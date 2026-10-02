@@ -359,11 +359,10 @@ func (s *Service) Update(ctx context.Context, ownerID, id string, input model.Co
 	if err := validate(input); err != nil {
 		return model.Connection{}, err
 	}
-	if input.Secret == nil && input.SSHKeyID == nil && (connection.AuthType != input.AuthType || connection.Kind != input.Kind) {
-		return model.Connection{}, ErrInvalid
-	}
-	if input.Secret == nil && input.SSHKeyID == nil && connection.SSHKeyID != nil {
-		return model.Connection{}, ErrInvalid
+	if input.Kind != "telnet" && input.Secret == nil && input.SSHKeyID == nil {
+		if connection.AuthType != input.AuthType || connection.Kind != input.Kind || connection.SSHKeyID != nil {
+			return model.Connection{}, ErrInvalid
+		}
 	}
 	if input.Secret != nil {
 		if err := validateSecret(input); err != nil {
@@ -398,8 +397,11 @@ func (s *Service) Update(ctx context.Context, ownerID, id string, input model.Co
 			return model.Connection{}, err
 		}
 	}
-	if input.SSHKeyID != nil {
+	if input.SSHKeyID != nil || input.Kind == "telnet" {
 		connection.Secret = nil
+	}
+	if input.Kind == "telnet" {
+		connection.HostKey = nil
 	}
 	if err := s.applyProxy(&connection, input.Proxy, true); err != nil {
 		return model.Connection{}, err
@@ -559,7 +561,7 @@ func Address(connection model.Connection) string {
 // validate checks protocol-specific settings before they reach a repository.
 func validate(input model.ConnectionInput) error {
 	switch input.Kind {
-	case "ssh", "sftp", "ftp", "vnc":
+	case "ssh", "sftp", "ftp", "vnc", "telnet":
 	default:
 		return ErrInvalid
 	}
@@ -576,6 +578,10 @@ func validate(input model.ConnectionInput) error {
 		return ErrInvalid
 	}
 	switch input.Kind {
+	case "telnet":
+		if input.AuthType != "none" || input.Username != "" || input.Secret != nil || input.SSHKeyID != nil {
+			return ErrInvalid
+		}
 	case "ssh", "sftp":
 		if input.Username == "" || (input.AuthType != "password" && input.AuthType != "private_key") {
 			return ErrInvalid
@@ -643,7 +649,7 @@ func validateSecret(input model.ConnectionInput) error {
 	if input.SSHKeyID != nil {
 		return nil
 	}
-	if input.Kind == "vnc" && input.AuthType == "none" {
+	if (input.Kind == "vnc" || input.Kind == "telnet") && input.AuthType == "none" {
 		return nil
 	}
 	if input.Secret == nil {

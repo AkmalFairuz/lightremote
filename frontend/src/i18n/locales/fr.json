@@ -399,5 +399,7 @@
   "errors.rateLimited": "Trop de demandes. Réessayez plus tard.",
   "errors.setupComplete": "Cette installation est déjà configurée.",
   "errors.setupAccountCreated": "Administrateur créé. Connectez-vous avec le mot de passe choisi.",
-  "errors.unsupported": "Le serveur distant ne prend pas en charge cette opération."
+  "errors.unsupported": "Le serveur distant ne prend pas en charge cette opération.",
+  "connections.telnetTerminal": "Terminal Telnet",
+  "connections.telnetManualLogin": "Saisissez vos identifiants lorsque le terminal vous les demande."
 }

@@ -381,5 +381,7 @@
   "errors.rateLimited": "Terlalu banyak permintaan. Coba lagi nanti.",
   "errors.setupComplete": "Instalasi ini sudah dikonfigurasi.",
   "errors.setupAccountCreated": "Administrator dibuat. Masuk dengan kata sandi yang Anda pilih.",
-  "errors.unsupported": "Server jarak jauh tidak mendukung operasi ini."
+  "errors.unsupported": "Server jarak jauh tidak mendukung operasi ini.",
+  "connections.telnetTerminal": "Terminal Telnet",
+  "connections.telnetManualLogin": "Masukkan kredensial login Anda saat diminta di terminal."
 }

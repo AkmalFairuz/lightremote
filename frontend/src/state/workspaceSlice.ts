@@ -111,7 +111,7 @@ const workspaceSlice = createSlice({
     },
     setTabZoom: (state, action: PayloadAction<{ id: string; zoom: number }>) => {
       const tab = state.tabs.find((item) => item.id === action.payload.id)
-      if (!tab || (tab.kind !== 'ssh' && tab.kind !== 'vnc')) return
+      if (!tab || (tab.kind !== 'ssh' && tab.kind !== 'telnet' && tab.kind !== 'vnc')) return
       tab.zoom = clampZoom(tab.kind, action.payload.zoom)
     },
     setTabPath: (state, action: PayloadAction<{ id: string; path: string }>) => {
@@ -152,10 +152,10 @@ export const {
   resetWorkspace,
 } = workspaceSlice.actions
 
-/** SSH failures clear their session ID; other tabs retain their error status. */
+/** Terminal failures clear their session ID; other tabs retain their error status. */
 export function connectionFailure(id: string, kind: ConnectionKind, cause: unknown) {
   const error = errorMessage(cause)
-  return kind === 'ssh'
+  return kind === 'ssh' || kind === 'telnet'
     ? setTabSession({ id, error })
     : setTabStatus({ id, status: 'error', error })
 }

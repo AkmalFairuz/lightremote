@@ -151,4 +151,84 @@ func TestManagedSSHKeyWorksForSavedAndDirectConnections(t *testing.T) {
 		t.Fatalf("direct connection did not resolve key: %v", err)
 	}
 	service.DeleteDirect("owner", direct.ID)
+	// Switching to manual Telnet login must release the managed key reference.
+	telnetInput := model.ConnectionInput{Name: "Telnet", Kind: "telnet", Host: input.Host, Port: 23, AuthType: "none"}
+	if _, err := service.Update(ctx, "owner", saved.ID, telnetInput); err != nil {
+		t.Fatalf("could not convert managed SSH connection to Telnet: %v", err)
+	}
+	stored, err = service.Get(ctx, "owner", saved.ID)
+	if err != nil || stored.SSHKeyID != nil || len(stored.Secret) != 0 {
+		t.Fatalf("Telnet retained SSH authentication: %+v, %v", stored, err)
+	}
+}
+
+func TestTelnetSavedDirectAndCredentialFreeUpdates(t *testing.T) {
+	ctx := context.Background()
+	db, err := store.Open(ctx, store.DatabaseSettings{Driver: "sqlite", SQLitePath: filepath.Join(t.TempDir(), "telnet.db")})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+	if err := migrations.Up(ctx, db); err != nil {
+		t.Fatal(err)
+	}
+	if err := store.NewUserRepository(db).Create(ctx, model.User{ID: "owner", Email: "owner@example.com", PasswordHash: "hash", Role: "user", CreatedAt: time.Now().UTC()}); err != nil {
+		t.Fatal(err)
+	}
+	vault, err := security.NewVault(base64.StdEncoding.EncodeToString(make([]byte, 32)))
+	if err != nil {
+		t.Fatal(err)
+	}
+	service := NewService(store.NewConnectionRepository(db), folders.NewService(store.NewFolderRepository(db)), vault, nil)
+	input := model.ConnectionInput{Name: "Router", Kind: "telnet", Host: "router.example", Port: 23, AuthType: "none"}
+	saved, err := service.Create(ctx, "owner", input)
+	if err != nil {
+		t.Fatal(err)
+	}
+	direct, err := service.CreateDirect(ctx, "owner", input)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer service.DeleteDirect("owner", direct.ID)
+	for _, id := range []string{saved.ID, direct.ID} {
+		stored, err := service.Get(ctx, "owner", id)
+		if err != nil || stored.Kind != "telnet" || len(stored.Secret) != 0 {
+			t.Fatalf("credential-free Telnet connection was not stored: %+v, %v", stored, err)
+		}
+		secret, err := service.Credentials(ctx, stored)
+		if err != nil || secret != (model.RemoteSecret{}) {
+			t.Fatalf("unexpected Telnet credentials: %+v, %v", secret, err)
+		}
+	}
+	input.Port = 2323
+	if _, err := service.Update(ctx, "owner", saved.ID, input); err != nil {
+		t.Fatalf("credential-free edit failed: %v", err)
+	}
+	sshInput := model.ConnectionInput{Name: "SSH", Kind: "ssh", Host: input.Host, Port: 22, Username: "alice", AuthType: "password", Secret: &model.RemoteSecret{Password: "old-password"}}
+	ssh, err := service.Create(ctx, "owner", sshInput)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := service.ApproveHostKey(ctx, "owner", ssh.ID, "old-fingerprint"); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := service.Update(ctx, "owner", ssh.ID, input); err != nil {
+		t.Fatal(err)
+	}
+	stored, err := service.Get(ctx, "owner", ssh.ID)
+	if err != nil || len(stored.Secret) != 0 || stored.HostKey != nil || stored.Username != "" {
+		t.Fatalf("conversion retained old credentials: %+v, %v", stored, err)
+	}
+	for _, auth := range []string{"password", "private_key"} {
+		invalid := input
+		invalid.AuthType = auth
+		if _, err := service.Create(ctx, "owner", invalid); err == nil {
+			t.Fatalf("Telnet accepted %s authentication", auth)
+		}
+	}
+	invalid := input
+	invalid.Secret = &model.RemoteSecret{Password: "unused"}
+	if _, err := service.Create(ctx, "owner", invalid); err == nil {
+		t.Fatal("manual Telnet login stored unused credentials")
+	}
 }

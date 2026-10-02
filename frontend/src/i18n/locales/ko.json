@@ -381,5 +381,7 @@
   "errors.rateLimited": "요청이 너무 많습니다. 나중에 다시 시도하세요.",
   "errors.setupComplete": "이 설치는 이미 설정되었습니다.",
   "errors.setupAccountCreated": "관리자가 생성되었습니다. 선택한 비밀번호로 로그인하세요.",
-  "errors.unsupported": "원격 서버가 이 작업을 지원하지 않습니다."
+  "errors.unsupported": "원격 서버가 이 작업을 지원하지 않습니다.",
+  "connections.telnetTerminal": "Telnet 터미널",
+  "connections.telnetManualLogin": "터미널에 프롬프트가 표시되면 로그인 정보를 입력하세요."
 }

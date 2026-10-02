@@ -1,7 +1,7 @@
 # Protocols
 
 The backend establishes upstream connections and forwards viewer or file data.
-Browsers use WebSockets for SSH and VNC. The desktop app uses Wails streams
+Browsers use WebSockets for SSH, Telnet and VNC. The desktop app uses Wails streams
 through the same viewer interface. See [desktop transport](desktop.md#viewer-transport).
 
 ## SSH terminal
@@ -27,6 +27,23 @@ A resize message looks like this:
 Rows and columns must each be between 1 and 1000. Server controls use `type`
 and `message` fields, such as `{"type":"ready","message":""}`.
 The shell keeps up to 1 MiB of recent output for viewer replay.
+
+## Telnet terminal
+
+Telnet connections use port 23 by default and `authType: "none"`. Login is
+entered manually at the server prompts; remote credentials are not saved.
+Telnet uses plain TCP through the same checked dialer and optional proxies.
+
+The viewer uses the same binary input/output and JSON controls as SSH.
+The transport removes Telnet commands from output, escapes IAC bytes in input,
+and negotiates server echo, suppress-go-ahead, binary mode, terminal type
+(`xterm-256color`), and window size (NAWS). Unsupported options are refused.
+Nonbinary Enter and pasted newlines use CR LF; incoming CR NUL becomes CR.
+Echo comes from the server; the client does not implement local line editing.
+
+Telnet sessions preserve their connection and up to 1 MiB of output across
+viewer handoffs, with the same session limit and cleanup rules as SSH.
+Telnet connections do not support file operations.
 
 ## VNC desktop
 
@@ -87,7 +104,7 @@ partial remote file.
 Remote paths must be absolute POSIX paths or drive paths such as `C:/folder`.
 NUL, carriage return, and newline characters are rejected. An empty listing
 path resolves to `/`. Mutating routes reject the virtual root `/`.
-SSH terminal connections are rejected by the file API. Use SFTP for SSH files.
+SSH and Telnet terminal connections are rejected by the file API. Use SFTP for SSH files.
 
 ## Outbound proxies
 

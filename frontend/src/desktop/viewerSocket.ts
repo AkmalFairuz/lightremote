@@ -13,7 +13,7 @@ const frameClose = 2
 export { isDesktop }
 
 /** Keeps browser WebSockets and Wails streams behind the same viewer interface. */
-export function openViewerSocket(kind: 'ssh' | 'vnc', sessionId: string): WebSocket {
+export function openViewerSocket(kind: 'ssh' | 'telnet' | 'vnc', sessionId: string): WebSocket {
   if (isDesktop) return new DesktopViewerSocket(kind, sessionId) as unknown as WebSocket
   const url = new URL(`/api/sessions/${sessionId}/ws`, window.location.href)
   url.protocol = url.protocol === 'https:' ? 'wss:' : 'ws:'
@@ -38,7 +38,7 @@ class DesktopViewerSocket extends EventTarget {
   private attached = false
   private closeReason = ''
 
-  constructor(kind: 'ssh' | 'vnc', sessionId: string) {
+  constructor(kind: 'ssh' | 'telnet' | 'vnc', sessionId: string) {
     super()
     this.url = `wails-stream:${kind}/${sessionId}`
     if (!desktopRuntime) throw new Error(t('common.wailsRuntimeIsUnavailable'))

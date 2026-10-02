@@ -390,5 +390,7 @@
   "errors.rateLimited": "Too many requests. Try again later.",
   "errors.setupComplete": "This installation is already configured.",
   "errors.setupAccountCreated": "Administrator created. Sign in with the password you chose.",
-  "errors.unsupported": "The remote server does not support this operation."
+  "errors.unsupported": "The remote server does not support this operation.",
+  "connections.telnetTerminal": "Telnet terminal",
+  "connections.telnetManualLogin": "Enter your login credentials at the prompts in the terminal."
 }

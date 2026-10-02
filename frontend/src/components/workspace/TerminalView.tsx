@@ -14,7 +14,8 @@ import { desktopRuntime, isDesktop } from '../../desktop/runtime'
 const baseTerminalFontPixels = 13
 const percentageScale = 100
 
-interface SshTerminalProps {
+interface TerminalViewProps {
+  kind: 'ssh' | 'telnet'
   sessionId: string
   visible: boolean
   active: boolean
@@ -23,14 +24,15 @@ interface SshTerminalProps {
   onConnectionError?: (message: string) => void
 }
 
-export function SshTerminal({
+export function TerminalView({
+  kind,
   sessionId,
   visible,
   active,
   zoom,
   onConnected,
   onConnectionError,
-}: SshTerminalProps) {
+}: TerminalViewProps) {
   const t = useT()
 
   const { mode, systemMode } = useColorScheme()
@@ -155,7 +157,7 @@ export function SshTerminal({
     lastSentSize.current = null
     const initialFit = requestAnimationFrame(fitAndResize)
 
-    const ws = openViewerSocket('ssh', sessionId)
+    const ws = openViewerSocket(kind, sessionId)
     ws.binaryType = 'arraybuffer'
     socket.current = ws
     let settled = false
@@ -219,7 +221,7 @@ export function SshTerminal({
       terminalInstance.current = null
       terminal.dispose()
     }
-  }, [sessionId, fitAndResize])
+  }, [kind, sessionId, fitAndResize])
 
   useEffect(() => {
     if (terminalInstance.current) {
@@ -253,7 +255,7 @@ export function SshTerminal({
   return (
     <div
       className="terminal-view"
-      aria-label={t('connections.sshTerminal')}
+      aria-label={t(kind === 'telnet' ? 'connections.telnetTerminal' : 'connections.sshTerminal')}
       ref={view}
       style={{ '--lr-terminal-bg': palette.background } as CSSProperties}
     >

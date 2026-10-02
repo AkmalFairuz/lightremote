@@ -24,7 +24,7 @@ type WorkHandler struct {
 	dialTimeout time.Duration
 }
 
-// ViewerTransport carries the existing SSH and VNC protocols over either
+// ViewerTransport carries the terminal and VNC protocols over either
 // browser WebSockets or an in-process desktop stream.
 type ViewerTransport interface {
 	Read(context.Context) (websocket.MessageType, []byte, error)
@@ -40,7 +40,7 @@ func (v webViewer) BinaryConn(ctx context.Context) net.Conn {
 	return websocket.NetConn(ctx, v.Conn, websocket.MessageBinary)
 }
 
-// NewWorkHandler wires SSH and VNC work-session endpoints.
+// NewWorkHandler wires terminal and VNC work-session endpoints.
 func NewWorkHandler(connections *connections.Service, sessions *work.Manager, auth *AuthMiddleware, dialTimeout time.Duration) *WorkHandler {
 	return &WorkHandler{
 		connections: connections,
@@ -58,8 +58,8 @@ func (h *WorkHandler) Create(w http.ResponseWriter, r *http.Request) {
 		writeError(w, 404, "not_found", "connection not found")
 		return
 	}
-	if connection.Kind != "ssh" && connection.Kind != "vnc" {
-		writeError(w, 400, "invalid_connection", "SSH or VNC connection required")
+	if connection.Kind != "ssh" && connection.Kind != "telnet" && connection.Kind != "vnc" {
+		writeError(w, 400, "invalid_connection", "SSH, Telnet or VNC connection required")
 		return
 	}
 	session, err := h.sessions.Create(principal(r).User.ID, connection.ID, connection.Kind)
@@ -181,13 +181,13 @@ func (h *WorkHandler) serveViewer(requestCtx context.Context, session *work.Sess
 		}
 	}()
 	switch connection.Kind {
-	case "ssh":
-		runtime, err := session.EnsureSSH(ctx, connection, secret, h.dialTimeout)
+	case "ssh", "telnet":
+		runtime, err := session.EnsureTerminal(ctx, connection, secret, h.dialTimeout)
 		if err != nil {
 			sendControl(ctx, socket, "error", err.Error())
 			return
 		}
-		h.serveSSHViewer(ctx, socket, session, runtime)
+		h.serveTerminalViewer(ctx, socket, session, runtime)
 	case "vnc":
 		bridge, err := session.EnsureVNC(ctx, connection, secret, h.dialTimeout)
 		if err != nil {
@@ -201,15 +201,15 @@ func (h *WorkHandler) serveViewer(requestCtx context.Context, session *work.Sess
 	}
 }
 
-// serveSSHViewer bridges one browser attachment to a preserved shell.
-func (h *WorkHandler) serveSSHViewer(ctx context.Context, socket ViewerTransport, workSession *work.Session, runtime *work.SSHRuntime) {
+// serveTerminalViewer bridges one browser attachment to a preserved shell.
+func (h *WorkHandler) serveTerminalViewer(ctx context.Context, socket ViewerTransport, workSession *work.Session, runtime work.TerminalRuntime) {
 	sendControl(ctx, socket, "ready", "")
 	go func() {
 		var sequence uint64
 		for {
 			chunk, next, ok := runtime.Output(ctx, sequence)
 			if !ok {
-				_ = socket.Close(websocket.StatusNormalClosure, "SSH session ended")
+				_ = socket.Close(websocket.StatusNormalClosure, strings.ToUpper(workSession.Kind)+" session ended")
 				return
 			}
 			if err := socket.Write(ctx, websocket.MessageBinary, chunk); err != nil {
@@ -263,7 +263,7 @@ func vncCloseReason(err error) string {
 	return reason.String()
 }
 
-// sendControl reports SSH readiness or a setup error over a text WebSocket message.
+// sendControl reports terminal readiness or a setup error over a text WebSocket message.
 func sendControl(ctx context.Context, socket ViewerTransport, kind, message string) {
 	payload, _ := json.Marshal(map[string]string{"type": kind, "message": message})
 	_ = socket.Write(ctx, websocket.MessageText, payload)

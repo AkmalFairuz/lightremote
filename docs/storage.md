@@ -82,9 +82,9 @@ Failure rolls back the key migration so startup can retry.
 
 | State | Lifetime and limit |
 | --- | --- |
-| SSH/VNC work sessions | In memory, up to 32 reservations per user |
+| SSH/Telnet/VNC work sessions | In memory, up to 32 reservations per user |
 | Viewer-free reservations | Expire after two minutes, including sessions created without a viewer |
-| SSH output replay | Up to 1 MiB per shell |
+| Terminal output replay | Up to 1 MiB per shell |
 | Direct connections | In memory, expire after 24 hours without a connection lookup |
 | Connection metadata cache | Up to 512 entries, one-minute TTL, credentials removed |
 | Login attempt counters | Bounded process-local map with a ten-minute attempt window |
@@ -97,7 +97,7 @@ The UI periodically looks up open direct connections to keep them available.
 Closing a direct tab removes its connection and work sessions. Logout and
 self-service password changes remove the owner's direct records.
 
-Viewer handoff replaces the active attachment. SSH keeps its shell, while
+Viewer handoff replaces the active attachment. SSH and Telnet keep their terminals, while
 frontend VNC detachment creates a new connection. Closing a tab releases the
 session immediately. Full edits or deletion of saved connections close their
 work sessions. Inline rename and folder moves preserve them.

@@ -5,8 +5,8 @@ import { ConnectionStatePanel } from './ConnectionStatePanel'
 import { FileManager } from './FileManager'
 import type { VncControls } from './vncControls'
 
-const SshTerminal = lazy(() =>
-  import('./SshTerminal').then((module) => ({ default: module.SshTerminal })),
+const TerminalView = lazy(() =>
+  import('./TerminalView').then((module) => ({ default: module.TerminalView })),
 )
 const VncCanvas = lazy(() =>
   import('./VncCanvas').then((module) => ({ default: module.VncCanvas })),
@@ -36,9 +36,10 @@ export function TabView({
 }: TabViewProps) {
   return (
     <>
-      {tab.kind === 'ssh' && tab.sessionId && tab.status !== 'error' && (
+      {(tab.kind === 'ssh' || tab.kind === 'telnet') && tab.sessionId && tab.status !== 'error' && (
         <Suspense fallback={<ConnectionStatePanel state="connecting" />}>
-          <SshTerminal
+          <TerminalView
+            kind={tab.kind}
             sessionId={tab.sessionId}
             visible={visible}
             active={visible}

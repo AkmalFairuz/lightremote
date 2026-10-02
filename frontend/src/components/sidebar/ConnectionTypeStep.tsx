@@ -18,6 +18,12 @@ const connectionTypes: {
     icon: 'terminal',
   },
   {
+    kind: 'telnet',
+    label: 'Telnet',
+    description: 'Remote terminal',
+    icon: 'terminal',
+  },
+  {
     kind: 'vnc',
     label: 'VNC',
     description: 'Remote desktop',

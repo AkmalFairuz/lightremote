@@ -381,5 +381,7 @@
   "errors.rateLimited": "请求过多。请稍后重试。",
   "errors.setupComplete": "此安装已配置。",
   "errors.setupAccountCreated": "管理员已创建。请使用所选密码登录。",
-  "errors.unsupported": "远程服务器不支持此操作。"
+  "errors.unsupported": "远程服务器不支持此操作。",
+  "connections.telnetTerminal": "Telnet 终端",
+  "connections.telnetManualLogin": "请在终端提示时输入登录凭据。"
 }

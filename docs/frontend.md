@@ -73,8 +73,8 @@ preselects that folder. Folder names and connection labels can be renamed
 inline. Renaming or moving a connection preserves its open viewer sessions.
 Connection actions also support duplication and host-key review.
 
-New connection forms start with a protocol choice: SSH, VNC, SFTP, or FTP/FTPS.
-Selecting one opens the detail fields, and Back returns to the type choice.
+New connection forms start with a protocol choice: SSH, Telnet, VNC, SFTP, or
+FTP/FTPS. Selecting one opens the detail fields, and Back returns to the type choice.
 Editing opens details directly. The folder picker contains Root and expandable
 nested folders. Proxy fields support HTTP, HTTPS, and SOCKS5.
 
@@ -104,8 +104,8 @@ cancelled. The key manager also generates downloadable key pairs. See
 
 The workspace allows 32 open tabs, including detached tabs tracked by the main
 window, and shows one active tab at a time. SFTP and FTP use file tabs without
-backend work reservations. SSH and VNC reserve work sessions before attaching
-their viewers.
+backend work reservations. SSH, Telnet and VNC reserve work sessions before
+attaching their viewers.
 
 Tabs can be reordered in the strip. The active tab fills the workspace and
 supplies footer status and zoom. Other tabs keep their viewers mounted while
@@ -113,9 +113,9 @@ hidden so switching tabs preserves their sessions and state.
 
 Detach moves the tab to a same-origin browser window or a native desktop
 window. A per-user BroadcastChannel coordinates transfer and heartbeats.
-Session storage keeps transfer records for recovery. SSH preserves its remote
-shell and replays up to 1 MiB of recent output. VNC deletes its previous work
-session and reconnects in the destination window.
+Session storage keeps transfer records for recovery. SSH and Telnet preserve
+their remote terminals and replay up to 1 MiB of recent output. VNC deletes its
+previous work session and reconnects in the destination window.
 
 Closing a detached window returns its tab to the main window. VNC reconnects
 again there. Its file panel open state, width, and current path travel with
@@ -123,19 +123,19 @@ the tab. Closing a tab releases its work session or direct connection.
 Workspace tabs are temporary across normal reloads. Detached transfer records
 support limited recovery, and temporary direct tabs are discarded on reload.
 
-Failed viewers show a connection error panel. Opening a failed SSH connection
-again retries it. SSH ready and error states use text control messages. VNC
-setup errors use transport close reasons.
+Failed viewers show a connection error panel. Opening a failed terminal connection
+again retries it. SSH and Telnet ready and error states use text control messages.
+VNC setup errors use transport close reasons.
 
 ## Terminals and desktops
 
-SSH uses xterm.js with its fit addon. Auto terminal colors follow the app
-appearance. View > Terminal theme also offers named palettes, including Ubuntu,
+SSH and Telnet use xterm.js with its fit addon. Auto terminal colors follow the
+app appearance. View > Terminal theme also offers named palettes, including Ubuntu,
 PowerShell Blue, Dracula, One Dark, Nord, Gruvbox Dark, and Solarized. Theme
 changes update the renderer without reconnecting the shell.
 
-Each SSH or VNC tab has its own zoom. SSH zoom changes the font size and
-refits the PTY grid. VNC zoom changes the local viewport size, with scrolling
+Each SSH, Telnet or VNC tab has its own zoom. Terminal zoom changes the font size
+and refits the terminal grid. VNC zoom changes the local viewport size, with scrolling
 when the desktop exceeds its viewport. Desktop Ctrl+scroll changes zoom
 using the same steps as the footer controls.
 

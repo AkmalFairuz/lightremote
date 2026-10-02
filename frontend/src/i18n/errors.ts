@@ -8,7 +8,7 @@ const knownApiMessages = new Set([
   'SSH host key differs from the approved fingerprint',
   'SSH key not found',
   'SSH or SFTP connection required',
-  'SSH or VNC connection required',
+  'SSH, Telnet or VNC connection required',
   'VNC desktop is still connecting',
   'WebSocket origin is not allowed',
   'a file path is required',

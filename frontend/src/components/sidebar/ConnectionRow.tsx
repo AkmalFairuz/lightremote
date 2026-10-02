@@ -28,6 +28,7 @@ interface ConnectionRowProps {
 
 const kindIcons = {
   ssh: 'terminal',
+  telnet: 'terminal',
   vnc: 'desktop-windows-outline',
   sftp: 'folder-shared-outline',
   ftp: 'folder-outline',

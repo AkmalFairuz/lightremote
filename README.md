@@ -3,7 +3,7 @@
 [![Desktop build](https://github.com/AkmalFairuz/lightremote/actions/workflows/desktop-build.yml/badge.svg)](https://github.com/AkmalFairuz/lightremote/actions/workflows/desktop-build.yml)
 [![Docker image](https://github.com/AkmalFairuz/lightremote/actions/workflows/docker-build.yml/badge.svg)](https://github.com/AkmalFairuz/lightremote/actions/workflows/docker-build.yml)
 
-LightRemote brings SSH terminals, VNC desktops, and SFTP, FTP, and explicit FTPS
+LightRemote brings SSH and Telnet terminals, VNC desktops, and SFTP, FTP, and explicit FTPS
 file management into one browser and desktop workspace, with TightVNC and
 UltraVNC file transfer support. Work across tabbed
 sessions and detachable windows, organize saved connections, manage reusable
@@ -45,6 +45,7 @@ Download the latest release for your OS and architecture:
 
 # Features
 
+- **Telnet terminals:** Manual login, terminal resizing, and proxy connections.
 - **SSH terminals:** Password and private key authentication, zoom, and shell
   continuity when moving between windows.
 - **VNC desktops:** Remote keyboard and mouse control, read-only modes,
