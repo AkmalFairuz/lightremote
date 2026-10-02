@@ -1,3 +1,6 @@
+import { useT } from '../../i18n/useT'
+import { nameCollator } from '../../i18n/format'
+import { useLocale } from '../../i18n/useLocale'
 import { useState } from 'react'
 import { Collapse } from '@mui/material'
 import { Dialog, DialogContent, DialogTitle } from '../../ui'
@@ -44,13 +47,18 @@ function FolderPickerBranch({
   onToggle,
   onSelect,
 }: FolderPickerBranchProps) {
+  const t = useT()
+
+  const locale = useLocale()
+
   const id = folder?.id ?? ''
-  const name = folder?.name ?? 'Root'
+  const name = folder?.name ?? t('connections.root')
   const open = Boolean(expanded[id])
   const selected = selectedId === id
+  const collator = nameCollator('base', locale)
   const children = folders
     .filter((entry) => entry.parentId === (folder?.id ?? null))
-    .sort((left, right) => left.name.localeCompare(right.name))
+    .sort((left, right) => collator.compare(left.name, right.name))
 
   return (
     <div className="folder-picker-branch" role="treeitem" aria-expanded={open}>
@@ -58,7 +66,10 @@ function FolderPickerBranch({
         <button
           type="button"
           className="folder-picker-toggle"
-          aria-label={`${open ? 'Collapse' : 'Expand'} ${name}`}
+          aria-label={t('common.namedAction', {
+            action: open ? t('connections.collapse') : t('connections.expand'),
+            name,
+          })}
           aria-expanded={open}
           onClick={() => onToggle(id)}
         >
@@ -108,6 +119,8 @@ export function FolderPickerDialog({
   onSelect,
   onClose,
 }: FolderPickerDialogProps) {
+  const t = useT()
+
   const [expanded, setExpanded] = useState<Record<string, boolean>>(() =>
     initiallyExpanded(folders, selectedId),
   )
@@ -118,9 +131,9 @@ export function FolderPickerDialog({
 
   return (
     <Dialog open onClose={onClose} maxWidth="xs" fullWidth>
-      <DialogTitle>Choose folder</DialogTitle>
+      <DialogTitle>{t('connections.chooseFolder')}</DialogTitle>
       <DialogContent className="folder-picker-content">
-        <div role="tree" aria-label="Choose connection folder">
+        <div role="tree" aria-label={t('connections.chooseConnectionFolder')}>
           <FolderPickerBranch
             folders={folders}
             selectedId={selectedId}

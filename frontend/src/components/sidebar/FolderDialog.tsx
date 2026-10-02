@@ -1,3 +1,4 @@
+import { useT } from '../../i18n/useT'
 import { useState, type FormEvent } from 'react'
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle, TextField } from '../../ui'
 import { useCreateFolderMutation } from '../../api/resources'
@@ -11,6 +12,8 @@ interface FolderDialogProps {
 
 /** Creates a folder under the parent chosen from the sidebar. */
 export function FolderDialog({ parentId, onClose }: FolderDialogProps) {
+  const t = useT()
+
   const [name, setName] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [createFolder, { isLoading }] = useCreateFolderMutation()
@@ -31,11 +34,11 @@ export function FolderDialog({ parentId, onClose }: FolderDialogProps) {
   return (
     <Dialog open onClose={onClose} fullWidth maxWidth="xs">
       <form onSubmit={save}>
-        <DialogTitle>New folder</DialogTitle>
+        <DialogTitle>{t('connections.newFolder')}</DialogTitle>
         <DialogContent className="dialog-fields">
           <Notice message={error} />
           <TextField
-            label="Name"
+            label={t('connections.name')}
             value={name}
             onChange={(event) => setName(event.target.value)}
             required
@@ -44,7 +47,7 @@ export function FolderDialog({ parentId, onClose }: FolderDialogProps) {
         </DialogContent>
         <DialogActions>
           <Button type="submit" variant="contained" disabled={isLoading}>
-            Create folder
+            {t('connections.createFolder')}
           </Button>
         </DialogActions>
       </form>

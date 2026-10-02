@@ -1,3 +1,4 @@
+import { useT } from '../../i18n/useT'
 import { useState, type FormEvent } from 'react'
 import { resourcesApi } from '../../api/resources'
 import { generateSSHKey, storeSSHKey } from '../../api/sshKeys'
@@ -42,6 +43,8 @@ function keyFilename(name: string): string {
 }
 
 export function SSHKeyGenerateDialog({ onClose }: Props) {
+  const t = useT()
+
   const dispatch = useAppDispatch()
   const csrfToken = useAppSelector((state) => state.auth.csrfToken)
   const [name, setName] = useState('')
@@ -100,13 +103,13 @@ export function SSHKeyGenerateDialog({ onClose }: Props) {
     <Dialog open onClose={close} fullWidth maxWidth="xs">
       {generated ? (
         <>
-          <DialogTitle>SSH key generated</DialogTitle>
+          <DialogTitle>{t('keys.sshKeyGenerated')}</DialogTitle>
           <DialogContent className="dialog-fields">
             <Notice message={error} />
             <p>
               {stored
-                ? 'Saved to SSH keys. Download the private key before closing if you need a local copy.'
-                : 'This key is not saved yet. Download the files or store the private key in SSH keys.'}
+                ? t('keys.savedToSshKeysDownloadThePrivateKeyBeforeClosingIfYouNeedALocalCopy')
+                : t('keys.thisKeyIsNotSavedYetDownloadTheFilesOrStoreThePrivateKeyInSshKeys')}
             </p>
           </DialogContent>
           <DialogActions className="ssh-key-created-actions" disableSpacing>
@@ -116,7 +119,7 @@ export function SSHKeyGenerateDialog({ onClose }: Props) {
               startIcon={<Glyph name="download" size={18} />}
               onClick={() => saveKey(generated.privateKey, filename)}
             >
-              Private key
+              {t('connections.privateKey')}
             </Button>
             <Button
               type="button"
@@ -124,31 +127,31 @@ export function SSHKeyGenerateDialog({ onClose }: Props) {
               startIcon={<Glyph name="download" size={18} />}
               onClick={() => saveKey(generated.publicKey, `${filename}.pub`)}
             >
-              Public key
+              {t('keys.publicKey')}
             </Button>
             <Button
               variant="contained"
               disabled={storing || stored}
               onClick={() => void storeKey()}
             >
-              {stored ? 'Stored' : 'Store key'}
+              {stored ? t('keys.stored') : t('keys.storeKey')}
             </Button>
           </DialogActions>
         </>
       ) : (
         <form onSubmit={(event) => void generate(event)}>
-          <DialogTitle>Generate SSH key</DialogTitle>
+          <DialogTitle>{t('keys.generateSshKey')}</DialogTitle>
           <DialogContent className="dialog-fields">
             <Notice message={error} />
             <TextField
-              label="Key name"
+              label={t('keys.keyName')}
               value={name}
               onChange={(event) => setName(event.target.value)}
               required
             />
             <TextField
               select
-              label="Algorithm"
+              label={t('keys.algorithm')}
               value={algorithm}
               onChange={(event) => setAlgorithm(event.target.value as SSHKeyAlgorithm)}
             >
@@ -157,16 +160,16 @@ export function SSHKeyGenerateDialog({ onClose }: Props) {
               <MenuItem value="rsa4096">RSA 4096</MenuItem>
             </TextField>
             <PasswordField
-              label="Passphrase (optional)"
+              label={t('keys.passphraseOptional')}
               value={passphrase}
               onChange={(event) => setPassphrase(event.target.value)}
               autoComplete="new-password"
-              helperText="Protects the downloaded private key."
+              helperText={t('keys.protectsTheDownloadedPrivateKey')}
             />
           </DialogContent>
           <DialogActions>
             <Button type="submit" variant="contained" disabled={busy}>
-              Generate key
+              {t('keys.generateKey')}
             </Button>
           </DialogActions>
         </form>

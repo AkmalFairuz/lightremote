@@ -1,3 +1,5 @@
+import { useT } from '../../i18n/useT'
+import { useLocale } from '../../i18n/useLocale'
 import { useRef, type CSSProperties, type KeyboardEvent, type PointerEvent } from 'react'
 import { FileManager } from './FileManager'
 
@@ -24,6 +26,10 @@ export function VncFilesPanel({
   width,
   onWidthChange,
 }: VncFilesPanelProps) {
+  const t = useT()
+
+  const rtl = useLocale() === 'ar'
+
   const panelRef = useRef<HTMLDivElement>(null)
 
   function clampWidth(next: number): number {
@@ -36,7 +42,8 @@ export function VncFilesPanel({
 
   function resizeFromPointer(event: PointerEvent<HTMLDivElement>) {
     const content = panelRef.current?.parentElement?.getBoundingClientRect()
-    if (content) onWidthChange(clampWidth(content.right - event.clientX))
+    if (content)
+      onWidthChange(clampWidth(rtl ? event.clientX - content.left : content.right - event.clientX))
   }
 
   function resizeFromKeyboard(event: KeyboardEvent<HTMLDivElement>) {
@@ -44,7 +51,7 @@ export function VncFilesPanel({
     event.preventDefault()
     const current = width ?? panelRef.current?.getBoundingClientRect().width ?? defaultPanelWidth
     const change = event.key === 'ArrowLeft' ? keyboardResizeStep : -keyboardResizeStep
-    onWidthChange(clampWidth(current + change))
+    onWidthChange(clampWidth(current + (rtl ? -change : change)))
   }
 
   return (
@@ -56,7 +63,7 @@ export function VncFilesPanel({
       <div
         className="vnc-files-resizer"
         role="separator"
-        aria-label="Resize VNC file manager"
+        aria-label={t('files.resizeVncFileManager')}
         aria-orientation="vertical"
         aria-valuenow={width ?? undefined}
         tabIndex={0}

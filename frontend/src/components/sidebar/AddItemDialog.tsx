@@ -1,3 +1,4 @@
+import { useT } from '../../i18n/useT'
 import { Card, CardActionArea } from '@mui/material'
 import { Dialog, DialogContent, DialogTitle } from '../../ui'
 import { Glyph } from '../common/Glyph'
@@ -16,23 +17,27 @@ export function AddItemDialog({
   onAddConnection,
   onClose,
 }: AddItemDialogProps) {
+  const t = useT()
+
   return (
     <Dialog open onClose={onClose} fullWidth maxWidth="xs">
-      <DialogTitle>Add to {folderName}</DialogTitle>
+      <DialogTitle>
+        {t('connections.addTo')} {folderName}
+      </DialogTitle>
       <DialogContent className="folder-add-content">
         <div className="folder-add-options">
           <Card variant="outlined">
             <CardActionArea onClick={onAddFolder} className="folder-add-option">
               <Glyph name="create-new-folder-outline" size={32} />
-              <strong>Folder</strong>
-              <span>Add a subfolder</span>
+              <strong>{t('connections.folder')}</strong>
+              <span>{t('connections.addASubfolder')}</span>
             </CardActionArea>
           </Card>
           <Card variant="outlined">
             <CardActionArea onClick={onAddConnection} className="folder-add-option">
               <Glyph name="add-link" size={32} />
-              <strong>Connection</strong>
-              <span>Add a remote connection</span>
+              <strong>{t('connections.connection')}</strong>
+              <span>{t('connections.addARemoteConnection')}</span>
             </CardActionArea>
           </Card>
         </div>

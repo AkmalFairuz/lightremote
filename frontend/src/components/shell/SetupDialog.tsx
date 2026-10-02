@@ -1,3 +1,5 @@
+import { useT } from '../../i18n/useT'
+import { LanguageSelector } from './LanguageSelector'
 import { useState, type FormEvent } from 'react'
 import { Dialog as MuiDialog } from '@mui/material'
 import {
@@ -16,6 +18,8 @@ import { Notice } from '../common/Notice'
 
 /** Creates the first administrator before any workspace content is available. */
 export function SetupDialog() {
+  const t = useT()
+
   const dispatch = useAppDispatch()
   const [setup, { isLoading }] = useSetupMutation()
   const [email, setEmail] = useState('')
@@ -27,7 +31,7 @@ export function SetupDialog() {
     event.preventDefault()
     setError(null)
     if (password !== confirmation) {
-      setError('Passwords do not match.')
+      setError(t('shell.passwordsDoNotMatch'))
       return
     }
     try {
@@ -42,13 +46,16 @@ export function SetupDialog() {
     <MuiDialog open fullWidth maxWidth="xs" aria-labelledby="setup-title">
       <form onSubmit={submit}>
         <DialogContent className="login-dialog-content">
+          <div className="dialog-language">
+            <LanguageSelector />
+          </div>
           <Typography variant="h6" component="h1" id="setup-title">
-            Set up LightRemote
+            {t('shell.setUpLightremote')}
           </Typography>
-          <Typography>Create your administrator account to finish installation.</Typography>
+          <Typography>{t('shell.createYourAdministratorAccountToFinishInstallation')}</Typography>
           <Notice message={error} />
           <TextField
-            label="Administrator email"
+            label={t('shell.administratorEmail')}
             type="email"
             autoComplete="username"
             autoFocus
@@ -58,17 +65,17 @@ export function SetupDialog() {
             disabled={isLoading}
           />
           <PasswordField
-            label="Password"
+            label={t('shell.password')}
             autoComplete="new-password"
             value={password}
             onChange={(event) => setPassword(event.target.value)}
             required
             disabled={isLoading}
             slotProps={{ htmlInput: { minLength: 6 } }}
-            helperText="At least 6 characters."
+            helperText={t('shell.atLeast6Characters')}
           />
           <PasswordField
-            label="Confirm password"
+            label={t('shell.confirmPassword')}
             autoComplete="new-password"
             value={confirmation}
             onChange={(event) => setConfirmation(event.target.value)}
@@ -84,7 +91,7 @@ export function SetupDialog() {
             loading={isLoading}
             disabled={isLoading}
           >
-            Complete installation
+            {t('shell.completeInstallation')}
           </Button>
         </DialogActions>
       </form>

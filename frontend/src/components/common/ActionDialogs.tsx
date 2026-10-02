@@ -1,3 +1,4 @@
+import { useT } from '../../i18n/useT'
 import { useState, type FormEvent } from 'react'
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle, TextField } from '../../ui'
 import { errorMessage } from '../../types'
@@ -67,6 +68,8 @@ export function TextPromptDialog({
   onClose,
   onConfirm,
 }: TextPromptDialogProps) {
+  const t = useT()
+
   const [value, setValue] = useState(initialValue)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -74,7 +77,7 @@ export function TextPromptDialog({
   async function submit(event: FormEvent) {
     event.preventDefault()
     if (!value || value === '.' || value === '..' || value.includes('/')) {
-      setError('Enter a name without a slash.')
+      setError(t('common.enterANameWithoutASlash'))
       return
     }
     setBusy(true)

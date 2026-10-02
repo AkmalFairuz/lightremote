@@ -1,3 +1,4 @@
+import { t } from '../i18n'
 import { sessionToken } from '../api/authSession'
 import type { WailsSocket } from '@wailsio/runtime'
 import { desktopRuntime, isDesktop } from './runtime'
@@ -40,7 +41,7 @@ class DesktopViewerSocket extends EventTarget {
   constructor(kind: 'ssh' | 'vnc', sessionId: string) {
     super()
     this.url = `wails-stream:${kind}/${sessionId}`
-    if (!desktopRuntime) throw new Error('Wails runtime is unavailable.')
+    if (!desktopRuntime) throw new Error(t('common.wailsRuntimeIsUnavailable'))
     this.stream = desktopRuntime.Stream(kind)
     this.stream.binaryType = 'arraybuffer'
     this.stream.addEventListener('open', () => {
@@ -52,7 +53,7 @@ class DesktopViewerSocket extends EventTarget {
       const payload = bytes.subarray(1)
       if (!this.attached) {
         if (bytes[0] !== frameText || decoder.decode(payload) !== '{"type":"attached"}') {
-          this.closeReason = 'Could not attach to the work session.'
+          this.closeReason = t('common.couldNotAttachToTheWorkSession')
           this.stream.close()
           return
         }
@@ -98,7 +99,8 @@ class DesktopViewerSocket extends EventTarget {
   }
 
   send(data: string | ArrayBufferLike | ArrayBufferView | Blob): void {
-    if (!this.attached) throw new DOMException('Viewer is still connecting.', 'InvalidStateError')
+    if (!this.attached)
+      throw new DOMException(t('common.viewerIsStillConnecting'), 'InvalidStateError')
     const header = typeof data === 'string' ? frameText : frameBinary
     if (data instanceof Blob) {
       void data.arrayBuffer().then((buffer) => this.send(buffer))

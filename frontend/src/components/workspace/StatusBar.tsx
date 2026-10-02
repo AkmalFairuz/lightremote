@@ -1,3 +1,6 @@
+import { useT } from '../../i18n/useT'
+import type { t as Translator } from '../../i18n'
+import { useLocale } from '../../i18n/useLocale'
 import { useEffect, useRef, useState } from 'react'
 import { useSessionDetailQuery } from '../../api/sessions'
 import type { WorkspaceTab } from '../../state/workspaceSlice'
@@ -12,12 +15,12 @@ const sessionPollingMs = 2000
 const millisecondsPerSecond = 1000
 const minimumRateIntervalSeconds = 0.001
 
-function statusText(tab: WorkspaceTab | undefined, isError: boolean): string {
-  if (!tab) return 'Select a connection'
-  if (tab.status === 'connecting') return 'Connecting…'
-  if (tab.status === 'error') return 'Connection failed'
-  if (!tab.sessionId) return 'File browser'
-  return isError ? 'Session ended' : 'Connecting'
+function statusText(tab: WorkspaceTab | undefined, isError: boolean, t: typeof Translator): string {
+  if (!tab) return t('files.selectAConnection')
+  if (tab.status === 'connecting') return t('files.connectingProgress')
+  if (tab.status === 'error') return t('files.connectionFailed')
+  if (!tab.sessionId) return t('files.fileBrowser')
+  return isError ? t('files.sessionEnded') : t('files.connecting')
 }
 
 export function StatusBar({
@@ -29,6 +32,10 @@ export function StatusBar({
   onZoom: (zoom: number) => void
   vncControls?: VncControls
 }) {
+  const t = useT()
+
+  const locale = useLocale()
+
   const { currentData: data, isError } = useSessionDetailQuery(tab?.sessionId ?? '', {
     skip: !tab?.sessionId,
     pollingInterval: sessionPollingMs,
@@ -65,48 +72,48 @@ export function StatusBar({
           <Glyph name="circle" size={9} />
         </span>
         <span className="status-name">
-          {tab ? `${tab.kind.toUpperCase()} · ${tab.name}` : 'No active connection'}
+          {tab ? `${tab.kind.toUpperCase()} · ${tab.name}` : t('shell.noActiveConnection')}
         </span>
       </span>
       {tab?.kind === 'vnc' && vncControls && (
         <div className="status-vnc-actions">
           <Button
             startIcon={<Glyph name="keyboard-command-key" size={14} />}
-            aria-label="Send Ctrl+Alt+Del"
-            title="Send Ctrl+Alt+Del"
+            aria-label={t('files.sendCtrlAltDel')}
+            title={t('files.sendCtrlAltDel')}
             disabled={!vncControls.connected || tab.vncReadOnly}
             onClick={vncControls.sendCtrlAltDel}
           >
-            <span className="status-vnc-label">Ctrl+Alt+Del</span>
+            <span className="status-vnc-label">{t('files.ctrlAltDel')}</span>
           </Button>
           {tab.vncFileTransfer !== false && (
             <Button
               startIcon={<Glyph name="folder-outline" size={14} />}
-              aria-label="Toggle VNC files"
-              title="Toggle VNC files"
+              aria-label={t('files.toggleVncFiles')}
+              title={t('files.toggleVncFiles')}
               aria-pressed={vncControls.filesOpen}
               onClick={vncControls.toggleFiles}
             >
-              <span className="status-vnc-label">Files</span>
+              <span className="status-vnc-label">{t('common.files')}</span>
             </Button>
           )}
           <Button
             startIcon={<Glyph name="mouse-outline" size={14} />}
-            aria-label="Show local cursor when the server hides it"
-            title="Show local cursor when the server hides it"
+            aria-label={t('files.showLocalCursorWhenTheServerHidesIt')}
+            title={t('files.showLocalCursorWhenTheServerHidesIt')}
             aria-pressed={vncControls.localCursor}
             onClick={vncControls.toggleLocalCursor}
           >
-            <span className="status-vnc-label">Cursor</span>
+            <span className="status-vnc-label">{t('files.cursor')}</span>
           </Button>
           <Button
             startIcon={<Glyph name="photo-camera-outline" size={14} />}
-            aria-label="Save VNC screenshot"
-            title="Save VNC screenshot"
+            aria-label={t('files.saveVncScreenshot')}
+            title={t('files.saveVncScreenshot')}
             disabled={!vncControls.connected}
             onClick={vncControls.takeScreenshot}
           >
-            <span className="status-vnc-label">Screenshot</span>
+            <span className="status-vnc-label">{t('files.screenshot')}</span>
           </Button>
         </div>
       )}
@@ -116,17 +123,19 @@ export function StatusBar({
       <div className={showBandwidth ? 'status-metrics status-bandwidth' : 'status-metrics'}>
         {showBandwidth && data ? (
           <>
-            <span title="Browser to remote">
-              <Glyph name="arrow-upward" size={14} /> {formatBytes(data.metrics.bytesReceived)} ·{' '}
-              {formatBytes(rates.received)}/s
+            <span title={t('files.browserToRemote')}>
+              <Glyph name="arrow-upward" size={14} />{' '}
+              {formatBytes(data.metrics.bytesReceived, locale)} ·{' '}
+              {t('files.speed', { speed: formatBytes(rates.received, locale) })}
             </span>
-            <span title="Remote to browser">
-              <Glyph name="arrow-downward" size={14} /> {formatBytes(data.metrics.bytesSent)} ·{' '}
-              {formatBytes(rates.sent)}/s
+            <span title={t('files.remoteToBrowser')}>
+              <Glyph name="arrow-downward" size={14} />{' '}
+              {formatBytes(data.metrics.bytesSent, locale)} ·{' '}
+              {t('files.speed', { speed: formatBytes(rates.sent, locale) })}
             </span>
           </>
         ) : (
-          <span>{statusText(tab, isError)}</span>
+          <span>{statusText(tab, isError, t)}</span>
         )}
       </div>
     </footer>

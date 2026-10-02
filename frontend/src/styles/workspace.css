@@ -45,7 +45,7 @@
   min-width: 145px;
   max-width: 220px;
   align-items: center;
-  border-right: 1px solid var(--lr-border);
+  border-inline-end: 1px solid var(--lr-border);
   color: var(--lr-muted);
 }
 
@@ -79,7 +79,7 @@
   border: 0;
   background: transparent;
   color: inherit;
-  text-align: left;
+  text-align: start;
 }
 
 .tab-select span {
@@ -89,7 +89,7 @@
 }
 
 .tab-item .ui-icon-button {
-  margin-right: 5px;
+  margin-inline-end: 5px;
   padding: 3px;
   color: var(--lr-soft);
 }
@@ -266,7 +266,7 @@
   min-width: 0;
   max-width: calc(100% - 120px);
   flex: 0 0 auto;
-  border-left: 1px solid var(--lr-border-strong);
+  border-inline-start: 1px solid var(--lr-border-strong);
   box-shadow: -1.8px 0 5.4px var(--lr-divider-shadow);
   container-type: inline-size;
 }
@@ -276,7 +276,7 @@
   z-index: 3;
   top: 0;
   bottom: 0;
-  left: -4px;
+  inset-inline-start: -4px;
   width: 8px;
   cursor: col-resize;
   touch-action: none;
@@ -309,7 +309,7 @@
 }
 
 .status-vnc-actions .MuiButton-startIcon {
-  margin-right: 3px;
+  margin-inline-end: 3px;
 }
 
 .status-bar {

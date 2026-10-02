@@ -1,3 +1,4 @@
+import { t } from '../../i18n'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { files } from '../../api/files'
 import type { ConnectionKind, FileEntry } from '../../types'
@@ -73,7 +74,7 @@ export function useRemoteDirectory({
         return displayed
       } catch (cause) {
         if (sequence !== requestSequence.current) return
-        setError(cause instanceof Error ? cause.message : 'Could not list remote files.')
+        setError(cause instanceof Error ? cause.message : t('files.couldNotListRemoteFiles'))
       } finally {
         if (sequence === requestSequence.current) setLoading(false)
       }
@@ -92,7 +93,9 @@ export function useRemoteDirectory({
         (cause) => {
           if (!cancelled)
             setError(
-              cause instanceof Error ? cause.message : 'Could not find the remote home directory.',
+              cause instanceof Error
+                ? cause.message
+                : t('files.couldNotFindTheRemoteHomeDirectory'),
             )
         },
       )

@@ -1,3 +1,7 @@
+import { t as translate } from '../../i18n'
+import { useT } from '../../i18n/useT'
+import { translateMessage } from '../../i18n'
+import { useLocale } from '../../i18n/useLocale'
 import { useEffect, useState, type KeyboardEvent } from 'react'
 import { Button, CircularProgress, DialogPresence } from '../../ui'
 import { files } from '../../api/files'
@@ -16,6 +20,10 @@ interface FileEditorProps {
 
 /** Loads and saves a small UTF-8 remote file. */
 export function FileEditor({ connectionId, entry, onBack, onSaved }: FileEditorProps) {
+  const t = useT()
+
+  const locale = useLocale()
+
   const [original, setOriginal] = useState('')
   const [value, setValue] = useState('')
   const [loading, setLoading] = useState(true)
@@ -37,7 +45,9 @@ export function FileEditor({ connectionId, entry, onBack, onSaved }: FileEditorP
       },
       (cause) => {
         if (cancelled) return
-        setError(cause instanceof Error ? cause.message : 'Could not open the remote file.')
+        setError(
+          cause instanceof Error ? cause.message : translate('files.couldNotOpenTheRemoteFile'),
+        )
         setLoadFailed(true)
         setLoading(false)
       },
@@ -57,7 +67,7 @@ export function FileEditor({ connectionId, entry, onBack, onSaved }: FileEditorP
       setSaved(true)
       await onSaved()
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'Could not save the remote file.')
+      setError(cause instanceof Error ? cause.message : t('files.couldNotSaveTheRemoteFile'))
     } finally {
       setSaving(false)
     }
@@ -82,39 +92,39 @@ export function FileEditor({ connectionId, entry, onBack, onSaved }: FileEditorP
     <div className="file-editor">
       <div className="file-editor-toolbar">
         <Button onClick={back} disabled={saving} startIcon={<Glyph name="arrow-back" size={17} />}>
-          Back
+          {t('connections.back')}
         </Button>
         <span className="file-editor-path" title={entry.path}>
           {entry.path}
         </span>
-        <span className="file-editor-size">{formatBytes(entry.size)}</span>
+        <span className="file-editor-size">{formatBytes(entry.size, locale)}</span>
         <Button
           variant="contained"
           disabled={loading || saving || !dirty}
           onClick={() => void save()}
         >
-          {saving ? 'Saving…' : 'Save'}
+          {saving ? t('files.saving') : t('users.save')}
         </Button>
       </div>
       {error && (
         <div className="files-error" role="alert">
-          {error}
+          {translateMessage(error, locale)}
         </div>
       )}
       {saved && !error && (
         <div className="file-editor-saved" role="status">
-          Saved.
+          {t('files.saved')}
         </div>
       )}
       {loading ? (
         <div className="files-loading">
           <CircularProgress size={22} />
-          <span>Opening file…</span>
+          <span>{t('files.openingFile')}</span>
         </div>
       ) : (
         <textarea
           className="file-editor-input"
-          aria-label={`Edit ${entry.name}`}
+          aria-label={t('common.editNamed', { name: entry.name })}
           value={value}
           onChange={(event) => {
             setValue(event.target.value)
@@ -128,9 +138,9 @@ export function FileEditor({ connectionId, entry, onBack, onSaved }: FileEditorP
       <DialogPresence>
         {confirmLeave && (
           <ConfirmDialog
-            title="Discard unsaved changes?"
-            message={`Changes to “${entry.name}” have not been saved.`}
-            actionLabel="Discard"
+            title={t('files.discardUnsavedChanges')}
+            message={t('files.unsaved', { name: entry.name })}
+            actionLabel={t('files.discard')}
             onClose={() => setConfirmLeave(false)}
             onConfirm={async () => onBack()}
           />

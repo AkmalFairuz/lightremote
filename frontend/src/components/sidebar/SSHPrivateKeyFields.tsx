@@ -1,3 +1,4 @@
+import { useT } from '../../i18n/useT'
 import { useEffect, useRef, useState, type DragEvent } from 'react'
 import { Button, IconButton, PasswordField } from '../../ui'
 import { Glyph } from '../common/Glyph'
@@ -13,6 +14,8 @@ interface SSHPrivateKeyFieldsProps {
 }
 
 export function SSHPrivateKeyFields(props: SSHPrivateKeyFieldsProps) {
+  const t = useT()
+
   const fileInput = useRef<HTMLInputElement>(null)
   const dragDepth = useRef(0)
   const readSequence = useRef(0)
@@ -31,7 +34,7 @@ export function SSHPrivateKeyFields(props: SSHPrivateKeyFieldsProps) {
     setFileError(null)
 
     if (file.size === 0 || file.size > maxPrivateKeyBytes) {
-      setFileError('Choose a nonempty private key file no larger than 512 KiB.')
+      setFileError(t('connections.chooseANonemptyPrivateKeyFileNoLargerThan512Kib'))
       return
     }
 
@@ -41,14 +44,14 @@ export function SSHPrivateKeyFields(props: SSHPrivateKeyFieldsProps) {
       )
       if (sequence !== readSequence.current) return
       if (!content) {
-        setFileError('The private key file is empty.')
+        setFileError(t('connections.thePrivateKeyFileIsEmpty'))
         return
       }
       props.onPrivateKey(content)
       props.onPrivateKeyFileName(file.name)
     } catch {
       if (sequence === readSequence.current) {
-        setFileError('Could not read this file as a UTF-8 private key.')
+        setFileError(t('connections.couldNotReadThisFileAsAUtf8PrivateKey'))
       }
     }
   }
@@ -84,7 +87,7 @@ export function SSHPrivateKeyFields(props: SSHPrivateKeyFieldsProps) {
           dragDepth.current = 0
           setDragActive(false)
           if (event.dataTransfer.files.length !== 1) {
-            setFileError('Drop one private key file at a time.')
+            setFileError(t('connections.dropOnePrivateKeyFileAtATime'))
             return
           }
           const selected = event.dataTransfer.files[0]
@@ -92,19 +95,19 @@ export function SSHPrivateKeyFields(props: SSHPrivateKeyFieldsProps) {
         }}
       >
         <div className="private-key-file-actions">
-          <span>Private key file *</span>
+          <span>{t('connections.privateKeyFile')}</span>
           <Button
             type="button"
             variant="outlined"
             onClick={() => fileInput.current?.click()}
             startIcon={<Glyph name="upload-file-outline" size={16} />}
           >
-            Choose file
+            {t('connections.chooseFile')}
           </Button>
           <input
             ref={fileInput}
             type="file"
-            aria-label="Choose SSH private key file"
+            aria-label={t('connections.chooseSshPrivateKeyFile')}
             hidden
             onChange={(event) => {
               const selected = event.target.files?.[0]
@@ -113,13 +116,17 @@ export function SSHPrivateKeyFields(props: SSHPrivateKeyFieldsProps) {
             }}
           />
         </div>
-        <small className="private-key-drop-hint">Drop a PEM or OpenSSH key file here.</small>
+        <small className="private-key-drop-hint">
+          {t('connections.dropAPemOrOpensshKeyFileHere')}
+        </small>
         {props.privateKeyFileName && (
           <div className="private-key-loaded-row">
-            <small className="private-key-loaded">Loaded {props.privateKeyFileName}</small>
+            <small className="private-key-loaded">
+              {t('connections.loaded')} {props.privateKeyFileName}
+            </small>
             <IconButton
               type="button"
-              aria-label="Remove selected private key file"
+              aria-label={t('connections.removeSelectedPrivateKeyFile')}
               onClick={() => {
                 readSequence.current += 1
                 props.onPrivateKey('')
@@ -138,7 +145,7 @@ export function SSHPrivateKeyFields(props: SSHPrivateKeyFieldsProps) {
         )}
       </div>
       <PasswordField
-        label="Key passphrase"
+        label={t('connections.keyPassphrase')}
         value={props.passphrase}
         onChange={(event) => props.onPassphrase(event.target.value)}
         autoComplete="new-password"

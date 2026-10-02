@@ -1,7 +1,8 @@
+import { t } from '../i18n'
 import { desktopRuntime } from './runtime'
 
 function call(method: string, ...args: string[]): Promise<void> {
-  if (!desktopRuntime) return Promise.reject(new Error('Wails runtime is unavailable.'))
+  if (!desktopRuntime) return Promise.reject(new Error(t('common.wailsRuntimeIsUnavailable')))
   return desktopRuntime.Call.ByName(method, ...args)
 }
 
@@ -15,7 +16,7 @@ export function saveRemoteFile(
   filename: string,
   transferId: string,
 ): Promise<boolean> {
-  if (!desktopRuntime) return Promise.reject(new Error('Wails runtime is unavailable.'))
+  if (!desktopRuntime) return Promise.reject(new Error(t('common.wailsRuntimeIsUnavailable')))
   return desktopRuntime.Call.ByName(
     'main.DesktopService.SaveRemoteFile',
     connectionId,

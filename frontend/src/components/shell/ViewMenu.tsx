@@ -1,3 +1,6 @@
+import { useT } from '../../i18n/useT'
+import { translateMessage } from '../../i18n'
+import { useLocale } from '../../i18n/useLocale'
 import { ListItemIcon, MenuItem, MenuList, Paper, Popover, Popper } from '@mui/material'
 import { useState } from 'react'
 import { useColorScheme } from '@mui/material/styles'
@@ -19,6 +22,11 @@ export type ViewSection = 'root' | 'appearance' | 'terminal'
 
 /** Opens appearance and terminal colors beside the parent View menu. */
 export function ViewMenu({ anchorEl, section, onSection, onClose }: ViewMenuProps) {
+  const t = useT()
+
+  const locale = useLocale()
+  const rtl = locale === 'ar'
+
   const { mode, setMode } = useColorScheme()
   const terminalTheme = useTerminalThemePreference()
   const [submenuAnchor, setSubmenuAnchor] = useState<HTMLElement | null>(null)
@@ -41,11 +49,11 @@ export function ViewMenu({ anchorEl, section, onSection, onClose }: ViewMenuProp
         anchorEl={anchorEl}
         onClose={closeMenu}
         disableEnforceFocus
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
-        transformOrigin={{ vertical: 'top', horizontal: 'left' }}
+        anchorOrigin={{ vertical: 'bottom', horizontal: rtl ? 'right' : 'left' }}
+        transformOrigin={{ vertical: 'top', horizontal: rtl ? 'right' : 'left' }}
         slotProps={{ paper: { className: 'view-popover' } }}
       >
-        <MenuList dense aria-label="View settings">
+        <MenuList dense aria-label={t('shell.viewSettings')}>
           <MenuItem
             selected={section === 'appearance'}
             aria-haspopup="menu"
@@ -56,7 +64,7 @@ export function ViewMenu({ anchorEl, section, onSection, onClose }: ViewMenuProp
             <ListItemIcon>
               <Glyph name="palette-outline" size={17} />
             </ListItemIcon>
-            Appearance
+            {t('shell.appearance')}
             <Glyph name="chevron-right" size={18} />
           </MenuItem>
           <MenuItem
@@ -69,7 +77,7 @@ export function ViewMenu({ anchorEl, section, onSection, onClose }: ViewMenuProp
             <ListItemIcon>
               <Glyph name="terminal" size={17} />
             </ListItemIcon>
-            Terminal theme
+            {t('shell.terminalTheme')}
             <Glyph name="chevron-right" size={18} />
           </MenuItem>
         </MenuList>
@@ -77,15 +85,21 @@ export function ViewMenu({ anchorEl, section, onSection, onClose }: ViewMenuProp
       <Popper
         open={Boolean(anchorEl && submenuAnchor && section !== 'root')}
         anchorEl={submenuAnchor}
-        placement="right-start"
+        placement={rtl ? 'left-start' : 'right-start'}
         className="view-submenu"
         modifiers={[
-          { name: 'flip', options: { fallbackPlacements: ['left-start', 'bottom-start'] } },
+          {
+            name: 'flip',
+            options: { fallbackPlacements: [rtl ? 'right-start' : 'left-start', 'bottom-start'] },
+          },
           { name: 'preventOverflow', options: { padding: 8 } },
         ]}
       >
         <Paper className="view-submenu-paper" elevation={6}>
-          <MenuList dense aria-label={section === 'appearance' ? 'Appearance' : 'Terminal theme'}>
+          <MenuList
+            dense
+            aria-label={section === 'appearance' ? t('shell.appearance') : t('shell.terminalTheme')}
+          >
             {section === 'appearance' && (
               <>
                 <MenuItem
@@ -95,7 +109,7 @@ export function ViewMenu({ anchorEl, section, onSection, onClose }: ViewMenuProp
                     closeMenu()
                   }}
                 >
-                  System mode
+                  {t('shell.systemMode')}
                   {mode === 'system' && <Glyph name="check" size={16} />}
                 </MenuItem>
                 <MenuItem
@@ -105,7 +119,7 @@ export function ViewMenu({ anchorEl, section, onSection, onClose }: ViewMenuProp
                     closeMenu()
                   }}
                 >
-                  Light mode
+                  {t('shell.lightMode')}
                   {mode === 'light' && <Glyph name="check" size={16} />}
                 </MenuItem>
                 <MenuItem
@@ -115,7 +129,7 @@ export function ViewMenu({ anchorEl, section, onSection, onClose }: ViewMenuProp
                     closeMenu()
                   }}
                 >
-                  Dark mode
+                  {t('shell.darkMode')}
                   {mode === 'dark' && <Glyph name="check" size={16} />}
                 </MenuItem>
               </>
@@ -131,7 +145,7 @@ export function ViewMenu({ anchorEl, section, onSection, onClose }: ViewMenuProp
                       closeMenu()
                     }}
                   >
-                    {option.label}
+                    {translateMessage(option.label, locale)}
                     {terminalTheme === option.name && <Glyph name="check" size={16} />}
                   </MenuItem>
                 ))}

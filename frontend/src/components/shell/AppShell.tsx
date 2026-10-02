@@ -1,3 +1,5 @@
+import { useT } from '../../i18n/useT'
+import { useLocale } from '../../i18n/useLocale'
 import { useEffect, useState, type CSSProperties } from 'react'
 import { Alert, DialogPresence, Snackbar } from '../../ui'
 import { Outlet, useLocation, useNavigate } from 'react-router-dom'
@@ -37,6 +39,10 @@ import { useDetachedTabs } from '../workspace/useDetachedTabs'
 import { Header } from './Header'
 
 export function AppShell() {
+  const t = useT()
+
+  const rtl = useLocale() === 'ar'
+
   const dispatch = useAppDispatch()
   const appStore = useAppStore()
   const location = useLocation()
@@ -151,7 +157,7 @@ export function AppShell() {
             (entry) => entry.id === tab.connectionId,
           )
       if (!connection) {
-        dispatch(connectionFailure(id, tab.kind, 'Connection not found.'))
+        dispatch(connectionFailure(id, tab.kind, t('shell.connectionNotFound')))
         return
       }
       if (currentTab(id)?.status === 'connecting') await connectTab(connection, id)
@@ -174,7 +180,7 @@ export function AppShell() {
               (tab.status === 'connecting' || tab.status === 'error'),
           )
     if (!existing && currentTabs.length + detachedCount() >= maxOpenTabs) {
-      setMessage('Close a tab before opening another connection.')
+      setMessage(t('shell.closeATabBeforeOpeningAnotherConnection'))
       if (connection.direct) {
         void deleteDirectConnection(connection.id)
       }
@@ -184,7 +190,7 @@ export function AppShell() {
     if (!connection.direct) {
       void recordConnectionOpen(connection.id)
         .unwrap()
-        .catch(() => setMessage('Could not update recent connections.'))
+        .catch(() => setMessage(t('shell.couldNotUpdateRecentConnections')))
     }
 
     if (existing?.status === 'connecting' || existing?.status === 'ready') {
@@ -222,7 +228,11 @@ export function AppShell() {
     setHostKeyPrompt(null)
     if (prompt && currentTab(prompt.tabId)?.status === 'connecting') {
       dispatch(
-        connectionFailure(prompt.tabId, prompt.connection.kind, 'SSH host key was not approved.'),
+        connectionFailure(
+          prompt.tabId,
+          prompt.connection.kind,
+          t('shell.sshHostKeyWasNotApproved'),
+        ),
       )
     }
   }
@@ -252,7 +262,7 @@ export function AppShell() {
           <button
             type="button"
             className="mobile-sidebar-backdrop"
-            aria-label="Close connections sidebar"
+            aria-label={t('shell.closeConnectionsSidebar')}
             onClick={() => setMobileSidebar(false)}
           />
         )}
@@ -273,7 +283,7 @@ export function AppShell() {
         <div
           className={`sidebar-resizer ${sidebarCollapsed ? 'sidebar-resizer-hidden' : ''}`}
           role="separator"
-          aria-label="Resize connection sidebar"
+          aria-label={t('shell.resizeConnectionSidebar')}
           aria-orientation="vertical"
           tabIndex={sidebarCollapsed ? -1 : 0}
           onPointerDown={(event) => {
@@ -283,12 +293,18 @@ export function AppShell() {
           onLostPointerCapture={() => setSidebarResizing(false)}
           onPointerMove={(event) => {
             if (event.currentTarget.hasPointerCapture(event.pointerId)) {
-              dispatch(setSidebarWidth(event.clientX))
+              dispatch(
+                setSidebarWidth(
+                  rtl ? document.documentElement.clientWidth - event.clientX : event.clientX,
+                ),
+              )
             }
           }}
           onKeyDown={(event) => {
-            if (event.key === 'ArrowLeft') dispatch(setSidebarWidth(sidebarWidth - 16))
-            if (event.key === 'ArrowRight') dispatch(setSidebarWidth(sidebarWidth + 16))
+            if (event.key === 'ArrowLeft')
+              dispatch(setSidebarWidth(sidebarWidth + (rtl ? 16 : -16)))
+            if (event.key === 'ArrowRight')
+              dispatch(setSidebarWidth(sidebarWidth + (rtl ? -16 : 16)))
           }}
         />
         <main className="shell-main">

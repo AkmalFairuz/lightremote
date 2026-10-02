@@ -1,3 +1,5 @@
+import { t as translate } from '../../i18n'
+import { useT } from '../../i18n/useT'
 import { useCallback, useEffect, useRef, useState, type CSSProperties } from 'react'
 import { useColorScheme } from '@mui/material/styles'
 import { Menu as MuiMenu, MenuItem } from '@mui/material'
@@ -29,6 +31,8 @@ export function SshTerminal({
   onConnected,
   onConnectionError,
 }: SshTerminalProps) {
+  const t = useT()
+
   const { mode, systemMode } = useColorScheme()
   const themePreference = useTerminalThemePreference()
   const appMode = mode === 'system' ? systemMode : mode
@@ -117,7 +121,7 @@ export function SshTerminal({
       await desktopRuntime.Clipboard.SetText(selection)
       terminalInstance.current?.focus()
     } catch {
-      setClipboardError('Could not copy the terminal selection.')
+      setClipboardError(t('files.couldNotCopyTheTerminalSelection'))
     }
   }
 
@@ -131,7 +135,7 @@ export function SshTerminal({
       terminal.paste(text)
       terminal.focus()
     } catch {
-      setClipboardError('Could not paste from the clipboard.')
+      setClipboardError(t('files.couldNotPasteFromTheClipboard'))
     }
   }
 
@@ -179,7 +183,7 @@ export function SshTerminal({
         } catch {
           reportedError = true
           settled = true
-          connectionErrorRef.current?.('Invalid terminal control message.')
+          connectionErrorRef.current?.(translate('files.invalidTerminalControlMessage'))
         }
       } else {
         terminal.write(new Uint8Array(event.data as ArrayBuffer))
@@ -189,12 +193,12 @@ export function SshTerminal({
       if (disposed) return
       reportedError = true
       settled = true
-      connectionErrorRef.current?.('Terminal connection failed.')
+      connectionErrorRef.current?.(translate('files.terminalConnectionFailed'))
     })
     ws.addEventListener('close', (event) => {
       if (disposed) return
       if (!reportedError)
-        connectionErrorRef.current?.(event.reason || 'Terminal connection closed.')
+        connectionErrorRef.current?.(event.reason || translate('files.terminalConnectionClosed'))
       settled = true
     })
     const input = terminal.onData((data) => {
@@ -249,7 +253,7 @@ export function SshTerminal({
   return (
     <div
       className="terminal-view"
-      aria-label="SSH terminal"
+      aria-label={t('connections.sshTerminal')}
       ref={view}
       style={{ '--lr-terminal-bg': palette.background } as CSSProperties}
     >
@@ -263,10 +267,10 @@ export function SshTerminal({
             anchorPosition={contextMenu ? { left: contextMenu.x, top: contextMenu.y } : undefined}
           >
             <MenuItem disabled={!contextMenu?.selection} onClick={() => void copySelection()}>
-              Copy
+              {t('files.copy')}
             </MenuItem>
             <MenuItem disabled={!contextMenu?.canPaste} onClick={() => void pasteClipboard()}>
-              Paste
+              {t('files.paste')}
             </MenuItem>
           </MuiMenu>
           <Snackbar

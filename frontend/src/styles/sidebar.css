@@ -18,7 +18,7 @@
   position: absolute;
   top: 0;
   bottom: 0;
-  left: 100%;
+  inset-inline-start: 100%;
   width: 9.6px;
   background: linear-gradient(to right, var(--lr-divider-shadow), transparent);
   content: '';
@@ -64,7 +64,7 @@
 }
 
 .sidebar-filter .MuiOutlinedInput-root {
-  padding-left: 6px;
+  padding-inline-start: 6px;
 }
 
 .sidebar-filter .MuiInputBase-input {
@@ -74,8 +74,8 @@
 }
 
 .sidebar-filter .MuiInputAdornment-root {
-  margin-right: 4px;
-  margin-left: 0;
+  margin-inline-end: 4px;
+  margin-inline-start: 0;
 }
 
 .sidebar-tree {
@@ -171,7 +171,7 @@
   background: transparent;
   color: var(--lr-action-text);
   font-size: 12px;
-  text-align: left;
+  text-align: start;
 }
 
 .folder-name,
@@ -198,18 +198,18 @@
 .sidebar-row-actions {
   position: sticky;
   z-index: 2;
-  right: 0;
+  inset-inline-end: 0;
   width: 0;
   height: 24px;
   flex: 0 0 0;
   align-self: center;
-  margin-left: auto;
+  margin-inline-start: auto;
 }
 
 .sidebar-row-actions-inner {
   position: absolute;
   top: 0;
-  right: 0;
+  inset-inline-end: 0;
   display: flex;
   align-items: center;
   gap: 1px;
@@ -251,8 +251,8 @@
 
 .folder-children {
   min-height: 0;
-  margin-left: 13px;
-  padding-left: 9px;
+  margin-inline-start: 13px;
+  padding-inline-start: 9px;
 }
 
 .folder-children > .folder-branch,
@@ -264,7 +264,7 @@
 .folder-children > .connection-row::before {
   position: absolute;
   top: 12px;
-  left: -9px;
+  inset-inline-start: -9px;
   width: 9px;
   border-top: 1px solid var(--lr-border-strong);
   content: '';
@@ -275,8 +275,8 @@
   position: absolute;
   top: 0;
   bottom: 0;
-  left: -9px;
-  border-left: 1px solid var(--lr-border-strong);
+  inset-inline-start: -9px;
+  border-inline-start: 1px solid var(--lr-border-strong);
   content: '';
 }
 
@@ -336,12 +336,12 @@
 .sidebar-rename-actions {
   position: sticky;
   z-index: 2;
-  right: 0;
+  inset-inline-end: 0;
   display: flex;
   flex-shrink: 0;
   align-items: center;
   gap: 1px;
-  margin-left: auto;
+  margin-inline-start: auto;
   padding: 1px 2px;
   background: var(--lr-sidebar);
 }

@@ -9,6 +9,7 @@ app. Both use the same React interface and backend services.
 | [Configuration](configuration.md) | Environment variables, defaults, and validation |
 | [Architecture](architecture.md) | Entry points, backend layers, API flows, and state ownership |
 | [Frontend](frontend.md) | Components, connections, tabs, detached windows, and files |
+| [Localization](localization.md) | Supported languages, language preferences, and translation contributions |
 | [Protocols](protocols.md) | SSH, VNC, file transfers, and outbound proxies |
 | [Security](security.md) | Accounts, session tokens, CSRF, credentials, and host trust |
 | [Storage](storage.md) | Databases, migrations, backups, and temporary state |

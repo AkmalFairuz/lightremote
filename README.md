@@ -60,6 +60,11 @@ Download the latest release for your OS and architecture:
   reopen recent connections, duplicate saved entries, and open temporary direct connections.
 - **Appearance:** Light, dark, and system themes, plus terminal color palettes
   with saved appearance preferences.
+- **Multilingual interface:** English, Indonesian, Spanish, French, German,
+  Brazilian Portuguese, Russian, Simplified Chinese, Japanese, Korean, Arabic,
+  and Hindi, with Arabic right-to-left layouts. Detect the system language or
+  switch instantly using the language selector; preferences sync across windows
+  and translations work offline. See [localization](docs/localization.md).
 - **Live status:** Connection status, traffic counters, and transfer speeds
   in the workspace status bar.
 - **SSH key management:** Import, generate, and reuse keys across connections.

@@ -1,0 +1,94 @@
+.language-selector.MuiInputBase-root {
+  --wails-draggable: no-drag;
+  max-width: 160px;
+  min-width: 100px;
+  height: 28px;
+  flex-shrink: 0;
+  margin-inline: 6px;
+  font-size: 12px;
+}
+.language-menu.MuiPaper-root {
+  max-height: min(75dvh, 480px);
+}
+.dialog-language {
+  display: flex;
+  justify-content: flex-end;
+  margin-block-end: 10px;
+}
+.app-header {
+  /* Native caption controls keep their platform position. Inner content follows the locale. */
+  direction: ltr;
+}
+.header-left {
+  direction: inherit;
+}
+:root[dir='rtl'] .header-left {
+  direction: rtl;
+}
+:root[dir='rtl'] .folder-chevron:not(.folder-chevron-open) {
+  transform: rotate(180deg);
+}
+:root[dir='rtl'] .folder-chevron-open {
+  transform: rotate(90deg);
+}
+:root[dir='rtl'] .file-popover .MuiMenuItem-root > svg:last-child,
+:root[dir='rtl'] .view-popover .MuiMenuItem-root > svg:last-child {
+  transform: scaleX(-1);
+}
+.terminal-view,
+.vnc-viewport,
+.file-editor-input,
+.host-key-address,
+.host-key-fingerprint,
+.files-path input {
+  direction: ltr;
+  unicode-bidi: isolate;
+}
+.file-name,
+.file-name-label,
+.connection-name,
+.folder-name {
+  unicode-bidi: plaintext;
+}
+.view-popover.MuiPaper-root,
+.help-popover.MuiPaper-root,
+.view-submenu-paper.MuiPaper-root {
+  width: max-content;
+  min-width: 180px;
+  max-width: calc(100vw - 24px);
+}
+.view-popover .MuiMenuItem-root,
+.help-popover .MuiMenuItem-root,
+.view-submenu .MuiMenuItem-root,
+.account-popover .MuiMenuItem-root {
+  white-space: normal;
+}
+@media (max-width: 760px) {
+  :root[dir='rtl'] .shell-body > .sidebar {
+    transform: translateX(110%);
+    box-shadow: -9px 0 20px var(--lr-shadow);
+  }
+  :root[dir='rtl'] .shell-body > .sidebar.sidebar-open {
+    transform: translateX(0);
+  }
+}
+@media (max-width: 420px) {
+  .language-selector.MuiInputBase-root {
+    min-width: 80px;
+    max-width: 100px;
+    margin-inline: 2px;
+  }
+}
+
+input[type='email'],
+input[type='password'],
+input[type='number'],
+textarea[spellcheck='false'],
+.ssh-key-value {
+  direction: ltr;
+  unicode-bidi: isolate;
+}
+
+:root[dir='rtl'] .folder-picker-chevron:not(.folder-picker-chevron-open) {
+  transform: rotate(180deg);
+}

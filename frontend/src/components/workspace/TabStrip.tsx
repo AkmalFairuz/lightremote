@@ -1,3 +1,5 @@
+import { useT } from '../../i18n/useT'
+import { useLocale } from '../../i18n/useLocale'
 import { useState, type DragEvent } from 'react'
 import { classNames } from '../../utils/classNames'
 import { IconButton, Tooltip } from '../../ui'
@@ -22,15 +24,19 @@ export function TabStrip({
   onClose,
   onDetach,
 }: TabStripProps) {
+  const t = useT()
+
+  const rtl = useLocale() === 'ar'
+
   const [dropTarget, setDropTarget] = useState<{ id: string; edge: TabMove['edge'] } | null>(null)
 
   function targetEdge(event: DragEvent<HTMLDivElement>): TabMove['edge'] {
     const bounds = event.currentTarget.getBoundingClientRect()
-    return event.clientX < bounds.left + bounds.width / 2 ? 'before' : 'after'
+    return event.clientX < bounds.left + bounds.width / 2 !== rtl ? 'before' : 'after'
   }
 
   return (
-    <div className="tab-strip" role="tablist" aria-label="Remote workspaces">
+    <div className="tab-strip" role="tablist" aria-label={t('files.remoteWorkspaces')}>
       {tabs.map((tab) => (
         <div
           key={tab.id}
@@ -78,17 +84,20 @@ export function TabStrip({
             <span>{tab.name}</span>
           </button>
           {onClose && (
-            <Tooltip title={`Close ${tab.name}`}>
-              <IconButton aria-label={`Close ${tab.name}`} onClick={() => onClose(tab.id)}>
+            <Tooltip title={t('common.closeNamed', { name: tab.name })}>
+              <IconButton
+                aria-label={t('common.closeNamed', { name: tab.name })}
+                onClick={() => onClose(tab.id)}
+              >
                 <Glyph name="close" size={15} />
               </IconButton>
             </Tooltip>
           )}
           {onDetach && (
-            <Tooltip title={`Detach ${tab.name}`}>
+            <Tooltip title={t('common.detachNamed', { name: tab.name })}>
               <span>
                 <IconButton
-                  aria-label={`Detach ${tab.name}`}
+                  aria-label={t('common.detachNamed', { name: tab.name })}
                   disabled={tab.status === 'connecting'}
                   onClick={() => onDetach(tab.id)}
                 >

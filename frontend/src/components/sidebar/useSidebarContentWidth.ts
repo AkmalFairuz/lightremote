@@ -1,3 +1,4 @@
+import { useLocale } from '../../i18n/useLocale'
 import { useEffect, useRef, useState } from 'react'
 import type { Connection, Folder } from '../../types'
 import { sidebarIndentPixels } from './sidebarDimensions'
@@ -69,6 +70,7 @@ export function useSidebarContentWidth(
   expanded: Record<string, boolean>,
   search: string,
 ) {
+  const locale = useLocale()
   const treeRef = useRef<HTMLDivElement>(null)
   const [contentWidth, setContentWidth] = useState(0)
 
@@ -91,7 +93,7 @@ export function useSidebarContentWidth(
       )
     }
     const syncScroll = () => {
-      tree.style.setProperty('--sidebar-scroll-left', `${tree.scrollLeft}px`)
+      tree.style.setProperty('--sidebar-scroll-left', `${Math.abs(tree.scrollLeft)}px`)
     }
     const schedule = () => {
       if (disposed) return
@@ -114,7 +116,7 @@ export function useSidebarContentWidth(
       window.removeEventListener('resize', schedule)
       window.cancelAnimationFrame(frame)
     }
-  }, [folders, connections, expanded, search])
+  }, [folders, connections, expanded, search, locale])
 
   return { treeRef, contentWidth }
 }

@@ -1,3 +1,4 @@
+import { useT } from '../../i18n/useT'
 import { useRef, type FormEvent } from 'react'
 import { Button, IconButton, Tooltip } from '../../ui'
 import { Glyph } from '../common/Glyph'
@@ -27,6 +28,8 @@ export function FileToolbar({
   onNewFolder,
   onUpload,
 }: FileToolbarProps) {
+  const t = useT()
+
   const uploadInput = useRef<HTMLInputElement>(null)
 
   function navigate(event: FormEvent<HTMLFormElement>) {
@@ -39,7 +42,7 @@ export function FileToolbar({
     <div className="files-toolbar">
       <form className="files-path" onSubmit={navigate}>
         <IconButton
-          aria-label="Parent folder"
+          aria-label={t('files.parentFolder')}
           disabled={path === null || path === '/'}
           onClick={onParent}
         >
@@ -48,14 +51,18 @@ export function FileToolbar({
         <input
           key={path ?? 'pending'}
           name="path"
-          aria-label="Remote path"
+          aria-label={t('files.remotePath')}
           defaultValue={path ?? ''}
-          placeholder={path === null ? 'Finding home…' : pathPlaceholder}
+          placeholder={path === null ? t('files.findingHome') : pathPlaceholder}
         />
       </form>
       <div className="files-actions">
-        <Tooltip title="Refresh">
-          <IconButton aria-label="Refresh files" disabled={path === null} onClick={onRefresh}>
+        <Tooltip title={t('files.refresh')}>
+          <IconButton
+            aria-label={t('files.refreshFiles')}
+            disabled={path === null}
+            onClick={onRefresh}
+          >
             <Glyph name="refresh" size={18} />
           </IconButton>
         </Tooltip>
@@ -64,21 +71,21 @@ export function FileToolbar({
           disabled={busy || path === null || writeDisabled}
           startIcon={<Glyph name="check" size={17} />}
         >
-          Select
+          {t('files.select')}
         </Button>
         <Button
           onClick={onNewFolder}
           disabled={busy || path === null || writeDisabled}
           startIcon={<Glyph name="create-new-folder-outline" size={17} />}
         >
-          New folder
+          {t('connections.newFolder')}
         </Button>
         <Button
           onClick={() => uploadInput.current?.click()}
           disabled={busy || path === null || writeDisabled}
           startIcon={<Glyph name="upload-file-outline" size={17} />}
         >
-          Upload
+          {t('files.upload')}
         </Button>
         <input
           ref={uploadInput}

@@ -1,3 +1,5 @@
+import { currentLanguage } from '../../i18n'
+import { nameCollator } from '../../i18n/format'
 import type { FileEntry } from '../../types'
 
 export type FileSortField = 'name' | 'size' | 'modTime'
@@ -9,10 +11,14 @@ export interface FileSort {
 }
 
 // Reuse collators instead of constructing one for every name comparison.
-const nameCollator = new Intl.Collator(undefined, { sensitivity: 'base' })
-const tieCollator = new Intl.Collator()
 
-export function sortFileEntries(entries: FileEntry[], sort: FileSort): FileEntry[] {
+export function sortFileEntries(
+  entries: FileEntry[],
+  sort: FileSort,
+  language = currentLanguage(),
+): FileEntry[] {
+  const collator = nameCollator('base', language)
+  const tieCollator = nameCollator('variant', language)
   const direction = sort.direction === 'asc' ? 1 : -1
   const modifiedTimes =
     sort.field === 'modTime'
@@ -23,7 +29,7 @@ export function sortFileEntries(entries: FileEntry[], sort: FileSort): FileEntry
     let compared = 0
     if (sort.field === 'size') compared = left.size - right.size
     if (sort.field === 'modTime') compared = modifiedTimes!.get(left)! - modifiedTimes!.get(right)!
-    if (sort.field === 'name') compared = nameCollator.compare(left.name, right.name)
+    if (sort.field === 'name') compared = collator.compare(left.name, right.name)
     return direction * compared || tieCollator.compare(left.name, right.name)
   })
 }

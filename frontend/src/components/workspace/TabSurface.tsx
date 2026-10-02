@@ -1,3 +1,4 @@
+import { useT } from '../../i18n/useT'
 import { useEffect, useRef } from 'react'
 import type { WorkspaceTab } from '../../state/workspaceSlice'
 import type { Connection } from '../../types'
@@ -41,6 +42,8 @@ export function TabSurface({
   onVncFilesWidth,
   onVncControls,
 }: TabSurfaceProps) {
+  const t = useT()
+
   const contentRef = useRef<HTMLDivElement>(null)
   const zoomValues = useRef(new Map<string, number>())
 
@@ -91,18 +94,21 @@ export function TabSurface({
       {tabs.length === 0 && (
         <div className="workspace-empty workspace-empty-with-content">
           <div className="workspace-empty-content">
-            <h1>Welcome to LightRemote</h1>
-            <div className="workspace-shortcuts" aria-label="Connection keyboard shortcuts">
+            <h1>{t('shell.welcomeToLightremote')}</h1>
+            <div
+              className="workspace-shortcuts"
+              aria-label={t('files.connectionKeyboardShortcuts')}
+            >
               <span>
-                <kbd>{openConnectionShortcut}</kbd> Open connection
+                <kbd>{openConnectionShortcut}</kbd> {t('shell.openConnection')}
               </span>
               <span>
-                <kbd>{newDirectConnectionShortcut}</kbd> New direct connection
+                <kbd>{newDirectConnectionShortcut}</kbd> {t('shell.newDirectConnection')}
               </span>
             </div>
             {onOpenConnection && recentConnections.length > 0 && (
               <section className="workspace-recent" aria-labelledby="workspace-recent-title">
-                <h2 id="workspace-recent-title">Recent connections</h2>
+                <h2 id="workspace-recent-title">{t('shell.recentConnections')}</h2>
                 <div className="workspace-recent-links">
                   {recentConnections.map((connection) => (
                     <button

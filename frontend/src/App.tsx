@@ -1,3 +1,5 @@
+import { useT } from './i18n/useT'
+import { LanguageSelector } from './components/shell/LanguageSelector'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { Dialog as MuiDialog } from '@mui/material'
 import { Button, CircularProgress, DialogActions, DialogContent, Typography } from './ui'
@@ -28,6 +30,8 @@ function PageLoading() {
 }
 
 function AuthGate({ children, detached = false }: { children: ReactNode; detached?: boolean }) {
+  const t = useT()
+
   const dispatch = useAppDispatch()
   const { user, signedOut } = useAppSelector((state) => state.auth)
   const { data, error, isLoading, isFetching, isError, refetch } = useMeQuery(undefined, {
@@ -73,13 +77,18 @@ function AuthGate({ children, detached = false }: { children: ReactNode; detache
       <LockedShell>
         <MuiDialog open fullWidth maxWidth="xs" aria-labelledby="server-error-title">
           <DialogContent>
+            <div className="dialog-language">
+              <LanguageSelector />
+            </div>
             <Typography component="h1" variant="h6" id="server-error-title">
-              Server unavailable
+              {t('common.serverUnavailable')}
             </Typography>
             <Typography>{errorMessage(checkingSetup ? setupError : error)}</Typography>
           </DialogContent>
           <DialogActions>
-            <Button onClick={() => (checkingSetup ? refetchSetup() : refetch())}>Retry</Button>
+            <Button onClick={() => (checkingSetup ? refetchSetup() : refetch())}>
+              {t('common.retry')}
+            </Button>
           </DialogActions>
         </MuiDialog>
       </LockedShell>

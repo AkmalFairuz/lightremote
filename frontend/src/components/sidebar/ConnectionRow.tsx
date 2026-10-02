@@ -1,3 +1,4 @@
+import { useT } from '../../i18n/useT'
 import { useState, type CSSProperties, type FormEvent } from 'react'
 import { DialogPresence, IconButton, Menu, MenuItem } from '../../ui'
 import {
@@ -41,6 +42,8 @@ export function ConnectionRow({
   onHostKey,
   onNotice,
 }: ConnectionRowProps) {
+  const t = useT()
+
   const drag = useSidebarDrag()
   const item: SidebarItem = { kind: 'connection', id: connection.id, parentId: connection.folderId }
   const dropEdge =
@@ -120,7 +123,7 @@ export function ConnectionRow({
         <form className="connection-rename" onSubmit={rename}>
           <Glyph name={kindIcons[connection.kind]} size={17} />
           <input
-            aria-label={`New name for ${connection.name}`}
+            aria-label={t('common.newName', { name: connection.name })}
             autoFocus
             value={name}
             onChange={(event) => setName(event.target.value)}
@@ -130,11 +133,15 @@ export function ConnectionRow({
             disabled={renameBusy}
           />
           <span className="sidebar-rename-actions">
-            <IconButton type="submit" aria-label="Save connection name" disabled={renameBusy}>
+            <IconButton
+              type="submit"
+              aria-label={t('connections.saveConnectionName')}
+              disabled={renameBusy}
+            >
               <Glyph name="check" size={18} />
             </IconButton>
             <IconButton
-              aria-label="Cancel rename"
+              aria-label={t('connections.cancelRename')}
               onClick={() => setEditing(false)}
               disabled={renameBusy}
             >
@@ -156,7 +163,7 @@ export function ConnectionRow({
           <span className="sidebar-row-actions">
             <span className="sidebar-row-actions-inner">
               <IconButton
-                aria-label={`Actions for ${connection.name}`}
+                aria-label={t('common.actionsFor', { name: connection.name })}
                 onClick={(event) => {
                   setAnchor(event.currentTarget)
                   setMenuOpen(true)
@@ -182,7 +189,7 @@ export function ConnectionRow({
             setEditing(true)
           }}
         >
-          Rename
+          {t('connections.rename')}
         </MenuItem>
         <MenuItem
           onClick={() => {
@@ -190,7 +197,7 @@ export function ConnectionRow({
             onEdit(connection)
           }}
         >
-          Edit connection
+          {t('connections.editConnection')}
         </MenuItem>
         <MenuItem
           disabled={duplicating}
@@ -199,7 +206,7 @@ export function ConnectionRow({
             void duplicate()
           }}
         >
-          Duplicate connection
+          {t('connections.duplicateConnection')}
         </MenuItem>
         {(connection.kind === 'ssh' || connection.kind === 'sftp') && (
           <MenuItem
@@ -208,7 +215,7 @@ export function ConnectionRow({
               onHostKey(connection)
             }}
           >
-            SSH host key
+            {t('connections.sshHostKey')}
           </MenuItem>
         )}
         <MenuItem
@@ -217,15 +224,15 @@ export function ConnectionRow({
             setConfirmDelete(true)
           }}
         >
-          Delete connection
+          {t('connections.deleteConnection')}
         </MenuItem>
       </Menu>
       <DialogPresence>
         {confirmDelete && (
           <ConfirmDialog
-            title="Delete connection"
-            message={`Delete “${connection.name}”?`}
-            actionLabel="Delete"
+            title={t('connections.deleteConnection')}
+            message={t('common.deleteNamed', { name: connection.name })}
+            actionLabel={t('connections.delete')}
             onClose={() => setConfirmDelete(false)}
             onConfirm={remove}
           />

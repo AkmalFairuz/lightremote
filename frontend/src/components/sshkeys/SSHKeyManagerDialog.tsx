@@ -1,3 +1,4 @@
+import { useT } from '../../i18n/useT'
 import { useState, type FormEvent } from 'react'
 import {
   useDeleteSSHKeyMutation,
@@ -33,6 +34,8 @@ interface SSHKeyRowProps {
 }
 
 function SSHKeyRow({ sshKey, onDelete }: SSHKeyRowProps) {
+  const t = useT()
+
   const [renameKey] = useRenameSSHKeyMutation()
   const [anchor, setAnchor] = useState<HTMLElement | null>(null)
   const [menuOpen, setMenuOpen] = useState(false)
@@ -70,7 +73,7 @@ function SSHKeyRow({ sshKey, onDelete }: SSHKeyRowProps) {
       {editing ? (
         <form className="ssh-key-rename" onSubmit={(event) => void rename(event)}>
           <input
-            aria-label={`New name for ${sshKey.name}`}
+            aria-label={t('common.newName', { name: sshKey.name })}
             autoFocus
             required
             maxLength={255}
@@ -85,12 +88,12 @@ function SSHKeyRow({ sshKey, onDelete }: SSHKeyRowProps) {
             }}
             disabled={busy}
           />
-          <IconButton type="submit" aria-label="Save SSH key name" disabled={busy}>
+          <IconButton type="submit" aria-label={t('keys.saveSshKeyName')} disabled={busy}>
             <Glyph name="check" size={18} />
           </IconButton>
           <IconButton
             type="button"
-            aria-label="Cancel rename"
+            aria-label={t('connections.cancelRename')}
             onClick={cancelRename}
             disabled={busy}
           >
@@ -106,7 +109,7 @@ function SSHKeyRow({ sshKey, onDelete }: SSHKeyRowProps) {
         <>
           <span className="ssh-key-name">{sshKey.name}</span>
           <IconButton
-            aria-label={`Actions for ${sshKey.name}`}
+            aria-label={t('common.actionsFor', { name: sshKey.name })}
             onClick={(event) => {
               setAnchor(event.currentTarget)
               setMenuOpen(true)
@@ -130,7 +133,7 @@ function SSHKeyRow({ sshKey, onDelete }: SSHKeyRowProps) {
             setEditing(true)
           }}
         >
-          Rename
+          {t('connections.rename')}
         </MenuItem>
         <MenuItem
           onClick={() => {
@@ -138,7 +141,7 @@ function SSHKeyRow({ sshKey, onDelete }: SSHKeyRowProps) {
             onDelete()
           }}
         >
-          Delete
+          {t('connections.delete')}
         </MenuItem>
       </Menu>
     </div>
@@ -146,6 +149,8 @@ function SSHKeyRow({ sshKey, onDelete }: SSHKeyRowProps) {
 }
 
 export function SSHKeyManagerDialog({ onClose }: Props) {
+  const t = useT()
+
   const { data: keys = [], error } = useSshKeysQuery()
   const [deleteKey] = useDeleteSSHKeyMutation()
   const [adding, setAdding] = useState(false)
@@ -155,10 +160,10 @@ export function SSHKeyManagerDialog({ onClose }: Props) {
   return (
     <>
       <Dialog open onClose={onClose} fullWidth maxWidth="sm">
-        <DialogTitle>SSH keys</DialogTitle>
+        <DialogTitle>{t('shell.sshKeys')}</DialogTitle>
         <DialogContent className="dialog-fields ssh-key-manager-content">
-          <Notice message={error ? 'Could not load SSH keys.' : null} />
-          {keys.length === 0 && <p>No SSH keys saved yet.</p>}
+          <Notice message={error ? t('keys.couldNotLoadSshKeys') : null} />
+          {keys.length === 0 && <p>{t('keys.noSshKeysSavedYet')}</p>}
           <div className="ssh-key-list">
             {keys.map((key) => (
               <SSHKeyRow key={key.id} sshKey={key} onDelete={() => setDeleting(key)} />
@@ -167,10 +172,10 @@ export function SSHKeyManagerDialog({ onClose }: Props) {
         </DialogContent>
         <DialogActions>
           <Button variant="outlined" onClick={() => setAdding(true)}>
-            Import key
+            {t('keys.importKey')}
           </Button>
           <Button variant="contained" onClick={() => setGenerating(true)}>
-            Generate key
+            {t('keys.generateKey')}
           </Button>
         </DialogActions>
       </Dialog>
@@ -185,9 +190,9 @@ export function SSHKeyManagerDialog({ onClose }: Props) {
       <DialogPresence>
         {deleting && (
           <ConfirmDialog
-            title="Delete SSH key"
-            message={`Delete ${deleting.name}? Connections using this key must select another key first.`}
-            actionLabel="Delete"
+            title={t('keys.deleteSshKey')}
+            message={t('keys.deleteKey', { name: deleting.name })}
+            actionLabel={t('connections.delete')}
             onClose={() => setDeleting(null)}
             onConfirm={async () => {
               await deleteKey(deleting.id).unwrap()

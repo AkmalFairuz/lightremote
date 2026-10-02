@@ -1,5 +1,8 @@
+import { syncDesktopMenuLanguage } from './i18n/desktopMenu'
 import { createRoot } from 'react-dom/client'
-import { CssBaseline, ThemeProvider } from '@mui/material'
+import { I18nextProvider } from 'react-i18next'
+import { i18n } from './i18n'
+import { LocalizedTheme } from './i18n/LocalizedTheme'
 import { Provider } from 'react-redux'
 import '@fontsource/roboto/latin-400.css'
 import '@fontsource/roboto/latin-500.css'
@@ -7,7 +10,6 @@ import '@fontsource/roboto/latin-600.css'
 import '@xterm/xterm/css/xterm.css'
 import App from './App'
 import { store } from './state/store'
-import { theme } from './ui/theme'
 import { syncDesktopWindowTitle } from './desktop/windowTitle'
 import './styles/base.css'
 import './styles/mui.css'
@@ -27,14 +29,17 @@ import './styles/folder-add.css'
 import './styles/folder-picker.css'
 import './styles/files.css'
 import './styles/file-editor.css'
+import './styles/localization.css'
 
 syncDesktopWindowTitle()
+syncDesktopMenuLanguage()
 
 createRoot(document.getElementById('root')!).render(
   <Provider store={store}>
-    <ThemeProvider theme={theme} defaultMode="system" noSsr>
-      <CssBaseline />
-      <App />
-    </ThemeProvider>
+    <I18nextProvider i18n={i18n}>
+      <LocalizedTheme>
+        <App />
+      </LocalizedTheme>
+    </I18nextProvider>
   </Provider>,
 )

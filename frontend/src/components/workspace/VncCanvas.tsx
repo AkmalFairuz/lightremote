@@ -1,3 +1,5 @@
+import { t as translate } from '../../i18n'
+import { useT } from '../../i18n/useT'
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import RFB from '@novnc/novnc'
 import { Alert, DialogPresence, Snackbar } from '../../ui'
@@ -62,6 +64,8 @@ export function VncCanvas({
   onConnectionError,
   onControls,
 }: VncCanvasProps) {
+  const t = useT()
+
   const viewport = useRef<HTMLDivElement>(null)
   const container = useRef<HTMLDivElement>(null)
   const rfb = useRef<RFB | null>(null)
@@ -88,7 +92,7 @@ export function VncCanvas({
     try {
       client.toBlob((blob) => {
         if (!blob) {
-          setScreenshotError('Could not capture the VNC desktop.')
+          setScreenshotError(t('files.couldNotCaptureTheVncDesktop'))
           return
         }
         try {
@@ -98,13 +102,13 @@ export function VncCanvas({
             imageUrl: URL.createObjectURL(blob),
           })
         } catch {
-          setScreenshotError('Could not capture the VNC desktop.')
+          setScreenshotError(t('files.couldNotCaptureTheVncDesktop'))
         }
       }, 'image/png')
     } catch {
-      setScreenshotError('Could not capture the VNC desktop.')
+      setScreenshotError(t('files.couldNotCaptureTheVncDesktop'))
     }
-  }, [tabName])
+  }, [tabName, t])
   const toggleFiles = useCallback(() => {
     if (!fileTransfer) return
     filesOpenActionRef.current(tabId, !filesOpenRef.current)
@@ -268,7 +272,7 @@ export function VncCanvas({
     } catch (cause) {
       channel.close()
       connectionErrorRef.current?.(
-        cause instanceof Error ? cause.message : 'Could not start the VNC client.',
+        cause instanceof Error ? cause.message : translate('files.couldNotStartTheVncClient'),
       )
       return
     }
@@ -290,7 +294,7 @@ export function VncCanvas({
       setConnected(false)
       if (reportedError) return
       if (!settled) settled = true
-      connectionErrorRef.current?.('VNC connection ended.')
+      connectionErrorRef.current?.(translate('files.vncConnectionEnded'))
     })
     client.addEventListener('securityfailure', (event) => {
       if (disposed) return
@@ -298,7 +302,7 @@ export function VncCanvas({
         reportedError = true
         settled = true
         const reason = (event as CustomEvent<{ reason?: string }>).detail?.reason
-        connectionErrorRef.current?.(reason || 'VNC security negotiation failed.')
+        connectionErrorRef.current?.(reason || translate('files.vncSecurityNegotiationFailed'))
       }
     })
     rfb.current = client
@@ -317,7 +321,7 @@ export function VncCanvas({
           <div
             className="vnc-canvas"
             ref={container}
-            aria-label="VNC desktop"
+            aria-label={t('connections.vncDesktop')}
             style={{
               width: `${zoom}%`,
               height: `${zoom}%`,

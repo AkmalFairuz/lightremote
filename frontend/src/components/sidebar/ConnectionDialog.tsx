@@ -1,3 +1,5 @@
+import { useT } from '../../i18n/useT'
+import type { t as Translator } from '../../i18n'
 import { useLayoutEffect, useRef, useState, type FormEvent } from 'react'
 import {
   Button,
@@ -59,8 +61,8 @@ function initialVncAccessMode(connection?: Connection): VncAccessMode {
   return connection.vncFileTransfer === false ? 'read_only' : 'read_only_files'
 }
 
-function folderPath(folders: Folder[], folderId: string): string[] {
-  if (!folderId) return ['Root']
+function folderPath(folders: Folder[], folderId: string, t: typeof Translator): string[] {
+  if (!folderId) return [t('connections.root')]
   const names: string[] = []
   const visited = new Set<string>()
   let current = folders.find((folder) => folder.id === folderId)
@@ -70,7 +72,7 @@ function folderPath(folders: Folder[], folderId: string): string[] {
     const parentId = current.parentId
     current = folders.find((folder) => folder.id === parentId)
   }
-  return ['Root', ...names]
+  return [t('connections.root'), ...names]
 }
 
 export function ConnectionDialog({
@@ -83,6 +85,8 @@ export function ConnectionDialog({
   onDirectCreated,
   onSavedAndConnect,
 }: ConnectionDialogProps) {
+  const t = useT()
+
   const dispatch = useAppDispatch()
   const [createConnection, { isLoading: creating }] = useCreateConnectionMutation()
   const [createDirectConnection, { isLoading: creatingDirect }] =
@@ -95,7 +99,7 @@ export function ConnectionDialog({
   const [folderId, setFolderId] = useState(connection?.folderId ?? initialFolderId ?? '')
   const [folderPickerOpen, setFolderPickerOpen] = useState(false)
   const folderPathRef = useRef<HTMLSpanElement>(null)
-  const folderSegments = folderPath(folders, folderId)
+  const folderSegments = folderPath(folders, folderId, t)
   const [host, setHost] = useState(connection?.host ?? '')
   const [port, setPort] = useState(String(connection?.port ?? 22))
   const [username, setUsername] = useState(connection?.username ?? '')
@@ -135,12 +139,16 @@ export function ConnectionDialog({
   }
 
   function dialogTitle() {
-    if (connection) return 'Edit connection'
+    if (connection) return t('connections.editConnection')
     if (step === 'type') {
-      return direct ? 'New direct connection · Choose type' : 'New connection · Choose type'
+      return direct
+        ? t('connections.newDirectConnectionChooseType')
+        : t('connections.newConnectionChooseType')
     }
     const protocol = kind === 'ftp' ? 'FTP / FTPS' : kind.toUpperCase()
-    return direct ? `Direct ${protocol} connection` : `New ${protocol} connection`
+    return direct
+      ? t('connections.directTitle', { protocol })
+      : t('connections.newTitle', { protocol })
   }
 
   async function save(event: FormEvent) {
@@ -152,15 +160,15 @@ export function ConnectionDialog({
     setError(null)
     const portNumber = Number(port)
     if (!Number.isInteger(portNumber) || portNumber < 1 || portNumber > 65535) {
-      setError('Enter a port between 1 and 65535.')
+      setError(t('connections.enterAPortBetween1And65535'))
       return
     }
     if (authType === 'private_key' && !sshKeyId) {
-      setError('Choose or add an SSH key.')
+      setError(t('connections.chooseOrAddAnSshKey'))
       return
     }
     if (proxyEnabled && proxy.password && !proxy.username) {
-      setError('Enter a proxy username to use a password.')
+      setError(t('connections.enterAProxyUsernameToUseAPassword'))
       return
     }
 
@@ -229,7 +237,7 @@ export function ConnectionDialog({
                 <div className="form-grid">
                   {!direct && (
                     <TextField
-                      label="Display name"
+                      label={t('connections.displayName')}
                       value={name}
                       onChange={(event) => setName(event.target.value)}
                       required
@@ -238,24 +246,24 @@ export function ConnectionDialog({
                   {connection && (
                     <TextField
                       select
-                      label="Protocol"
+                      label={t('connections.protocol')}
                       value={kind}
                       onChange={(event) => changeKind(event.target.value as ConnectionKind)}
                     >
-                      <MenuItem value="ssh">SSH terminal</MenuItem>
-                      <MenuItem value="vnc">VNC desktop</MenuItem>
-                      <MenuItem value="sftp">SFTP files</MenuItem>
-                      <MenuItem value="ftp">FTP / FTPS files</MenuItem>
+                      <MenuItem value="ssh">{t('connections.sshTerminal')}</MenuItem>
+                      <MenuItem value="vnc">{t('connections.vncDesktop')}</MenuItem>
+                      <MenuItem value="sftp">{t('connections.sftpFiles')}</MenuItem>
+                      <MenuItem value="ftp">{t('connections.ftpFiles')}</MenuItem>
                     </TextField>
                   )}
                   <TextField
-                    label="Host"
+                    label={t('connections.host')}
                     value={host}
                     onChange={(event) => setHost(event.target.value)}
                     required
                   />
                   <TextField
-                    label="Port"
+                    label={t('connections.port')}
                     type="text"
                     value={port}
                     onChange={(event) => setPort(event.target.value)}
@@ -265,27 +273,29 @@ export function ConnectionDialog({
                     }}
                   />
                   <TextField
-                    label="Username"
+                    label={t('connections.username')}
                     value={username}
                     onChange={(event) => setUsername(event.target.value)}
                     required={kind !== 'vnc'}
                   />
                   <TextField
                     select
-                    label="Authentication"
+                    label={t('connections.authentication')}
                     value={authType}
                     onChange={(event) => setAuthType(event.target.value as AuthType)}
                   >
-                    {kind === 'vnc' && <MenuItem value="none">No password</MenuItem>}
-                    <MenuItem value="password">Password</MenuItem>
+                    {kind === 'vnc' && (
+                      <MenuItem value="none">{t('connections.noPassword')}</MenuItem>
+                    )}
+                    <MenuItem value="password">{t('shell.password')}</MenuItem>
                     {(kind === 'ssh' || kind === 'sftp') && (
-                      <MenuItem value="private_key">Private key</MenuItem>
+                      <MenuItem value="private_key">{t('connections.privateKey')}</MenuItem>
                     )}
                   </TextField>
                   {!direct && (
                     <TextField
                       className="connection-folder-field"
-                      label="Folder"
+                      label={t('connections.folder')}
                       value=""
                       onClick={() => setFolderPickerOpen(true)}
                       onKeyDown={(event) => {
@@ -312,7 +322,7 @@ export function ConnectionDialog({
                         },
                         htmlInput: {
                           readOnly: true,
-                          'aria-label': 'Choose folder',
+                          'aria-label': t('connections.chooseFolder'),
                           'aria-haspopup': 'dialog',
                         },
                       }}
@@ -321,11 +331,11 @@ export function ConnectionDialog({
                   {kind === 'vnc' && (
                     <TextField
                       select
-                      label="Encoding"
+                      label={t('connections.encoding')}
                       value={vncEncoding}
                       onChange={(event) => setVncEncoding(event.target.value as VncEncoding)}
                     >
-                      <MenuItem value="auto">Auto</MenuItem>
+                      <MenuItem value="auto">{t('connections.auto')}</MenuItem>
                       <MenuItem value="copyrect">CopyRect + Raw</MenuItem>
                       <MenuItem value="tight">Tight</MenuItem>
                       <MenuItem value="zlib">Zlib</MenuItem>
@@ -337,13 +347,15 @@ export function ConnectionDialog({
                   {kind === 'vnc' && (
                     <TextField
                       select
-                      label="Access mode"
+                      label={t('connections.accessMode')}
                       value={vncAccessMode}
                       onChange={(event) => setVncAccessMode(event.target.value as VncAccessMode)}
                     >
-                      <MenuItem value="full">Full access</MenuItem>
-                      <MenuItem value="read_only">Read only</MenuItem>
-                      <MenuItem value="read_only_files">Read only with file transfer</MenuItem>
+                      <MenuItem value="full">{t('connections.fullAccess')}</MenuItem>
+                      <MenuItem value="read_only">{t('connections.readOnly')}</MenuItem>
+                      <MenuItem value="read_only_files">
+                        {t('connections.readOnlyWithFileTransfer')}
+                      </MenuItem>
                     </TextField>
                   )}
                 </div>
@@ -355,21 +367,21 @@ export function ConnectionDialog({
                         onChange={(event) => setFtpTls(event.target.checked)}
                       />
                     }
-                    label="Explicit FTPS (TLS)"
+                    label={t('connections.explicitFtps')}
                   />
                 )}
                 {authType === 'private_key' && (
                   <div className="ssh-key-picker">
                     <TextField
                       select
-                      label="SSH key"
+                      label={t('connections.sshKey')}
                       value={sshKeyId}
                       onChange={(event) => setSSHKeyId(event.target.value)}
                       required
                     >
                       {availableSSHKeys.length === 0 && (
                         <MenuItem value="" disabled>
-                          No SSH keys saved
+                          {t('connections.noSshKeysSaved')}
                         </MenuItem>
                       )}
                       {availableSSHKeys.map((key) => (
@@ -379,18 +391,20 @@ export function ConnectionDialog({
                       ))}
                     </TextField>
                     <Button type="button" variant="outlined" onClick={() => setAddSSHKeyOpen(true)}>
-                      Add new key
+                      {t('connections.addNewKey')}
                     </Button>
                   </div>
                 )}
                 {authType === 'password' && (
                   <PasswordField
-                    label="Remote password"
+                    label={t('connections.remotePassword')}
                     value={password}
                     onChange={(event) => setPassword(event.target.value)}
                     required={!connection}
                     autoComplete="new-password"
-                    helperText={connection ? 'Leave blank to keep the saved password.' : undefined}
+                    helperText={
+                      connection ? t('connections.leaveBlankToKeepTheSavedPassword') : undefined
+                    }
                   />
                 )}
                 <ProxyFields
@@ -410,7 +424,7 @@ export function ConnectionDialog({
             >
               {!connection && (
                 <Button type="button" onClick={() => setStep('type')}>
-                  Back
+                  {t('connections.back')}
                 </Button>
               )}
               <Button
@@ -419,7 +433,7 @@ export function ConnectionDialog({
                 value="save"
                 disabled={creating || creatingDirect || updating}
               >
-                {direct ? 'Connect' : 'Save connection'}
+                {direct ? t('connections.connect') : t('connections.saveConnection')}
               </Button>
               {!connection && !direct && (
                 <Button
@@ -428,7 +442,7 @@ export function ConnectionDialog({
                   value="connect"
                   disabled={creating || creatingDirect || updating}
                 >
-                  Save &amp; connect
+                  {t('common.saveConnect')}
                 </Button>
               )}
             </DialogActions>

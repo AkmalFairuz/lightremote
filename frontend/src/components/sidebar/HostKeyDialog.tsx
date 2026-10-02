@@ -1,3 +1,5 @@
+import { useT } from '../../i18n/useT'
+import { Trans } from 'react-i18next'
 import { useEffect, useState } from 'react'
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle } from '../../ui'
 import { useApproveHostKeyMutation, useInspectHostKeyMutation } from '../../api/resources'
@@ -15,6 +17,8 @@ export function HostKeyDialog({
   initialObserved?: string | null
   onApproved?: () => void | Promise<void>
 }) {
+  const t = useT()
+
   const [inspect] = useInspectHostKeyMutation()
   const [approve] = useApproveHostKeyMutation()
   const [observed, setObserved] = useState<string | null>(initialObserved)
@@ -63,7 +67,7 @@ export function HostKeyDialog({
     } catch (cause) {
       if ((cause as { status?: number })?.status === 409) {
         setObserved(null)
-        setError('The host key changed while this dialog was open. Close it and try again.')
+        setError(t('connections.theHostKeyChangedWhileThisDialogWasOpenCloseItAndTryAgain'))
       } else {
         setError(errorMessage(cause))
       }
@@ -74,30 +78,42 @@ export function HostKeyDialog({
 
   return (
     <Dialog open onClose={onClose} fullWidth maxWidth="sm">
-      <DialogTitle>{changed ? 'SSH host key changed' : 'Verify SSH host key'}</DialogTitle>
+      <DialogTitle>
+        {changed ? t('connections.sshHostKeyChanged') : t('connections.verifySshHostKey')}
+      </DialogTitle>
       <DialogContent className="host-key-content">
         <p className="host-key-message" role={changed ? 'alert' : undefined}>
-          The server for <strong>{connection.name}</strong> (
-          <span className="host-key-address">
-            {connection.host}:{connection.port}
-          </span>
-          ) presents SSH fingerprint{' '}
-          {observed ? (
-            <code className="host-key-fingerprint">{observed}</code>
-          ) : checking ? (
-            <span className="host-key-pending">checking…</span>
-          ) : (
-            <span className="host-key-pending">unavailable</span>
-          )}
-          .{' '}
+          <Trans
+            shouldUnescape
+            tOptions={{ interpolation: { escapeValue: true } }}
+            i18nKey="connections.fingerprint"
+            values={{
+              name: connection.name,
+              address: `${connection.host}:${connection.port}`,
+              fingerprint:
+                observed ?? (checking ? t('connections.checking') : t('common.unavailable')),
+            }}
+            components={{
+              name: <strong />,
+              address: <span className="host-key-address" />,
+              fingerprint: <code className="host-key-fingerprint" />,
+            }}
+          />{' '}
           {connection.hostKeyFingerprint && (
             <>
-              The previously trusted fingerprint is{' '}
-              <code className="host-key-fingerprint">{connection.hostKeyFingerprint}</code>.{' '}
+              <Trans
+                shouldUnescape
+                tOptions={{ interpolation: { escapeValue: true } }}
+                i18nKey="connections.previousFingerprint"
+                values={{ fingerprint: connection.hostKeyFingerprint }}
+                components={{ fingerprint: <code className="host-key-fingerprint" /> }}
+              />{' '}
             </>
           )}
-          {changed && <strong className="host-key-warning">The host key has changed. </strong>}
-          Compare the server fingerprint with a trusted source before continuing.
+          {changed && (
+            <strong className="host-key-warning">{t('connections.theHostKeyHasChanged')} </strong>
+          )}
+          {t('connections.compareTheServerFingerprintWithATrustedSourceBeforeContinuing')}
         </p>
         <Notice message={error} />
       </DialogContent>
@@ -107,7 +123,7 @@ export function HostKeyDialog({
           onClick={() => void approveKey()}
           disabled={!observed || checking || approving}
         >
-          Trust host key
+          {t('connections.trustHostKey')}
         </Button>
       </DialogActions>
     </Dialog>

@@ -199,7 +199,7 @@
 .files-column-resize {
   position: absolute;
   top: 0;
-  right: -7px;
+  inset-inline-end: -7px;
   width: 10px;
   height: 100%;
   cursor: col-resize;
@@ -211,7 +211,7 @@
   position: absolute;
   top: 5px;
   bottom: 5px;
-  left: 4px;
+  inset-inline-start: 4px;
   width: 1px;
   background: var(--lr-border);
   content: '';
@@ -363,7 +363,7 @@
   position: absolute;
   z-index: 3;
   top: 100%;
-  left: 0;
+  inset-inline-start: 0;
   max-width: 100%;
   padding: 3px 5px;
   border: 1px solid var(--lr-danger-border);
@@ -379,7 +379,7 @@
   border: 0;
   background: transparent;
   color: var(--lr-action-text);
-  text-align: left;
+  text-align: start;
 }
 
 .file-name span {

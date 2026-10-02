@@ -1,3 +1,4 @@
+import { useT } from '../../i18n/useT'
 import { useState, type FormEvent } from 'react'
 import { resourcesApi } from '../../api/resources'
 import { storeSSHKey } from '../../api/sshKeys'
@@ -14,6 +15,8 @@ interface Props {
 }
 
 export function SSHKeyCreateDialog({ onClose, onCreated }: Props) {
+  const t = useT()
+
   const dispatch = useAppDispatch()
   const csrfToken = useAppSelector((state) => state.auth.csrfToken)
   const [name, setName] = useState('')
@@ -27,7 +30,7 @@ export function SSHKeyCreateDialog({ onClose, onCreated }: Props) {
     event.preventDefault()
     event.stopPropagation()
     if (!privateKey) {
-      setError('Choose a private key file.')
+      setError(t('keys.chooseAPrivateKeyFile'))
       return
     }
     setError(null)
@@ -46,11 +49,11 @@ export function SSHKeyCreateDialog({ onClose, onCreated }: Props) {
   return (
     <Dialog open onClose={onClose} fullWidth maxWidth="xs">
       <form onSubmit={(event) => void save(event)}>
-        <DialogTitle>Add SSH key</DialogTitle>
+        <DialogTitle>{t('keys.addSshKey')}</DialogTitle>
         <DialogContent className="dialog-fields">
           <Notice message={error} />
           <TextField
-            label="Key name"
+            label={t('keys.keyName')}
             value={name}
             onChange={(event) => setName(event.target.value)}
             required
@@ -65,7 +68,7 @@ export function SSHKeyCreateDialog({ onClose, onCreated }: Props) {
         </DialogContent>
         <DialogActions>
           <Button type="submit" variant="contained" disabled={busy}>
-            Add key
+            {t('keys.addKey')}
           </Button>
         </DialogActions>
       </form>

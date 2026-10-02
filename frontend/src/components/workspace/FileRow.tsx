@@ -1,3 +1,7 @@
+import { useT } from '../../i18n/useT'
+import { formatDate } from '../../i18n/format'
+import { translateMessage } from '../../i18n'
+import { useLocale } from '../../i18n/useLocale'
 import { useEffect, useState, type FormEvent } from 'react'
 import { IconButton, Menu, MenuItem } from '../../ui'
 import type { FileEntry } from '../../types'
@@ -40,6 +44,10 @@ export function FileRow({
   onDelete,
   onActiveChange,
 }: FileRowProps) {
+  const t = useT()
+
+  const locale = useLocale()
+
   const [editing, setEditing] = useState(false)
   const [name, setName] = useState(entry.name)
   const [busy, setBusy] = useState(false)
@@ -48,7 +56,7 @@ export function FileRow({
   const [menuOpen, setMenuOpen] = useState(false)
   const [focused, setFocused] = useState(false)
   const modifiedAt = Date.parse(entry.modTime)
-  const modifiedLabel = modifiedAt > 0 ? new Date(modifiedAt).toLocaleString() : '—'
+  const modifiedLabel = modifiedAt > 0 ? formatDate(new Date(modifiedAt), locale) : '—'
   const driveRoot = isDriveRoot(entry.path)
   const active = focused || editing || anchor !== null
 
@@ -60,7 +68,7 @@ export function FileRow({
   async function submit(event: FormEvent) {
     event.preventDefault()
     if (!name || name === '.' || name === '..' || name.includes('/')) {
-      setError('Enter a name without a slash.')
+      setError(t('common.enterANameWithoutASlash'))
       return
     }
     if (name === entry.name) {
@@ -73,7 +81,7 @@ export function FileRow({
       await onRename(entry, name)
       setEditing(false)
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'Rename failed.')
+      setError(cause instanceof Error ? cause.message : t('files.renameFailed'))
     } finally {
       setBusy(false)
     }
@@ -94,7 +102,7 @@ export function FileRow({
         <span role="cell" className="file-selection-cell">
           <input
             type="checkbox"
-            aria-label={`Select ${entry.name}`}
+            aria-label={t('common.selectNamed', { name: entry.name })}
             checked={selected}
             disabled={driveRoot || selectionDisabled}
             onChange={(event) => onSelect(entry, event.target.checked)}
@@ -106,7 +114,7 @@ export function FileRow({
           <form className="file-rename" onSubmit={submit}>
             <FileTypeIcon entry={entry} />
             <input
-              aria-label={`New name for ${entry.name}`}
+              aria-label={t('common.newName', { name: entry.name })}
               aria-invalid={Boolean(error)}
               title={error ?? undefined}
               autoFocus
@@ -117,11 +125,11 @@ export function FileRow({
               }}
               disabled={busy}
             />
-            <IconButton type="submit" aria-label="Save name" disabled={busy}>
+            <IconButton type="submit" aria-label={t('files.saveName')} disabled={busy}>
               <Glyph name="check" size={16} />
             </IconButton>
             <IconButton
-              aria-label="Cancel rename"
+              aria-label={t('connections.cancelRename')}
               onClick={() => setEditing(false)}
               disabled={busy}
             >
@@ -129,7 +137,7 @@ export function FileRow({
             </IconButton>
             {error && (
               <small className="file-rename-error" role="alert">
-                {error}
+                {translateMessage(error, locale)}
               </small>
             )}
           </form>
@@ -152,9 +160,9 @@ export function FileRow({
       <span
         role="cell"
         className="file-metadata-cell"
-        title={entry.isDir ? undefined : formatBytes(entry.size)}
+        title={entry.isDir ? undefined : formatBytes(entry.size, locale)}
       >
-        {entry.isDir ? '—' : formatBytes(entry.size)}
+        {entry.isDir ? '—' : formatBytes(entry.size, locale)}
       </span>
       <span role="cell" className="file-metadata-cell" title={modifiedLabel}>
         {modifiedLabel}
@@ -162,7 +170,7 @@ export function FileRow({
       <div className="file-row-actions" role="cell">
         {!driveRoot && (
           <IconButton
-            aria-label={`Actions for ${entry.name}`}
+            aria-label={t('common.actionsFor', { name: entry.name })}
             onClick={(event) => {
               setAnchor(event.currentTarget)
               setMenuOpen(true)
@@ -184,7 +192,7 @@ export function FileRow({
                 onCopyPath(entry)
               }}
             >
-              Copy path
+              {t('files.copyPath')}
             </MenuItem>
             {isEditableTextFile(entry) && (
               <MenuItem
@@ -194,7 +202,7 @@ export function FileRow({
                   onEdit(entry)
                 }}
               >
-                {entry.size >= maxEditableBytes ? 'Edit (10 MB limit)' : 'Edit'}
+                {entry.size >= maxEditableBytes ? t('files.edit10MbLimit') : t('users.edit')}
               </MenuItem>
             )}
             {!entry.isDir && (
@@ -204,7 +212,7 @@ export function FileRow({
                   onDownload(entry)
                 }}
               >
-                Download
+                {t('files.download')}
               </MenuItem>
             )}
             <MenuItem
@@ -215,7 +223,7 @@ export function FileRow({
                 setEditing(true)
               }}
             >
-              Rename
+              {t('connections.rename')}
             </MenuItem>
             <MenuItem
               onClick={() => {
@@ -223,7 +231,7 @@ export function FileRow({
                 onDelete(entry)
               }}
             >
-              Delete
+              {t('connections.delete')}
             </MenuItem>
           </Menu>
         )}

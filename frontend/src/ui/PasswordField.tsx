@@ -1,3 +1,4 @@
+import { useT } from '../i18n/useT'
 import { useState } from 'react'
 import { LocalIcon } from './localIcons'
 import type { TextFieldProps } from '@mui/material'
@@ -6,6 +7,8 @@ import { InputAdornment, TextField } from './fields'
 
 /** Adds a shared show or hide action to sensitive text fields. */
 export function PasswordField({ slotProps, ...props }: Omit<TextFieldProps, 'type'>) {
+  const t = useT()
+
   const [visible, setVisible] = useState(false)
 
   return (
@@ -20,7 +23,7 @@ export function PasswordField({ slotProps, ...props }: Omit<TextFieldProps, 'typ
               <IconButton
                 type="button"
                 edge="end"
-                aria-label={visible ? 'Hide secret' : 'Show secret'}
+                aria-label={visible ? t('common.hideSecret') : t('common.showSecret')}
                 aria-pressed={visible}
                 onClick={() => setVisible((current) => !current)}
                 onMouseDown={(event) => event.preventDefault()}

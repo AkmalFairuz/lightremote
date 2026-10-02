@@ -296,7 +296,7 @@ body.desktop-app .locked-session-check {
     z-index: 4;
     top: 38px;
     bottom: 0;
-    left: 0;
+    inset-inline-start: 0;
     height: auto;
     max-width: calc(100vw - 46px);
     box-shadow: 9px 0 20px var(--lr-shadow);

@@ -1,3 +1,5 @@
+import { useT } from '../../i18n/useT'
+import { useLocale } from '../../i18n/useLocale'
 import { ListItemIcon, MenuItem, MenuList, Paper, Popover, Popper } from '@mui/material'
 import { useState } from 'react'
 import type { Connection } from '../../types'
@@ -32,6 +34,10 @@ export function FileMenu({
   recentConnections,
   onOpenRecentConnection,
 }: FileMenuProps) {
+  const t = useT()
+
+  const rtl = useLocale() === 'ar'
+
   const [submenuAnchor, setSubmenuAnchor] = useState<HTMLElement | null>(null)
 
   function closeMenu() {
@@ -51,30 +57,30 @@ export function FileMenu({
         anchorEl={anchorEl}
         onClose={closeMenu}
         disableEnforceFocus
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
-        transformOrigin={{ vertical: 'top', horizontal: 'left' }}
+        anchorOrigin={{ vertical: 'bottom', horizontal: rtl ? 'right' : 'left' }}
+        transformOrigin={{ vertical: 'top', horizontal: rtl ? 'right' : 'left' }}
         slotProps={{ paper: { className: 'file-popover' } }}
       >
-        <MenuList dense aria-label="File actions">
+        <MenuList dense aria-label={t('shell.fileActions')}>
           <MenuItem onMouseEnter={() => onSection('root')} onClick={onOpenConnection}>
             <ListItemIcon>
               <Glyph name="search" size={17} />
             </ListItemIcon>
-            <span>Open connection</span>
+            <span>{t('shell.openConnection')}</span>
             <span className="file-menu-shortcut">{openConnectionShortcut}</span>
           </MenuItem>
           <MenuItem onMouseEnter={() => onSection('root')} onClick={onNewDirectConnection}>
             <ListItemIcon>
               <Glyph name="add-link" size={17} />
             </ListItemIcon>
-            <span>New direct connection</span>
+            <span>{t('shell.newDirectConnection')}</span>
             <span className="file-menu-shortcut">{newDirectConnectionShortcut}</span>
           </MenuItem>
           <MenuItem onMouseEnter={() => onSection('root')} onClick={onManageSSHKeys}>
             <ListItemIcon>
               <Glyph name="key" size={17} />
             </ListItemIcon>
-            SSH keys
+            {t('shell.sshKeys')}
           </MenuItem>
           <MenuItem
             selected={section === 'recent'}
@@ -87,7 +93,7 @@ export function FileMenu({
             <ListItemIcon>
               <Glyph name="history" size={17} />
             </ListItemIcon>
-            Recent connections
+            {t('shell.recentConnections')}
             <Glyph name="chevron-right" size={18} />
           </MenuItem>
         </MenuList>
@@ -95,15 +101,18 @@ export function FileMenu({
       <Popper
         open={Boolean(anchorEl && submenuAnchor && section === 'recent')}
         anchorEl={submenuAnchor}
-        placement="right-start"
+        placement={rtl ? 'left-start' : 'right-start'}
         className="file-submenu"
         modifiers={[
-          { name: 'flip', options: { fallbackPlacements: ['left-start', 'bottom-start'] } },
+          {
+            name: 'flip',
+            options: { fallbackPlacements: [rtl ? 'right-start' : 'left-start', 'bottom-start'] },
+          },
           { name: 'preventOverflow', options: { padding: 8 } },
         ]}
       >
         <Paper className="file-submenu-paper" elevation={6}>
-          <MenuList dense aria-label="Recent connections">
+          <MenuList dense aria-label={t('shell.recentConnections')}>
             {recentConnections.map((connection) => (
               <MenuItem
                 key={connection.id}

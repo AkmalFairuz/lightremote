@@ -46,7 +46,7 @@
   width: 0;
   min-width: 0;
   flex: 0 0 0;
-  padding-left: 0;
+  padding-inline-start: 0;
 }
 
 .connection-folder-path.MuiInputAdornment-root {
@@ -54,7 +54,7 @@
   min-width: 0;
   max-width: none;
   flex: 1 1 auto;
-  margin-right: 0;
+  margin-inline-end: 0;
   color: var(--lr-text);
 }
 

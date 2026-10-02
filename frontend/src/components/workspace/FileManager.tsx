@@ -1,3 +1,7 @@
+import type { TranslationKey } from '../../i18n'
+import { useT } from '../../i18n/useT'
+import { translateMessage } from '../../i18n'
+import { useLocale } from '../../i18n/useLocale'
 import { useMemo, useRef, useState, type DragEvent } from 'react'
 import { files } from '../../api/files'
 import { Alert, DialogPresence, IconButton, Snackbar, Tooltip } from '../../ui'
@@ -24,7 +28,8 @@ import { desktopRuntime } from '../../desktop/runtime'
 
 interface Notice {
   id: string
-  message: string
+  key: TranslationKey
+  values?: Record<string, unknown>
 }
 
 interface DirectorySearch {
@@ -56,12 +61,19 @@ export function FileManager({
   initialPath?: string
   onPathChange?: (path: string) => void
 }) {
+  const t = useT()
+
+  const locale = useLocale()
+
   const { path, entries, loadedPath, loading, error, setError, changePath, load } =
     useRemoteDirectory({ connectionId, kind, active, initialPath, onPathChange })
   const currentPath = path ?? '/'
   const [scrollPositions] = useState(() => new Map<string, FileScrollPosition>())
   const [sort, setSort] = useState<FileSort>({ field: 'name', direction: 'asc' })
-  const sortedEntries = useMemo(() => sortFileEntries(entries, sort), [entries, sort])
+  const sortedEntries = useMemo(
+    () => sortFileEntries(entries, sort, locale),
+    [entries, sort, locale],
+  )
   const selectionScope = `${connectionId}\0${path ?? ''}`
   const [search, setSearch] = useState<DirectorySearch>(() => ({
     scope: selectionScope,
@@ -92,9 +104,9 @@ export function FileManager({
     try {
       return { pattern: new RegExp(search.query, 'i'), error: null }
     } catch {
-      return { pattern: null, error: 'Invalid regular expression.' }
+      return { pattern: null, error: t('files.invalidRegularExpression', { lng: locale }) }
     }
-  }, [search.query, search.regex])
+  }, [search.query, search.regex, locale, t])
   const visibleEntries = useMemo(() => {
     if (!search.query) return directoryEntries
     if (searchPattern.error) return emptyEntries
@@ -197,8 +209,8 @@ export function FileManager({
     setTransfers((current) => current.filter((transfer) => transfer.id !== id))
   }
 
-  function showCompletion(message: string) {
-    setNotices((current) => [...current, { id: nextTransferId(), message }])
+  function showCompletion(key: TranslationKey, values?: Record<string, unknown>) {
+    setNotices((current) => [...current, { id: nextTransferId(), key, values }])
   }
 
   async function copyPath(entry: FileEntry) {
@@ -206,9 +218,9 @@ export function FileManager({
     try {
       if (desktopRuntime) await desktopRuntime.Clipboard.SetText(entry.path)
       else await navigator.clipboard.writeText(entry.path)
-      showCompletion('Copied path')
+      showCompletion('files.copiedPath')
     } catch {
-      setError('Could not copy the path. Check clipboard permission and try again.')
+      setError(t('files.couldNotCopyThePathCheckClipboardPermissionAndTryAgain'))
     }
   }
 
@@ -231,7 +243,7 @@ export function FileManager({
       await operation()
       await refreshFiles()
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'File operation failed.')
+      setError(cause instanceof Error ? cause.message : t('files.fileOperationFailed'))
     } finally {
       setBusy(false)
     }
@@ -249,11 +261,11 @@ export function FileManager({
 
   function uploadFiles(selected: FileList) {
     if (kind === 'vnc' && path === '/') {
-      setError('Open a drive before uploading files.')
+      setError(t('files.openADriveBeforeUploadingFiles'))
       return
     }
     if (path === null) {
-      setError('Choose a remote path before uploading.')
+      setError(t('files.chooseARemotePathBeforeUploading'))
       return
     }
     const uploads = Array.from(selected)
@@ -270,7 +282,7 @@ export function FileManager({
               updateTransfer(id, loaded, total)
             },
           )
-          showCompletion(`Uploaded ${file.name}`)
+          showCompletion('files.uploaded', { name: file.name })
         } finally {
           finishTransfer(id)
         }
@@ -315,8 +327,8 @@ export function FileManager({
         })
         try {
           const saved = await saveRemoteFile(connectionId, entry.path, entry.name, id)
-          if (!saved) return 'Download canceled'
-          showCompletion(`Downloaded ${entry.name}`)
+          if (!saved) return 'download_canceled'
+          showCompletion('files.downloaded', { name: entry.name })
         } finally {
           stopProgress?.()
         }
@@ -324,7 +336,7 @@ export function FileManager({
         await files.download(connectionId, entry.path, entry.name, entry.size, (loaded, total) => {
           updateTransfer(id, loaded, total)
         })
-        showCompletion(`Downloaded ${entry.name}`)
+        showCompletion('files.downloaded', { name: entry.name })
       }
       return null
     } catch (cause) {
@@ -348,7 +360,7 @@ export function FileManager({
     try {
       for (const entry of toDownload) {
         const failure = await download(entry, false)
-        if (failure === 'Download canceled') {
+        if (failure === 'download_canceled') {
           canceled = true
           break
         }
@@ -367,10 +379,13 @@ export function FileManager({
         setError(
           [
             failed.length
-              ? `${failed.length} download(s) failed: ${failed.map((item) => item.message).join('; ')}`
+              ? t('files.downloadsFailed', {
+                  count: failed.length,
+                  details: failed.map((item) => item.message).join('; '),
+                })
               : '',
-            skipped ? `${skipped} folder(s) skipped.` : '',
-            canceled ? 'Remaining downloads were canceled.' : '',
+            skipped ? t('files.foldersSkipped', { count: skipped }) : '',
+            canceled ? t('files.remainingDownloadsWereCanceled') : '',
           ]
             .filter(Boolean)
             .join(' '),
@@ -401,7 +416,10 @@ export function FileManager({
       await refreshFiles()
       if (failed.length) {
         setError(
-          `${failed.length} item(s) could not be deleted: ${failed.map((item) => item.message).join('; ')}`,
+          t('files.deleteFailed', {
+            count: failed.length,
+            details: failed.map((item) => item.message).join('; '),
+          }),
         )
       }
     } finally {
@@ -414,8 +432,8 @@ export function FileManager({
     if (!destination) {
       setError(
         kind === 'vnc'
-          ? 'Enter / or a drive path such as C:/.'
-          : 'Enter an absolute remote path beginning with /.',
+          ? t('files.enterOrADrivePathSuchAsC')
+          : t('files.enterAnAbsoluteRemotePathBeginningWith'),
       )
       return
     }
@@ -457,11 +475,13 @@ export function FileManager({
         <>
           {selecting ? (
             <div className="files-toolbar files-selection-bar">
-              <strong role="status">{selectedEntries.length} selected</strong>
+              <strong role="status">
+                {t('files.selectedCount', { count: selectedEntries.length })}
+              </strong>
               <div className="files-actions">
-                <Tooltip title="Clear selection">
+                <Tooltip title={t('files.clearSelection')}>
                   <IconButton
-                    aria-label="Clear selection"
+                    aria-label={t('files.clearSelection')}
                     disabled={busy}
                     onClick={() => {
                       setSelection({ scope: selectionScope, paths: new Set() })
@@ -471,18 +491,18 @@ export function FileManager({
                     <Glyph name="close" size={18} />
                   </IconButton>
                 </Tooltip>
-                <Tooltip title="Download selected files">
+                <Tooltip title={t('files.downloadSelectedFiles')}>
                   <IconButton
-                    aria-label="Download selected files"
+                    aria-label={t('files.downloadSelectedFiles')}
                     disabled={busy || downloadableEntries.length === 0}
                     onClick={() => void downloadSelected()}
                   >
                     <Glyph name="download" size={18} />
                   </IconButton>
                 </Tooltip>
-                <Tooltip title="Delete selected items">
+                <Tooltip title={t('files.deleteSelectedItems')}>
                   <IconButton
-                    aria-label="Delete selected items"
+                    aria-label={t('files.deleteSelectedItems')}
                     disabled={busy || selectedEntries.length === 0}
                     onClick={() => setPending({ type: 'bulkDelete', entries: selectedEntries })}
                   >
@@ -515,7 +535,7 @@ export function FileManager({
           />
           {error && (
             <div className="files-error" role="alert">
-              {error}
+              {translateMessage(error, locale)}
             </div>
           )}
           <FileList
@@ -524,14 +544,14 @@ export function FileManager({
             hideActions={kind === 'vnc' && path === '/'}
             entries={visibleEntries}
             loading={loading || (!error && (path === null || loadedPath !== path))}
-            loadingLabel={path === null ? 'Finding home directory…' : 'Loading files…'}
+            loadingLabel={path === null ? t('files.findingHomeDirectory') : t('files.loadingFiles')}
             showEmpty={path !== null && loadedPath === path && !error}
             emptyMessage={
               searchPattern.error
-                ? 'Correct the regular expression to search.'
+                ? t('files.correctTheRegularExpressionToSearch')
                 : search.query && directoryEntries.length > 0
-                  ? 'No matching files or folders.'
-                  : 'This folder is empty.'
+                  ? t('files.noMatchingFilesOrFolders')
+                  : t('files.thisFolderIsEmpty')
             }
             sort={sort}
             onSort={toggleSort}
@@ -569,18 +589,21 @@ export function FileManager({
           )}
           <div className="files-footer">
             {search.query
-              ? `${visibleEntries.length} of ${directoryEntries.length} items`
-              : `${directoryEntries.length} items`}{' '}
-            {busy && '· Working…'}
+              ? t('files.filteredCount', {
+                  visible: visibleEntries.length,
+                  count: directoryEntries.length,
+                })
+              : t('files.itemCount', { count: directoryEntries.length })}{' '}
+            {busy && `· ${t('common.working')}`}
           </div>
         </>
       )}
       <DialogPresence>
         {pending?.type === 'mkdir' && (
           <TextPromptDialog
-            title="New remote folder"
-            label="Folder name"
-            actionLabel="Create"
+            title={t('files.newRemoteFolder')}
+            label={t('files.folderName')}
+            actionLabel={t('connections.create')}
             onClose={() => setPending(null)}
             onConfirm={(name) =>
               performDialog(() => files.mkdir(connectionId, joinRemotePath(currentPath, name)))
@@ -591,9 +614,9 @@ export function FileManager({
       <DialogPresence>
         {pending?.type === 'delete' && (
           <ConfirmDialog
-            title="Delete remote entry"
-            message={`Delete “${pending.entry.name}”? Directories must be empty.`}
-            actionLabel="Delete"
+            title={t('files.deleteRemoteEntry')}
+            message={t('files.deleteEntry', { name: pending.entry.name })}
+            actionLabel={t('connections.delete')}
             onClose={() => setPending(null)}
             onConfirm={() => performDialog(() => files.delete(connectionId, pending.entry.path))}
           />
@@ -602,15 +625,15 @@ export function FileManager({
       <DialogPresence>
         {pending?.type === 'bulkDelete' && (
           <ConfirmDialog
-            title="Delete selected remote entries"
-            message={`Delete ${pending.entries.length} selected item(s)? Directories must be empty.`}
-            actionLabel="Delete"
+            title={t('files.deleteSelectedRemoteEntries')}
+            message={t('files.deleteSelected', { count: pending.entries.length })}
+            actionLabel={t('connections.delete')}
             onClose={() => setPending(null)}
             onConfirm={() => deleteSelected(pending.entries)}
           />
         )}
       </DialogPresence>
-      {dropActive && <div className="files-drop-overlay">Drop files to upload</div>}
+      {dropActive && <div className="files-drop-overlay">{t('files.dropFilesToUpload')}</div>}
       <Snackbar
         key={notices[0]?.id}
         open={notices.length > 0}
@@ -618,7 +641,7 @@ export function FileManager({
         onClose={() => setNotices((current) => current.slice(1))}
       >
         <Alert severity="success" onClose={() => setNotices((current) => current.slice(1))}>
-          {notices[0]?.message}
+          {notices[0] && t(notices[0].key, notices[0].values)}
         </Alert>
       </Snackbar>
     </div>

@@ -1,3 +1,4 @@
+import { useT } from '../i18n/useT'
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
 import {
   Dialog as MuiDialog,
@@ -73,13 +74,20 @@ export function Dialog({ onClose, ...props }: DialogProps) {
 
 /** Renders a dialog heading. */
 export function DialogTitle({ children, className = '', ...props }: DialogTitleProps) {
+  const t = useT()
+
   const onClose = useContext(DialogCloseContext)
 
   return (
     <MuiDialogTitle className={`ui-dialog-title ${className}`} {...props}>
       <span className="ui-dialog-title-text">{children}</span>
       {onClose && (
-        <MuiIconButton type="button" size="small" aria-label="Close dialog" onClick={onClose}>
+        <MuiIconButton
+          type="button"
+          size="small"
+          aria-label={t('common.closeDialog')}
+          onClick={onClose}
+        >
           <LocalIcon name="close" size={20} />
         </MuiIconButton>
       )}

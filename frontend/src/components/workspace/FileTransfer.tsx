@@ -1,3 +1,5 @@
+import { useT } from '../../i18n/useT'
+import { useLocale } from '../../i18n/useLocale'
 import { useEffect, useState } from 'react'
 import { formatBytes } from '../../utils/formatBytes'
 import { formatRemainingTime, transferMetrics, type TransferProgress } from './transferProgress'
@@ -10,6 +12,10 @@ export interface Transfer extends TransferProgress {
 
 /** Updates stalled rates and estimates without rerendering the directory list. */
 export function FileTransfer({ transfer }: { transfer: Transfer }) {
+  const t = useT()
+
+  const locale = useLocale()
+
   const [now, setNow] = useState(() => performance.now())
   useEffect(() => {
     const timer = window.setInterval(() => setNow(performance.now()), 1000)
@@ -20,35 +26,37 @@ export function FileTransfer({ transfer }: { transfer: Transfer }) {
     transfer,
     Math.max(now, transfer.samples.at(-1)?.time ?? now),
   )
-  const action = transfer.direction === 'upload' ? 'Uploading' : 'Downloading'
+  const action = transfer.direction === 'upload' ? t('files.uploading') : t('files.downloading')
   const finishing = transfer.total > 0 && transfer.loaded >= transfer.total
   const estimate = finishing
-    ? 'Finishing…'
+    ? t('files.finishing')
     : transfer.total <= 0
-      ? 'Time remaining unavailable'
+      ? t('files.timeRemainingUnavailable')
       : remainingSeconds === null
-        ? 'Estimating time remaining…'
-        : `About ${formatRemainingTime(remainingSeconds)} remaining`
+        ? t('files.estimatingTimeRemaining')
+        : t('files.remaining', { time: formatRemainingTime(remainingSeconds, locale) })
 
   return (
     <div className="files-transfer">
       <div className="files-transfer-label">
-        <span title={`${action} ${transfer.name}`}>
-          {action} {transfer.name}
+        <span title={t('common.namedAction', { action, name: transfer.name })}>
+          {t('common.namedAction', { action, name: transfer.name })}
         </span>
         <span>
-          {formatBytes(transfer.loaded)}
-          {transfer.total > 0 && ` / ${formatBytes(transfer.total)}`}
+          {formatBytes(transfer.loaded, locale)}
+          {transfer.total > 0 && ` / ${formatBytes(transfer.total, locale)}`}
         </span>
       </div>
       <div className="files-transfer-details">
         <span>
-          {bytesPerSecond === null ? 'Calculating speed…' : `${formatBytes(bytesPerSecond)}/s`}
+          {bytesPerSecond === null
+            ? t('files.calculatingSpeed')
+            : t('files.speed', { speed: formatBytes(bytesPerSecond, locale) })}
         </span>
         <span>{estimate}</span>
       </div>
       <progress
-        aria-label={`${action} ${transfer.name}`}
+        aria-label={t('common.namedAction', { action, name: transfer.name })}
         max={transfer.total > 0 ? transfer.total : undefined}
         value={transfer.total > 0 ? Math.min(transfer.loaded, transfer.total) : undefined}
       />

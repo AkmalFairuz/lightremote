@@ -1,3 +1,5 @@
+import { useT } from '../../i18n/useT'
+import { useLocale } from '../../i18n/useLocale'
 import { ListItemIcon, MenuItem, MenuList, Popover, Typography } from '@mui/material'
 import { useAppSelector } from '../../state/hooks'
 import { Glyph } from '../common/Glyph'
@@ -18,6 +20,10 @@ export function AccountPopover({
   onManageUsers,
   onSignOut,
 }: AccountPopoverProps) {
+  const t = useT()
+
+  const rtl = useLocale() === 'ar'
+
   const user = useAppSelector((state) => state.auth.user)
 
   return (
@@ -26,8 +32,8 @@ export function AccountPopover({
       anchorEl={anchorEl}
       onClose={onClose}
       disableEnforceFocus
-      anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
-      transformOrigin={{ vertical: 'top', horizontal: 'left' }}
+      anchorOrigin={{ vertical: 'bottom', horizontal: rtl ? 'right' : 'left' }}
+      transformOrigin={{ vertical: 'top', horizontal: rtl ? 'right' : 'left' }}
       slotProps={{ paper: { className: 'account-popover' } }}
     >
       <div className="account-popover-heading">
@@ -35,7 +41,7 @@ export function AccountPopover({
           {user?.email}
         </Typography>
         <Typography variant="caption" color="text.secondary">
-          {user?.role === 'admin' ? 'Administrator' : 'User'}
+          {user?.role === 'admin' ? t('shell.administrator') : t('shell.user')}
         </Typography>
       </div>
       <MenuList>
@@ -43,21 +49,21 @@ export function AccountPopover({
           <ListItemIcon>
             <Glyph name="lock-outline" size={18} />
           </ListItemIcon>
-          Change password
+          {t('shell.changePassword')}
         </MenuItem>
         {user?.role === 'admin' && (
           <MenuItem onClick={onManageUsers}>
             <ListItemIcon>
               <Glyph name="group-outline" size={18} />
             </ListItemIcon>
-            Manage users
+            {t('shell.manageUsers')}
           </MenuItem>
         )}
         <MenuItem onClick={onSignOut}>
           <ListItemIcon>
             <Glyph name="logout" size={18} />
           </ListItemIcon>
-          Sign out
+          {t('shell.signOut')}
         </MenuItem>
       </MenuList>
     </Popover>

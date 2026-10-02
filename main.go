@@ -31,9 +31,13 @@ import (
 var assets embed.FS
 
 type DesktopService struct {
-	app        *application.App
-	runtime    *bootstrap.Runtime
-	recentMenu *application.Menu
+	app             *application.App
+	runtime         *bootstrap.Runtime
+	recentMenu      *application.Menu
+	menuMutex       sync.Mutex
+	menuLabels      map[string]func(string)
+	menuText        map[string]string
+	emptyRecentItem *application.MenuItem
 }
 
 // OpenDetached opens a native window for the existing detached-tab route.

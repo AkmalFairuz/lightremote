@@ -26,25 +26,41 @@ func installMacMenu(app *application.App, mainWindow *application.WebviewWindow,
 		}
 	}
 
+	service.menuLabels = make(map[string]func(string))
+	service.menuText = make(map[string]string)
+	addMenu := func(parent *application.Menu, key, label string) *application.Menu {
+		submenu := parent.AddSubmenu(label)
+		item := parent.FindByLabel(label)
+		service.menuLabels[key] = func(value string) {
+			item.SetLabel(value)
+			submenu.SetLabel(value)
+		}
+		return submenu
+	}
+	addItem := func(parent *application.Menu, key, label string) *application.MenuItem {
+		item := parent.Add(label)
+		service.menuLabels[key] = func(value string) { item.SetLabel(value) }
+		return item
+	}
 	menu := application.NewMenu()
 	menu.AddRole(application.AppMenu)
 
-	file := menu.AddSubmenu("File")
-	file.Add("Open Connection…").SetAccelerator("CmdOrCtrl+K").OnClick(emit("file:open"))
-	file.Add("New Direct Connection…").SetAccelerator("CmdOrCtrl+Shift+K").OnClick(emit("file:direct"))
-	file.Add("SSH Keys…").OnClick(emit("file:ssh-keys"))
-	service.recentMenu = file.AddSubmenu("Recent Connections")
-	service.recentMenu.Add("No recent connections").SetEnabled(false)
+	file := addMenu(menu, "file", "File")
+	addItem(file, "open", "Open Connection…").SetAccelerator("CmdOrCtrl+K").OnClick(emit("file:open"))
+	addItem(file, "direct", "New Direct Connection…").SetAccelerator("CmdOrCtrl+Shift+K").OnClick(emit("file:direct"))
+	addItem(file, "keys", "SSH Keys…").OnClick(emit("file:ssh-keys"))
+	service.recentMenu = addMenu(file, "recent", "Recent Connections")
+	service.emptyRecentItem = service.recentMenu.Add("No recent connections").SetEnabled(false)
 	file.AddSeparator()
 	file.AddRole(application.CloseWindow)
 
 	menu.AddRole(application.EditMenu)
-	view := menu.AddSubmenu("View")
-	appearance := view.AddSubmenu("Appearance")
-	appearance.Add("System Mode").OnClick(emit("view:appearance:system"))
-	appearance.Add("Light Mode").OnClick(emit("view:appearance:light"))
-	appearance.Add("Dark Mode").OnClick(emit("view:appearance:dark"))
-	terminal := view.AddSubmenu("Terminal Theme")
+	view := addMenu(menu, "view", "View")
+	appearance := addMenu(view, "appearance", "Appearance")
+	addItem(appearance, "system", "System Mode").OnClick(emit("view:appearance:system"))
+	addItem(appearance, "light", "Light Mode").OnClick(emit("view:appearance:light"))
+	addItem(appearance, "dark", "Dark Mode").OnClick(emit("view:appearance:dark"))
+	terminal := addMenu(view, "terminal", "Terminal Theme")
 	for _, option := range []struct{ name, label string }{
 		{"auto", "Auto (follow app)"},
 		{"ubuntu", "Ubuntu"},
@@ -56,18 +72,20 @@ func installMacMenu(app *application.App, mainWindow *application.WebviewWindow,
 		{"solarizedDark", "Solarized Dark"},
 		{"solarizedLight", "Solarized Light"},
 	} {
-		terminal.Add(option.label).OnClick(emit("view:terminal:" + option.name))
+		addItem(terminal, "terminal:"+option.name, option.label).OnClick(emit("view:terminal:" + option.name))
 	}
 
 	menu.AddRole(application.WindowMenu)
-	help := menu.AddSubmenu("Help")
-	help.Add("About LightRemote").OnClick(emit("help:about"))
-	help.Add("Source Code").OnClick(emit("help:source"))
+	help := addMenu(menu, "help", "Help")
+	addItem(help, "about", "About LightRemote").OnClick(emit("help:about"))
+	addItem(help, "source", "Source Code").OnClick(emit("help:source"))
 	app.Menu.SetApplicationMenu(menu)
 }
 
 // UpdateRecentConnections keeps the native File menu in sync with the app.
 func (s *DesktopService) UpdateRecentConnections(encoded string) error {
+	s.menuMutex.Lock()
+	defer s.menuMutex.Unlock()
 	if s.recentMenu == nil {
 		return nil
 	}
@@ -80,8 +98,9 @@ func (s *DesktopService) UpdateRecentConnections(encoded string) error {
 	}
 
 	s.recentMenu.Clear()
+	s.emptyRecentItem = nil
 	if len(connections) == 0 {
-		s.recentMenu.Add("No recent connections").SetEnabled(false)
+		s.emptyRecentItem = s.recentMenu.Add(s.emptyRecentLabel()).SetEnabled(false)
 	}
 	for _, connection := range connections {
 		if connection.ID == "" {
@@ -101,4 +120,40 @@ func (s *DesktopService) UpdateRecentConnections(encoded string) error {
 		menu.Update()
 	}
 	return nil
+}
+
+// UpdateMenuLabels updates only app-owned labels. OS menu roles keep system localization.
+func (s *DesktopService) UpdateMenuLabels(encoded string) error {
+	if s.menuLabels == nil {
+		return nil
+	}
+	var labels map[string]string
+	if err := json.Unmarshal([]byte(encoded), &labels); err != nil {
+		return err
+	}
+	s.menuMutex.Lock()
+	defer s.menuMutex.Unlock()
+	for key, label := range labels {
+		if label == "" || len(label) > 512 {
+			continue
+		}
+		s.menuText[key] = label
+		if setLabel, ok := s.menuLabels[key]; ok {
+			setLabel(label)
+		}
+	}
+	if s.emptyRecentItem != nil {
+		s.emptyRecentItem.SetLabel(s.emptyRecentLabel())
+	}
+	if menu := s.app.Menu.GetApplicationMenu(); menu != nil {
+		menu.Update()
+	}
+	return nil
+}
+
+func (s *DesktopService) emptyRecentLabel() string {
+	if label := s.menuText["emptyRecent"]; label != "" {
+		return label
+	}
+	return "No recent connections"
 }

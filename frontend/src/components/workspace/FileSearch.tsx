@@ -1,3 +1,4 @@
+import { useT } from '../../i18n/useT'
 import { useId } from 'react'
 import { IconButton, Tooltip } from '../../ui'
 import { Glyph } from '../common/Glyph'
@@ -19,6 +20,8 @@ export function FileSearch({
   onQueryChange,
   onRegexChange,
 }: FileSearchProps) {
+  const t = useT()
+
   const errorId = useId()
 
   return (
@@ -28,10 +31,10 @@ export function FileSearch({
         <input
           type="text"
           role="searchbox"
-          aria-label="Search current directory"
+          aria-label={t('files.searchCurrentDirectory')}
           aria-invalid={Boolean(error)}
           aria-describedby={error ? errorId : undefined}
-          placeholder={regex ? 'Regex…' : 'Search this folder…'}
+          placeholder={regex ? t('files.regex') : t('files.searchThisFolder')}
           autoComplete="off"
           spellCheck={false}
           value={query}
@@ -45,18 +48,18 @@ export function FileSearch({
             }
           }}
         />
-        <Tooltip title="Clear search">
+        <Tooltip title={t('files.clearSearch')}>
           <IconButton
-            aria-label="Clear search"
+            aria-label={t('files.clearSearch')}
             disabled={disabled || !query}
             onClick={() => onQueryChange('')}
           >
             <Glyph name="close" size={16} />
           </IconButton>
         </Tooltip>
-        <Tooltip title="Use regular expression (case insensitive)">
+        <Tooltip title={t('files.useRegularExpressionCaseInsensitive')}>
           <IconButton
-            aria-label="Use regular expression"
+            aria-label={t('files.useRegularExpression')}
             aria-pressed={regex}
             disabled={disabled}
             onClick={() => onRegexChange(!regex)}

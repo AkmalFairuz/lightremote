@@ -1,3 +1,4 @@
+import { useT } from '../../i18n/useT'
 import { useEffect, useState } from 'react'
 import { desktopRuntime, isDesktop, isMacDesktop } from '../../desktop/runtime'
 
@@ -13,6 +14,8 @@ export function WindowDragRegion({ title }: { title?: string }) {
 
 /** Provides caption buttons where the native window controls are hidden. */
 export function WindowControls() {
+  const t = useT()
+
   const [maximized, setMaximized] = useState(false)
 
   useEffect(() => {
@@ -46,12 +49,12 @@ export function WindowControls() {
   }
 
   return (
-    <div className="window-controls" role="group" aria-label="Window controls">
+    <div className="window-controls" role="group" aria-label={t('shell.windowControls')}>
       <button
         type="button"
         className="window-control-button"
-        aria-label="Minimize window"
-        title="Minimize"
+        aria-label={t('shell.minimizeWindow')}
+        title={t('common.minimize')}
         onClick={() => void desktopRuntime?.Window.Minimise()}
       >
         <svg viewBox="0 0 16 16" aria-hidden="true">
@@ -61,8 +64,8 @@ export function WindowControls() {
       <button
         type="button"
         className="window-control-button"
-        aria-label={maximized ? 'Restore window' : 'Maximize window'}
-        title={maximized ? 'Restore' : 'Maximize'}
+        aria-label={maximized ? t('shell.restoreWindow') : t('shell.maximizeWindow')}
+        title={maximized ? t('common.restore') : t('common.maximize')}
         onClick={() => void toggleMaximized()}
       >
         <svg viewBox="0 0 16 16" aria-hidden="true">
@@ -79,8 +82,8 @@ export function WindowControls() {
       <button
         type="button"
         className="window-control-button window-control-close"
-        aria-label="Close window"
-        title="Close"
+        aria-label={t('shell.closeWindow')}
+        title={t('shell.close')}
         onClick={() => void desktopRuntime?.Window.Close()}
       >
         <svg viewBox="0 0 16 16" aria-hidden="true">

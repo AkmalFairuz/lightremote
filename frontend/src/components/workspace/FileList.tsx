@@ -1,3 +1,6 @@
+import { useT } from '../../i18n/useT'
+import { t } from '../../i18n'
+import { useLocale } from '../../i18n/useLocale'
 import {
   useCallback,
   useEffect,
@@ -48,7 +51,6 @@ const headerHeight = 27
 const overscan = 8
 const minimumWidths = { name: 100, size: 56, modTime: 90 }
 const defaultWidths = { name: null, size: 70, modTime: 135 }
-const columnLabels = { name: 'Name', size: 'Size', modTime: 'Modified' }
 
 export function FileList({
   directoryKey,
@@ -58,7 +60,7 @@ export function FileList({
   loading,
   loadingLabel,
   showEmpty,
-  emptyMessage = 'This folder is empty.',
+  emptyMessage = t('files.thisFolderIsEmpty'),
   sort,
   onSort,
   selectedPaths,
@@ -73,6 +75,15 @@ export function FileList({
   onRename,
   onDelete,
 }: FileListProps) {
+  const t = useT()
+
+  const rtl = useLocale() === 'ar'
+  const columnLabels = {
+    name: t('connections.name'),
+    size: t('files.size'),
+    modTime: t('files.modified'),
+  }
+
   const listRef = useRef<HTMLDivElement>(null)
   const selectAllRef = useRef<HTMLInputElement>(null)
   const [widths, setWidths] = useState<Record<FileSortField, number | null>>(defaultWidths)
@@ -118,9 +129,9 @@ export function FileList({
         restored = true
         const position = scrollPositions.get(directoryKey)
         list.scrollTop = position?.top ?? 0
-        list.scrollLeft = position?.left ?? 0
+        list.scrollLeft = (position?.left ?? 0) * (rtl ? -1 : 1)
       }
-      scrollPositions.set(directoryKey, { top: list.scrollTop, left: list.scrollLeft })
+      scrollPositions.set(directoryKey, { top: list.scrollTop, left: Math.abs(list.scrollLeft) })
       cancelAnimationFrame(frame)
       frame = requestAnimationFrame(() => {
         const top = list.scrollTop
@@ -141,7 +152,7 @@ export function FileList({
       observer.disconnect()
       list.removeEventListener('scroll', measure)
     }
-  }, [directoryKey, entries.length, loading, scrollPositions, showEmpty])
+  }, [directoryKey, entries.length, loading, rtl, scrollPositions, showEmpty])
 
   const keepRowMounted = useCallback((path: string, active: boolean) => {
     setActivePaths((current) => {
@@ -209,7 +220,7 @@ export function FileList({
       className={`files-list ${hideActions ? 'files-no-actions' : ''} ${selecting ? 'files-selecting' : ''}`}
       style={style}
       role="table"
-      aria-label="Remote files"
+      aria-label={t('files.remoteFiles')}
       aria-rowcount={entries.length + 1}
       aria-colcount={columnCount}
       aria-busy={loading}
@@ -220,7 +231,7 @@ export function FileList({
             <input
               ref={selectAllRef}
               type="checkbox"
-              aria-label="Select all files and folders"
+              aria-label={t('files.selectAllFilesAndFolders')}
               checked={allSelected}
               disabled={eligibleCount === 0 || loading || selectionDisabled}
               onChange={(event) => onSelectAll(event.target.checked)}
@@ -250,16 +261,19 @@ export function FileList({
               className="files-column-resize"
               role="separator"
               tabIndex={0}
-              aria-label={`Resize ${columnLabels[field]} column`}
+              aria-label={t('files.resizeColumn', { name: columnLabels[field] })}
               aria-orientation="vertical"
               aria-valuemin={minimumWidths[field]}
               aria-valuenow={widths[field] ?? 140}
-              title="Drag to resize; use arrow keys to adjust; double-click to reset"
+              title={t('files.dragToResizeUseArrowKeysToAdjustDoubleClickToReset')}
               onPointerDown={(event) => startResize(event, field)}
               onPointerMove={(event) => {
                 const drag = resize.current
                 if (!drag || drag.field !== field) return
-                const width = Math.max(minimumWidths[field], drag.width + event.clientX - drag.x)
+                const width = Math.max(
+                  minimumWidths[field],
+                  drag.width + (event.clientX - drag.x) * (rtl ? -1 : 1),
+                )
                 setWidths((current) => ({ ...current, [field]: Math.round(width) }))
               }}
               onLostPointerCapture={() => {
@@ -275,13 +289,16 @@ export function FileList({
                 const delta = event.key === 'ArrowLeft' ? -16 : 16
                 setWidths((current) => ({
                   ...current,
-                  [field]: Math.max(minimumWidths[field], Math.round(width + delta)),
+                  [field]: Math.max(
+                    minimumWidths[field],
+                    Math.round(width + delta * (rtl ? -1 : 1)),
+                  ),
                 }))
               }}
             />
           </span>
         ))}
-        {!hideActions && <span role="columnheader" aria-label="Actions" />}
+        {!hideActions && <span role="columnheader" aria-label={t('files.actions')} />}
       </div>
       {loading && (
         <div className="files-loading">

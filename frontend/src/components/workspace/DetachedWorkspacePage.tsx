@@ -1,3 +1,5 @@
+import { useT } from '../../i18n/useT'
+import { LanguageSelector } from '../shell/LanguageSelector'
 import { useEffect, useRef, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { useCreateSessionMutation, useDeleteSessionMutation } from '../../api/sessions'
@@ -37,6 +39,8 @@ import { Workspace } from './Workspace'
 
 /** Hosts one transferred tab in a separate browser window. */
 export function DetachedWorkspacePage() {
+  const t = useT()
+
   const { transferId = '' } = useParams()
   const userId = useAppSelector((state) => state.auth.user?.id ?? '')
   const { tabs, activeId } = useAppSelector((state) => state.workspace)
@@ -120,7 +124,7 @@ export function DetachedWorkspacePage() {
             (entry) => entry.id === tab.connectionId,
           )
       if (!connection) {
-        dispatch(connectionFailure(tab.id, tab.kind, 'Connection not found.'))
+        dispatch(connectionFailure(tab.id, tab.kind, t('shell.connectionNotFound')))
         return
       }
       if (connection.kind === 'ssh' || connection.kind === 'sftp') {
@@ -260,6 +264,7 @@ export function DetachedWorkspacePage() {
           onDoubleClick={toggleWindowOnTitlebarDoubleClick}
         >
           <WindowDragRegion title={titleName ? `${titleName} — LightRemote` : 'LightRemote'} />
+          <LanguageSelector />
           <WindowControls />
         </header>
       )}
@@ -299,7 +304,7 @@ export function DetachedWorkspacePage() {
                 .getState()
                 .workspace.tabs.find((item) => item.id === hostKeyPrompt.tabId)
               if (tab?.status === 'connecting')
-                dispatch(connectionFailure(tab.id, tab.kind, 'SSH host key was not approved.'))
+                dispatch(connectionFailure(tab.id, tab.kind, t('shell.sshHostKeyWasNotApproved')))
               setHostKeyPrompt(null)
             }}
             onApproved={async () => {

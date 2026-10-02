@@ -1,3 +1,4 @@
+import { t, currentLanguage } from '../../i18n'
 interface ProgressSample {
   time: number
   loaded: number
@@ -70,12 +71,12 @@ export function transferMetrics(
   return { bytesPerSecond, remainingSeconds }
 }
 
-export function formatRemainingTime(seconds: number): string {
+export function formatRemainingTime(seconds: number, language = currentLanguage()): string {
   const rounded = Math.max(1, Math.ceil(seconds))
-  if (rounded < 60) return `${rounded}s`
+  if (rounded < 60) return t('files.timeSeconds', { count: rounded, lng: language })
   const minutes = Math.floor(rounded / 60)
-  if (minutes < 60) return `${minutes}m ${rounded % 60}s`
+  if (minutes < 60) return t('files.timeMinutes', { minutes, seconds: rounded % 60, lng: language })
   const hours = Math.floor(minutes / 60)
-  if (hours < 24) return `${hours}h ${minutes % 60}m`
-  return `${Math.floor(hours / 24)}d ${hours % 24}h`
+  if (hours < 24) return t('files.timeHours', { hours, minutes: minutes % 60, lng: language })
+  return t('files.timeDays', { days: Math.floor(hours / 24), hours: hours % 24, lng: language })
 }

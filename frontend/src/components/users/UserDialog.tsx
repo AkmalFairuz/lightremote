@@ -1,3 +1,4 @@
+import { useT } from '../../i18n/useT'
 import { useState, type FormEvent } from 'react'
 import {
   Button,
@@ -18,6 +19,8 @@ import { errorMessage, type User } from '../../types'
 import { Notice } from '../common/Notice'
 
 export function UserDialog({ user, onClose }: { user?: User; onClose: () => void }) {
+  const t = useT()
+
   const dispatch = useAppDispatch()
   const currentUser = useAppSelector((state) => state.auth.user)
   const [createUser, { isLoading: creating }] = useCreateUserMutation()
@@ -50,11 +53,11 @@ export function UserDialog({ user, onClose }: { user?: User; onClose: () => void
   return (
     <Dialog open onClose={onClose} fullWidth maxWidth="xs">
       <form onSubmit={save}>
-        <DialogTitle>{user ? 'Edit user' : 'Add user'}</DialogTitle>
+        <DialogTitle>{user ? t('users.editUser') : t('users.addUser')}</DialogTitle>
         <DialogContent className="dialog-fields">
           <Notice message={error} />
           <TextField
-            label="Email"
+            label={t('shell.email')}
             type="email"
             required
             value={email}
@@ -62,22 +65,22 @@ export function UserDialog({ user, onClose }: { user?: User; onClose: () => void
           />
           <TextField
             select
-            label="Role"
+            label={t('users.role')}
             value={role}
             onChange={(event) => setRole(event.target.value as 'admin' | 'user')}
           >
-            <MenuItem value="user">User</MenuItem>
-            <MenuItem value="admin">Administrator</MenuItem>
+            <MenuItem value="user">{t('shell.user')}</MenuItem>
+            <MenuItem value="admin">{t('shell.administrator')}</MenuItem>
           </TextField>
           <PasswordField
-            label={user ? 'New password' : 'Password'}
+            label={user ? t('shell.newPassword') : t('shell.password')}
             required={!user}
             value={password}
             onChange={(event) => setPassword(event.target.value)}
             autoComplete="new-password"
             slotProps={{ htmlInput: { minLength: 6 } }}
             helperText={
-              user ? 'Leave blank to keep the current password.' : 'At least 6 characters.'
+              user ? t('users.leaveBlankToKeepTheCurrentPassword') : t('shell.atLeast6Characters')
             }
           />
           {user && (
@@ -88,13 +91,13 @@ export function UserDialog({ user, onClose }: { user?: User; onClose: () => void
                   onChange={(event) => setDisabled(event.target.checked)}
                 />
               }
-              label="Disable account"
+              label={t('users.disableAccount')}
             />
           )}
         </DialogContent>
         <DialogActions>
           <Button type="submit" variant="contained" disabled={creating || updating}>
-            Save
+            {t('users.save')}
           </Button>
         </DialogActions>
       </form>

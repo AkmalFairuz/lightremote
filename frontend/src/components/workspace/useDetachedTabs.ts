@@ -1,3 +1,4 @@
+import { t } from '../../i18n'
 import { useCallback, useEffect, useRef } from 'react'
 import { flushSync } from 'react-dom'
 import { openDetachedWindow } from '../../desktop/actions'
@@ -183,7 +184,7 @@ export function useDetachedTabs(userId: string, onNotice: (message: string) => v
         popup = window.open(`/detached/${transferId}`, '_blank', detachedWindowFeatures)
       }
       if (!isDesktop && !popup) {
-        onNotice('The browser blocked the detached window. Allow popups and try again.')
+        onNotice(t('files.theBrowserBlockedTheDetachedWindowAllowPopupsAndTryAgain'))
         return
       }
       entries.current.set(transferId, {
@@ -197,7 +198,7 @@ export function useDetachedTabs(userId: string, onNotice: (message: string) => v
         void openDetachedWindow(transferId).catch((cause) => {
           entries.current.delete(transferId)
           persist()
-          onNotice(cause instanceof Error ? cause.message : 'Could not open detached window.')
+          onNotice(cause instanceof Error ? cause.message : t('files.couldNotOpenDetachedWindow'))
         })
       } else {
         popup?.focus()

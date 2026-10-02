@@ -1,3 +1,5 @@
+import { translateMessage } from './i18n'
+import { localizedApiMessage } from './i18n/errors'
 export type ConnectionKind = 'ssh' | 'vnc' | 'sftp' | 'ftp'
 export type AuthType = 'none' | 'password' | 'private_key'
 export type VncEncoding = 'auto' | 'copyrect' | 'tight' | 'zlib' | 'hextile' | 'zrle' | 'raw'
@@ -124,8 +126,8 @@ export function isUnauthorized(error: unknown): boolean {
 }
 
 export function errorMessage(error: unknown): string {
-  if (typeof error === 'string') return error
-  if (error instanceof Error) return error.message
+  if (typeof error === 'string') return translateMessage(error)
+  if (error instanceof Error) return translateMessage(error.message)
   const apiError = error as ApiError | undefined
-  return apiError?.data?.error?.message ?? 'The request could not be completed.'
+  return localizedApiMessage(apiError?.data?.error?.code, apiError?.data?.error?.message)
 }

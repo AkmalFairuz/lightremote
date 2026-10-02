@@ -1,3 +1,5 @@
+import { useT } from '../../i18n/useT'
+import { LanguageSelector } from './LanguageSelector'
 import { useState, type FormEvent } from 'react'
 import { Dialog as MuiDialog } from '@mui/material'
 import {
@@ -16,6 +18,8 @@ import { errorMessage } from '../../types'
 
 /** Requires an account before the workspace can be used. */
 export function LoginDialog() {
+  const t = useT()
+
   const dispatch = useAppDispatch()
   const [login, { isLoading }] = useLoginMutation()
   const [email, setEmail] = useState('')
@@ -37,12 +41,15 @@ export function LoginDialog() {
     <MuiDialog open fullWidth maxWidth="xs" aria-labelledby="login-title">
       <form onSubmit={submit}>
         <DialogContent className="login-dialog-content">
+          <div className="dialog-language">
+            <LanguageSelector />
+          </div>
           <Typography variant="body1" component="h1" id="login-title">
-            Please enter credentials to continue:
+            {t('shell.pleaseEnterCredentialsToContinue')}
           </Typography>
           <Notice message={error} />
           <TextField
-            label="Email"
+            label={t('shell.email')}
             type="email"
             autoComplete="username"
             autoFocus
@@ -51,7 +58,7 @@ export function LoginDialog() {
             required
           />
           <PasswordField
-            label="Password"
+            label={t('shell.password')}
             autoComplete="current-password"
             value={password}
             onChange={(event) => setPassword(event.target.value)}
@@ -66,7 +73,7 @@ export function LoginDialog() {
             loading={isLoading}
             disabled={isLoading}
           >
-            Sign in
+            {t('shell.signIn')}
           </Button>
         </DialogActions>
       </form>

@@ -1,3 +1,4 @@
+import { useT } from '../../i18n/useT'
 import { useEffect, useState } from 'react'
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle } from '../../ui'
 import { Notice } from '../common/Notice'
@@ -20,6 +21,8 @@ export function VncScreenshotDialog({
   imageUrl,
   onClose,
 }: VncScreenshotDialogProps) {
+  const t = useT()
+
   const [copied, setCopied] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -30,14 +33,14 @@ export function VncScreenshotDialog({
   async function copyImage() {
     setError(null)
     if (!navigator.clipboard?.write || typeof ClipboardItem === 'undefined') {
-      setError('This browser cannot copy images to the clipboard.')
+      setError(t('files.thisBrowserCannotCopyImagesToTheClipboard'))
       return
     }
     try {
       await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })])
       setCopied(true)
     } catch {
-      setError('Could not copy the screenshot. Check clipboard permission and try again.')
+      setError(t('files.couldNotCopyTheScreenshotCheckClipboardPermissionAndTryAgain'))
     }
   }
 
@@ -69,11 +72,11 @@ export function VncScreenshotDialog({
 
   return (
     <Dialog open onClose={onClose} fullWidth maxWidth="sm">
-      <DialogTitle>Screenshot captured</DialogTitle>
+      <DialogTitle>{t('files.screenshotCaptured')}</DialogTitle>
       <DialogContent className="vnc-screenshot-content">
         <Notice message={error} />
         <div className="vnc-screenshot-preview">
-          <img src={imageUrl} alt="Captured VNC desktop" />
+          <img src={imageUrl} alt={t('files.capturedVncDesktop')} />
         </div>
       </DialogContent>
       <DialogActions>
@@ -81,14 +84,14 @@ export function VncScreenshotDialog({
           startIcon={<Glyph name="content-copy" size={17} />}
           onClick={() => void copyImage()}
         >
-          {copied ? 'Copied' : 'Copy'}
+          {copied ? t('files.copied') : t('files.copy')}
         </Button>
         <Button
           variant="contained"
           startIcon={<Glyph name="download" size={17} />}
           onClick={() => void downloadImage()}
         >
-          Download
+          {t('files.download')}
         </Button>
       </DialogActions>
     </Dialog>

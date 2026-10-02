@@ -1,3 +1,5 @@
+import { localizedApiMessage } from '../i18n/errors'
+import { t } from '../i18n'
 import { authenticatedFetch, authHeaders, handleUnauthorized, sessionToken } from './authSession'
 import { store } from '../state/store'
 import { isDesktop } from '../desktop/runtime'
@@ -57,9 +59,13 @@ function fileURL(connectionId: string, suffix: string, path?: string): string {
 
 async function responseError(response: Response): Promise<Error> {
   const body = (await response.json().catch(() => null)) as {
-    error?: { message?: string }
+    error?: { code?: string; message?: string }
   } | null
-  return new Error(body?.error?.message ?? `File request failed (${response.status})`)
+  return new Error(
+    body?.error
+      ? localizedApiMessage(body.error.code, body.error.message)
+      : t('files.requestFailed', { status: response.status }),
+  )
 }
 
 type TransferProgress = (loaded: number, total: number) => void
@@ -114,17 +120,19 @@ async function uploadFile(url: string, file: File, onProgress?: TransferProgress
           resolve()
           return
         }
-        let message = `File request failed (${request.status})`
+        let message = t('files.requestFailed', { status: request.status })
         try {
-          const body = JSON.parse(request.responseText) as { error?: { message?: string } }
-          message = body.error?.message ?? message
+          const body = JSON.parse(request.responseText) as {
+            error?: { code?: string; message?: string }
+          }
+          message = body.error ? localizedApiMessage(body.error.code, body.error.message) : message
         } catch {
           // Use the HTTP status when the server did not return JSON.
         }
         reject(new Error(message))
       }
-      request.onerror = () => reject(new Error('Could not reach the server.'))
-      request.onabort = () => reject(new Error('Upload was canceled.'))
+      request.onerror = () => reject(new Error(t('files.couldNotReachTheServer')))
+      request.onabort = () => reject(new Error(t('files.uploadWasCanceled')))
       onProgress?.(0, file.size)
       request.send(body)
       if (onProgress) void pollProgress()
@@ -144,7 +152,7 @@ async function downloadFile(
 ): Promise<void> {
   const response = await authenticatedFetch(fileURL(id, '/download', path))
   if (!response.ok) throw await responseError(response)
-  if (!response.body) throw new Error('The remote file could not be read.')
+  if (!response.body) throw new Error(t('files.theRemoteFileCouldNotBeRead'))
 
   const length = Number(response.headers.get('Content-Length'))
   const total = length > 0 ? length : expectedSize
@@ -208,7 +216,7 @@ async function readText(id: string, path: string, maxBytes: number): Promise<str
 
   const chunks: Uint8Array[] = []
   let total = 0
-  if (!response.body) throw new Error('The remote file could not be read.')
+  if (!response.body) throw new Error(t('files.theRemoteFileCouldNotBeRead'))
   const reader = response.body.getReader()
   try {
     while (true) {
@@ -234,12 +242,12 @@ async function readText(id: string, path: string, maxBytes: number): Promise<str
   try {
     const decoded = new TextDecoder('utf-8', { fatal: true, ignoreBOM: true }).decode(contents)
     if (decoded.includes('\0')) {
-      throw new Error('This file contains binary data and cannot be edited.')
+      throw new Error(t('files.thisFileContainsBinaryDataAndCannotBeEdited'))
     }
     return decoded
   } catch (error) {
     if (error instanceof TypeError) {
-      throw new Error('This file is not valid UTF-8 text.', { cause: error })
+      throw new Error(t('files.thisFileIsNotValidUtf8Text'), { cause: error })
     }
     throw error
   }

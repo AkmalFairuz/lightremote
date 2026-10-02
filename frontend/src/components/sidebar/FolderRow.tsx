@@ -1,3 +1,4 @@
+import { useT } from '../../i18n/useT'
 import { useState, type FormEvent } from 'react'
 import { useDeleteFolderMutation, useUpdateFolderMutation } from '../../api/resources'
 import type { Folder } from '../../types'
@@ -19,6 +20,8 @@ interface FolderRowProps {
 
 /** Renders a draggable folder with inline rename and deletion actions. */
 export function FolderRow({ folder, open, highlighted, onToggle, onAddItem }: FolderRowProps) {
+  const t = useT()
+
   const drag = useSidebarDrag()
   const item: SidebarItem = { kind: 'folder', id: folder.id, parentId: folder.parentId }
   const dropEdge =
@@ -88,7 +91,7 @@ export function FolderRow({ folder, open, highlighted, onToggle, onAddItem }: Fo
               <Glyph name="keyboard-arrow-right" size={17} />
             </span>
             <input
-              aria-label={`New name for ${folder.name}`}
+              aria-label={t('common.newName', { name: folder.name })}
               autoFocus
               required
               maxLength={255}
@@ -100,11 +103,15 @@ export function FolderRow({ folder, open, highlighted, onToggle, onAddItem }: Fo
               disabled={renameBusy}
             />
             <span className="sidebar-rename-actions">
-              <IconButton type="submit" aria-label="Save folder name" disabled={renameBusy}>
+              <IconButton
+                type="submit"
+                aria-label={t('connections.saveFolderName')}
+                disabled={renameBusy}
+              >
                 <Glyph name="check" size={18} />
               </IconButton>
               <IconButton
-                aria-label="Cancel rename"
+                aria-label={t('connections.cancelRename')}
                 onClick={() => setEditing(false)}
                 disabled={renameBusy}
               >
@@ -133,15 +140,15 @@ export function FolderRow({ folder, open, highlighted, onToggle, onAddItem }: Fo
               <span className="sidebar-row-actions-inner">
                 <IconButton
                   className="folder-add-button"
-                  aria-label={`Add item to ${folder.name}`}
-                  title="Add item"
+                  aria-label={t('common.addItemTo', { name: folder.name })}
+                  title={t('connections.addItem')}
                   onClick={onAddItem}
                 >
                   <Glyph name="add" size={16} />
                 </IconButton>
                 <IconButton
-                  aria-label={`Actions for ${folder.name}`}
-                  title="Folder actions"
+                  aria-label={t('common.actionsFor', { name: folder.name })}
+                  title={t('connections.folderActions')}
                   onClick={(event) => {
                     setAnchor(event.currentTarget)
                     setMenuOpen(true)
@@ -168,7 +175,7 @@ export function FolderRow({ folder, open, highlighted, onToggle, onAddItem }: Fo
             setEditing(true)
           }}
         >
-          Rename
+          {t('connections.rename')}
         </MenuItem>
         <MenuItem
           className="mobile-folder-create"
@@ -177,7 +184,7 @@ export function FolderRow({ folder, open, highlighted, onToggle, onAddItem }: Fo
             onAddItem()
           }}
         >
-          Create
+          {t('connections.create')}
         </MenuItem>
         <MenuItem
           onClick={() => {
@@ -185,15 +192,15 @@ export function FolderRow({ folder, open, highlighted, onToggle, onAddItem }: Fo
             setConfirmDelete(true)
           }}
         >
-          Delete folder
+          {t('connections.deleteFolder')}
         </MenuItem>
       </Menu>
       <DialogPresence>
         {confirmDelete && (
           <ConfirmDialog
-            title="Delete folder"
-            message={`Delete empty folder “${folder.name}”?`}
-            actionLabel="Delete"
+            title={t('connections.deleteFolder')}
+            message={t('connections.deleteFolder', { name: folder.name })}
+            actionLabel={t('connections.delete')}
             onClose={() => setConfirmDelete(false)}
             onConfirm={remove}
           />

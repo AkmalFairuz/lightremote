@@ -1,3 +1,5 @@
+import { useT } from '../../i18n/useT'
+import { LanguageSelector } from './LanguageSelector'
 import { useEffect, useState } from 'react'
 import { useColorScheme } from '@mui/material/styles'
 import { Link, useNavigate } from 'react-router-dom'
@@ -39,6 +41,8 @@ export function Header({
   recentConnections,
   onOpenRecentConnection,
 }: HeaderProps) {
+  const t = useT()
+
   const dispatch = useAppDispatch()
   const localMode = useAppSelector((state) => state.auth.localMode)
   const navigate = useNavigate()
@@ -176,7 +180,7 @@ export function Header({
     <header className="app-header" onDoubleClick={toggleWindowOnTitlebarDoubleClick}>
       <div className="header-left">
         <IconButton
-          aria-label="Toggle connections sidebar"
+          aria-label={t('shell.toggleConnectionsSidebar')}
           aria-controls="connections-sidebar"
           onClick={onToggleSidebar}
         >
@@ -186,48 +190,49 @@ export function Header({
           LightRemote
         </Link>
         {!isMacDesktop && (
-          <nav className="header-menus" aria-label="Application menus">
+          <nav className="header-menus" aria-label={t('shell.applicationMenus')}>
             <Button
-              aria-label="Open file actions"
+              aria-label={t('shell.openFileActions')}
               aria-haspopup="menu"
               aria-expanded={Boolean(fileAnchor)}
               onClick={(event) => toggleMenu('file', event.currentTarget)}
               endIcon={<Glyph name="keyboard-arrow-down" size={17} />}
             >
-              File
+              {t('shell.file')}
             </Button>
             <Button
-              aria-label="Open view settings"
+              aria-label={t('shell.openViewSettings')}
               aria-haspopup="menu"
               aria-expanded={Boolean(viewAnchor)}
               onClick={(event) => toggleMenu('view', event.currentTarget)}
               endIcon={<Glyph name="keyboard-arrow-down" size={17} />}
             >
-              View
+              {t('shell.view')}
             </Button>
             <Button
-              aria-label="Open help"
+              aria-label={t('shell.openHelp')}
               aria-haspopup="menu"
               aria-expanded={Boolean(helpAnchor)}
               onClick={(event) => toggleMenu('help', event.currentTarget)}
               endIcon={<Glyph name="keyboard-arrow-down" size={17} />}
             >
-              Help
+              {t('shell.help')}
             </Button>
             {!localMode && (
               <Button
-                aria-label="Open account"
+                aria-label={t('shell.openAccount')}
                 aria-haspopup="menu"
                 aria-expanded={Boolean(accountAnchor)}
                 onClick={(event) => toggleMenu('account', event.currentTarget)}
                 endIcon={<Glyph name="keyboard-arrow-down" size={17} />}
               >
-                Account
+                {t('shell.account')}
               </Button>
             )}
           </nav>
         )}
       </div>
+      <LanguageSelector />
       <WindowDragRegion />
       <WindowControls />
       <FileMenu

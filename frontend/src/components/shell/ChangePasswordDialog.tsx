@@ -1,3 +1,4 @@
+import { useT } from '../../i18n/useT'
 import { useState, type FormEvent } from 'react'
 import { useChangePasswordMutation } from '../../api/auth'
 import { useAppDispatch, useAppSelector } from '../../state/hooks'
@@ -17,6 +18,8 @@ import { clearDetachedRegistry } from '../workspace/detachedTabs'
 
 /** Changes the signed-in user's password in a dedicated account dialog. */
 export function ChangePasswordDialog({ onClose }: { onClose: () => void }) {
+  const t = useT()
+
   const dispatch = useAppDispatch()
   const userId = useAppSelector((state) => state.auth.user?.id ?? '')
   const [changePassword, { isLoading }] = useChangePasswordMutation()
@@ -45,32 +48,34 @@ export function ChangePasswordDialog({ onClose }: { onClose: () => void }) {
   return (
     <Dialog open onClose={onClose} fullWidth maxWidth="xs">
       <form onSubmit={save}>
-        <DialogTitle>Change password</DialogTitle>
+        <DialogTitle>{t('shell.changePassword')}</DialogTitle>
         <DialogContent className="dialog-fields">
           <Notice message={error} />
           {success && (
-            <Alert severity="success">Password changed. Other login sessions were revoked.</Alert>
+            <Alert severity="success">
+              {t('shell.passwordChangedOtherLoginSessionsWereRevoked')}
+            </Alert>
           )}
           <PasswordField
-            label="Current password"
+            label={t('shell.currentPassword')}
             autoComplete="current-password"
             required
             value={currentPassword}
             onChange={(event) => setCurrentPassword(event.target.value)}
           />
           <PasswordField
-            label="New password"
+            label={t('shell.newPassword')}
             autoComplete="new-password"
             required
             slotProps={{ htmlInput: { minLength: 6 } }}
             value={newPassword}
             onChange={(event) => setNewPassword(event.target.value)}
-            helperText="At least 6 characters."
+            helperText={t('shell.atLeast6Characters')}
           />
         </DialogContent>
         <DialogActions>
           <Button type="submit" variant="contained" disabled={isLoading}>
-            Change password
+            {t('shell.changePassword')}
           </Button>
         </DialogActions>
       </form>

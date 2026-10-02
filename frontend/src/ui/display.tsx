@@ -1,3 +1,5 @@
+import { translateMessage } from '../i18n'
+import { useLocale } from '../i18n/useLocale'
 import {
   Alert as MuiAlert,
   CircularProgress as MuiCircularProgress,
@@ -29,8 +31,13 @@ export function CircularProgress(props: CircularProgressProps) {
 }
 
 /** Shows an inline status or error message. */
-export function Alert({ className = '', ...props }: AlertProps) {
-  return <MuiAlert className={`ui-alert ${className}`} {...props} />
+export function Alert({ className = '', children, ...props }: AlertProps) {
+  const locale = useLocale()
+  return (
+    <MuiAlert className={`ui-alert ${className}`} {...props}>
+      {typeof children === 'string' ? translateMessage(children, locale) : children}
+    </MuiAlert>
+  )
 }
 
 /** Explains an action on hover or keyboard focus. */

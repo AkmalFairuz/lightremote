@@ -1,3 +1,6 @@
+import { useT } from '../../i18n/useT'
+import { nameCollator } from '../../i18n/format'
+import { useLocale } from '../../i18n/useLocale'
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react'
 import { useConnectionsQuery } from '../../api/resources'
 import type { Connection } from '../../types'
@@ -18,11 +21,16 @@ const kindIcons = {
 
 /** Finds saved connections without depending on the sidebar's current filter or expanded folders. */
 export function OpenConnectionDialog({ onClose, onOpen }: OpenConnectionDialogProps) {
+  const t = useT()
+
+  const locale = useLocale()
+
   const { data: connections, isLoading, isError } = useConnectionsQuery()
   const [search, setSearch] = useState('')
   const [highlightedIndex, setHighlightedIndex] = useState(0)
   const resultsRef = useRef<HTMLDivElement>(null)
   const matches = useMemo(() => {
+    const collator = nameCollator('base', locale)
     const query = search.trim().toLowerCase()
     return (connections ?? [])
       .filter((connection) =>
@@ -31,9 +39,10 @@ export function OpenConnectionDialog({ onClose, onOpen }: OpenConnectionDialogPr
           .includes(query),
       )
       .sort(
-        (left, right) => left.name.localeCompare(right.name) || left.host.localeCompare(right.host),
+        (left, right) =>
+          collator.compare(left.name, right.name) || collator.compare(left.host, right.host),
       )
-  }, [connections, search])
+  }, [connections, search, locale])
   const selectedIndex = Math.min(highlightedIndex, matches.length - 1)
 
   useEffect(() => {
@@ -66,14 +75,14 @@ export function OpenConnectionDialog({ onClose, onOpen }: OpenConnectionDialogPr
       fullWidth
     >
       <span id="open-connection-title" className="open-connection-accessible-label">
-        Open connection
+        {t('shell.openConnection')}
       </span>
       <DialogContent className="open-connection-content">
         <div className="open-connection-search-row">
           <TextField
             autoFocus
-            placeholder="Search connections"
-            aria-label="Search connections"
+            placeholder={t('shell.searchConnections')}
+            aria-label={t('shell.searchConnections')}
             value={search}
             onChange={(event) => {
               setSearch(event.target.value)
@@ -100,7 +109,7 @@ export function OpenConnectionDialog({ onClose, onOpen }: OpenConnectionDialogPr
               },
             }}
           />
-          <IconButton aria-label="Close open connection dialog" onClick={onClose}>
+          <IconButton aria-label={t('shell.closeOpenConnectionDialog')} onClick={onClose}>
             <Glyph name="close" size={20} />
           </IconButton>
         </div>
@@ -112,12 +121,12 @@ export function OpenConnectionDialog({ onClose, onOpen }: OpenConnectionDialogPr
           aria-label="Connections"
         >
           {isLoading ? (
-            <p className="open-connection-message">Loading connections…</p>
+            <p className="open-connection-message">{t('shell.loadingConnections')}</p>
           ) : isError ? (
-            <p className="open-connection-message">Could not load connections.</p>
+            <p className="open-connection-message">{t('shell.couldNotLoadConnections')}</p>
           ) : matches.length === 0 ? (
             <p className="open-connection-message">
-              {search.trim() ? 'No matching connections.' : 'No saved connections.'}
+              {search.trim() ? t('shell.noMatchingConnections') : t('shell.noSavedConnections')}
             </p>
           ) : (
             matches.map((connection, index) => (

@@ -1,3 +1,4 @@
+import { useT } from '../../i18n/useT'
 import { useMemo, useState } from 'react'
 import { CircularProgress, DialogPresence, IconButton, InputAdornment, TextField } from '../../ui'
 import { useConnectionsQuery, useFoldersQuery } from '../../api/resources'
@@ -77,6 +78,8 @@ function filterSidebarItems(folders: Folder[], connections: Connection[], query:
 }
 
 export function Sidebar({ onOpenConnection, onNotice }: SidebarProps) {
+  const t = useT()
+
   const { data: folderData, isLoading: foldersLoading } = useFoldersQuery()
   const { data: connectionData, isLoading: connectionsLoading } = useConnectionsQuery()
   const folders = folderData ?? emptyFolders
@@ -131,8 +134,8 @@ export function Sidebar({ onOpenConnection, onNotice }: SidebarProps) {
         <div className="sidebar-toolbar">
           <div className="sidebar-filter">
             <TextField
-              placeholder="Filter"
-              aria-label="Filter folders and connections"
+              placeholder={t('shell.filter')}
+              aria-label={t('shell.filterFoldersAndConnections')}
               value={search}
               onChange={(event) => setSearch(event.target.value)}
               slotProps={{
@@ -148,8 +151,8 @@ export function Sidebar({ onOpenConnection, onNotice }: SidebarProps) {
           </div>
           <div className="sidebar-tools">
             <IconButton
-              aria-label="Add folder or connection"
-              title="Add folder or connection"
+              aria-label={t('shell.addFolderOrConnection')}
+              title={t('shell.addFolderOrConnection')}
               onClick={() => setAddTarget('root')}
             >
               <Glyph name="add" size={17} />
@@ -160,7 +163,7 @@ export function Sidebar({ onOpenConnection, onNotice }: SidebarProps) {
           ref={treeRef}
           className="sidebar-tree"
           role="tree"
-          aria-label="Folders and connections"
+          aria-label={t('connections.foldersAndConnections')}
           onDragOver={(event) => drag.over(event, null)}
           onDrop={(event) => drag.drop(event, null)}
         >
@@ -216,14 +219,14 @@ export function Sidebar({ onOpenConnection, onNotice }: SidebarProps) {
                     onDragOver={(event) => drag.over(event, null)}
                     onDrop={(event) => drag.drop(event, null)}
                   >
-                    Move to root
+                    {t('connections.moveToRoot')}
                   </div>
                 )}
                 {!query && folders.length === 0 && connections.length === 0 && (
-                  <p className="sidebar-empty">Add a connection to get started.</p>
+                  <p className="sidebar-empty">{t('connections.addAConnectionToGetStarted')}</p>
                 )}
                 {query && visibleFolders.length === 0 && visibleConnections.length === 0 && (
-                  <p className="sidebar-empty">No matching folders or connections.</p>
+                  <p className="sidebar-empty">{t('connections.noMatchingFoldersOrConnections')}</p>
                 )}
               </>
             )}

@@ -40,7 +40,7 @@ body.desktop-app .account-popover.MuiPaper-root {
 
 .file-popover .file-menu-shortcut {
   flex-shrink: 0;
-  margin-left: auto;
+  margin-inline-start: auto;
   color: var(--lr-muted);
   font-size: 11px;
 }
@@ -87,5 +87,5 @@ body.desktop-app .account-popover.MuiPaper-root {
 .file-popover .MuiMenuItem-root > svg:last-child,
 .view-popover .MuiMenuItem-root > svg:last-child,
 .view-submenu .MuiMenuItem-root > svg:last-child {
-  margin-left: auto;
+  margin-inline-start: auto;
 }

@@ -57,7 +57,7 @@
   border-radius: 7px;
   background: transparent;
   color: var(--lr-text);
-  text-align: left;
+  text-align: start;
 }
 
 .open-connection-result > svg {

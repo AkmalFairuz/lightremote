@@ -1,3 +1,5 @@
+import { useT } from '../../i18n/useT'
+import { useLocale } from '../../i18n/useLocale'
 import { ListItemIcon, MenuItem, MenuList, Popover } from '@mui/material'
 import { Glyph } from '../common/Glyph'
 import { desktopRuntime } from '../../desktop/runtime'
@@ -9,17 +11,21 @@ interface HelpMenuProps {
 }
 
 export function HelpMenu({ anchorEl, onClose, onAbout }: HelpMenuProps) {
+  const t = useT()
+
+  const rtl = useLocale() === 'ar'
+
   return (
     <Popover
       open={Boolean(anchorEl)}
       anchorEl={anchorEl}
       onClose={onClose}
       disableEnforceFocus
-      anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
-      transformOrigin={{ vertical: 'top', horizontal: 'left' }}
+      anchorOrigin={{ vertical: 'bottom', horizontal: rtl ? 'right' : 'left' }}
+      transformOrigin={{ vertical: 'top', horizontal: rtl ? 'right' : 'left' }}
       slotProps={{ paper: { className: 'help-popover' } }}
     >
-      <MenuList dense aria-label="Help links">
+      <MenuList dense aria-label={t('shell.helpLinks')}>
         <MenuItem
           onClick={() => {
             onClose()
@@ -29,7 +35,7 @@ export function HelpMenu({ anchorEl, onClose, onAbout }: HelpMenuProps) {
           <ListItemIcon>
             <Glyph name="info-outline" size={17} />
           </ListItemIcon>
-          About LightRemote
+          {t('shell.aboutLightremote')}
         </MenuItem>
         <MenuItem
           component="a"
@@ -47,7 +53,7 @@ export function HelpMenu({ anchorEl, onClose, onAbout }: HelpMenuProps) {
           <ListItemIcon>
             <Glyph name="code" size={17} />
           </ListItemIcon>
-          Source Code
+          {t('shell.sourceCode')}
         </MenuItem>
       </MenuList>
     </Popover>
