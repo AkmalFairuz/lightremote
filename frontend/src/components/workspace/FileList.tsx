@@ -27,6 +27,7 @@ interface FileListProps {
   loading: boolean
   loadingLabel: string
   showEmpty: boolean
+  emptyMessage?: string
   sort: FileSort
   onSort: (field: FileSortField) => void
   selectedPaths: ReadonlySet<string>
@@ -57,6 +58,7 @@ export function FileList({
   loading,
   loadingLabel,
   showEmpty,
+  emptyMessage = 'This folder is empty.',
   sort,
   onSort,
   selectedPaths,
@@ -82,8 +84,9 @@ export function FileList({
   }))
   const [activePaths, setActivePaths] = useState<ReadonlySet<string>>(() => new Set())
   const eligibleCount = useMemo(
-    () => entries.reduce((count, entry) => count + Number(!isDriveRoot(entry.path)), 0),
-    [entries],
+    () =>
+      selecting ? entries.reduce((count, entry) => count + Number(!isDriveRoot(entry.path)), 0) : 0,
+    [entries, selecting],
   )
   const selectedCount = useMemo(
     () =>
@@ -287,7 +290,7 @@ export function FileList({
         </div>
       )}
       {!loading && showEmpty && entries.length === 0 && (
-        <p className="files-empty">This folder is empty.</p>
+        <p className="files-empty">{emptyMessage}</p>
       )}
       {!loading && (
         <div className="files-rows" role="rowgroup" style={{ height: entries.length * rowHeight }}>

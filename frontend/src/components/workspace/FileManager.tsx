@@ -7,6 +7,7 @@ import { Glyph } from '../common/Glyph'
 import { FileList, type FileScrollPosition } from './FileList'
 import { FileEditor } from './FileEditor'
 import { FileToolbar } from './FileToolbar'
+import { FileSearch } from './FileSearch'
 import { FileTransfer, type Transfer } from './FileTransfer'
 import { recordTransferProgress } from './transferProgress'
 import { sortFileEntries, type FileSort, type FileSortField } from './fileSort'
@@ -24,6 +25,13 @@ import { desktopRuntime } from '../../desktop/runtime'
 interface Notice {
   id: string
   message: string
+}
+
+interface DirectorySearch {
+  scope: string
+  query: string
+  regex: boolean
+  scrollPositions: Map<string, FileScrollPosition>
 }
 
 const transferNamespace = Math.random().toString(36).slice(2)
@@ -55,6 +63,15 @@ export function FileManager({
   const [sort, setSort] = useState<FileSort>({ field: 'name', direction: 'asc' })
   const sortedEntries = useMemo(() => sortFileEntries(entries, sort), [entries, sort])
   const selectionScope = `${connectionId}\0${path ?? ''}`
+  const [search, setSearch] = useState<DirectorySearch>(() => ({
+    scope: selectionScope,
+    query: '',
+    regex: false,
+    scrollPositions: new Map(),
+  }))
+  if (search.scope !== selectionScope) {
+    setSearch({ ...search, scope: selectionScope, query: '', scrollPositions: new Map() })
+  }
   const [selecting, setSelecting] = useState(false)
   const [selection, setSelection] = useState<{ scope: string; paths: Set<string> }>(() => ({
     scope: selectionScope,
@@ -64,20 +81,49 @@ export function FileManager({
     setSelecting(false)
     setSelection({ scope: selectionScope, paths: new Set() })
   }
-  const visibleEntries = loadedPath === path ? sortedEntries : emptyEntries
-  const availablePaths = useMemo(
-    () => new Set(visibleEntries.map((entry) => entry.path)),
-    [visibleEntries],
+  const directoryEntries = loadedPath === path ? sortedEntries : emptyEntries
+  // Normalize filenames once per listing, rather than allocating strings on every keystroke.
+  const searchNames = useMemo(
+    () => directoryEntries.map((entry) => entry.name.toLowerCase()),
+    [directoryEntries],
   )
-  const selectedPaths = useMemo(
-    () =>
-      new Set(
-        selection.scope === selectionScope
-          ? [...selection.paths].filter((entryPath) => availablePaths.has(entryPath))
-          : [],
-      ),
-    [selection, selectionScope, availablePaths],
-  )
+  const searchPattern = useMemo(() => {
+    if (!search.query || !search.regex) return { pattern: null, error: null }
+    try {
+      return { pattern: new RegExp(search.query, 'i'), error: null }
+    } catch {
+      return { pattern: null, error: 'Invalid regular expression.' }
+    }
+  }, [search.query, search.regex])
+  const visibleEntries = useMemo(() => {
+    if (!search.query) return directoryEntries
+    if (searchPattern.error) return emptyEntries
+    const matches: FileEntry[] = []
+    if (searchPattern.pattern) {
+      for (const entry of directoryEntries) {
+        if (searchPattern.pattern.test(entry.name)) matches.push(entry)
+      }
+    } else {
+      const query = search.query.toLowerCase()
+      for (let index = 0; index < searchNames.length; index += 1) {
+        if (searchNames[index].includes(query)) matches.push(directoryEntries[index])
+      }
+    }
+    return matches
+  }, [directoryEntries, search.query, searchNames, searchPattern])
+  // Filtered views get temporary positions so they never overwrite the full directory's scroll.
+  const listKey = search.query
+    ? JSON.stringify([selectionScope, search.query, search.regex])
+    : selectionScope
+  const selectedPaths = useMemo(() => {
+    const paths = new Set<string>()
+    if (selection.scope === selectionScope && selection.paths.size > 0) {
+      for (const entry of visibleEntries) {
+        if (selection.paths.has(entry.path)) paths.add(entry.path)
+      }
+    }
+    return paths
+  }, [selection, selectionScope, visibleEntries])
   const selectedEntries = useMemo(
     () =>
       selectedPaths.size
@@ -101,6 +147,12 @@ export function FileManager({
     | null
   >(null)
   const dragDepth = useRef(0)
+
+  function updateSearch(query: string, regex: boolean) {
+    if (busy || (query === search.query && regex === search.regex)) return
+    setSearch({ scope: selectionScope, query, regex, scrollPositions: new Map() })
+    setSelection({ scope: selectionScope, paths: new Set() })
+  }
 
   function selectEntry(entry: FileEntry, selected: boolean) {
     setSelection((current) => {
@@ -453,19 +505,34 @@ export function FileManager({
               onStartSelection={() => setSelecting(true)}
             />
           )}
+          <FileSearch
+            query={search.query}
+            regex={search.regex}
+            error={searchPattern.error}
+            disabled={busy || path === null}
+            onQueryChange={(query) => updateSearch(query, search.regex)}
+            onRegexChange={(regex) => updateSearch(search.query, regex)}
+          />
           {error && (
             <div className="files-error" role="alert">
               {error}
             </div>
           )}
           <FileList
-            directoryKey={selectionScope}
-            scrollPositions={scrollPositions}
+            directoryKey={listKey}
+            scrollPositions={search.query ? search.scrollPositions : scrollPositions}
             hideActions={kind === 'vnc' && path === '/'}
             entries={visibleEntries}
             loading={loading || (!error && (path === null || loadedPath !== path))}
             loadingLabel={path === null ? 'Finding home directory…' : 'Loading files…'}
             showEmpty={path !== null && loadedPath === path && !error}
+            emptyMessage={
+              searchPattern.error
+                ? 'Correct the regular expression to search.'
+                : search.query && directoryEntries.length > 0
+                  ? 'No matching files or folders.'
+                  : 'This folder is empty.'
+            }
             sort={sort}
             onSort={toggleSort}
             selecting={selecting}
@@ -501,7 +568,10 @@ export function FileManager({
             </div>
           )}
           <div className="files-footer">
-            {loadedPath === path ? entries.length : 0} items {busy && '· Working…'}
+            {search.query
+              ? `${visibleEntries.length} of ${directoryEntries.length} items`
+              : `${directoryEntries.length} items`}{' '}
+            {busy && '· Working…'}
           </div>
         </>
       )}
