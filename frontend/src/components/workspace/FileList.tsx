@@ -1,6 +1,7 @@
 import {
   useCallback,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -13,8 +14,14 @@ import { isDriveRoot } from '../../utils/remoteFilePath'
 import { FileRow } from './FileRow'
 import type { FileSort, FileSortField } from './fileSort'
 
+export interface FileScrollPosition {
+  top: number
+  left: number
+}
+
 interface FileListProps {
   directoryKey: string
+  scrollPositions: Map<string, FileScrollPosition>
   hideActions?: boolean
   entries: FileEntry[]
   loading: boolean
@@ -44,6 +51,7 @@ const columnLabels = { name: 'Name', size: 'Size', modTime: 'Modified' }
 
 export function FileList({
   directoryKey,
+  scrollPositions,
   hideActions = false,
   entries,
   loading,
@@ -67,7 +75,11 @@ export function FileList({
   const selectAllRef = useRef<HTMLInputElement>(null)
   const [widths, setWidths] = useState<Record<FileSortField, number | null>>(defaultWidths)
   const resize = useRef<{ field: FileSortField; x: number; width: number } | null>(null)
-  const [viewport, setViewport] = useState({ directoryKey, top: 0, height: 400 })
+  const [viewport, setViewport] = useState(() => ({
+    directoryKey,
+    top: scrollPositions.get(directoryKey)?.top ?? 0,
+    height: 400,
+  }))
   const [activePaths, setActivePaths] = useState<ReadonlySet<string>>(() => new Set())
   const eligibleCount = useMemo(
     () => entries.reduce((count, entry) => count + Number(!isDriveRoot(entry.path)), 0),
@@ -90,11 +102,22 @@ export function FileList({
     if (selectAllRef.current) selectAllRef.current.indeterminate = selectedCount > 0 && !allSelected
   }, [allSelected, selectedCount, selecting])
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const list = listRef.current
-    if (!list) return
+    // Loading removes the rows and clamps scroll offsets, so only track a ready list.
+    if (!list || loading || (entries.length === 0 && !showEmpty)) return
     let frame = 0
+    let restored = false
     const measure = () => {
+      // Hidden tabs must wait until their scroll container has a viewport again.
+      if (list.clientHeight === 0) return
+      if (!restored) {
+        restored = true
+        const position = scrollPositions.get(directoryKey)
+        list.scrollTop = position?.top ?? 0
+        list.scrollLeft = position?.left ?? 0
+      }
+      scrollPositions.set(directoryKey, { top: list.scrollTop, left: list.scrollLeft })
       cancelAnimationFrame(frame)
       frame = requestAnimationFrame(() => {
         const top = list.scrollTop
@@ -115,7 +138,7 @@ export function FileList({
       observer.disconnect()
       list.removeEventListener('scroll', measure)
     }
-  }, [directoryKey])
+  }, [directoryKey, entries.length, loading, scrollPositions, showEmpty])
 
   const keepRowMounted = useCallback((path: string, active: boolean) => {
     setActivePaths((current) => {
@@ -135,7 +158,9 @@ export function FileList({
     [activePaths, entries],
   )
   const scrollTop = Math.min(
-    viewport.directoryKey === directoryKey ? viewport.top : 0,
+    viewport.directoryKey === directoryKey
+      ? viewport.top
+      : (scrollPositions.get(directoryKey)?.top ?? 0),
     Math.max(0, headerHeight + entries.length * rowHeight - viewport.height),
   )
   const first = Math.min(

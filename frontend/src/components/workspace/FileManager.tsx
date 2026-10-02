@@ -4,7 +4,7 @@ import { Alert, DialogPresence, IconButton, Snackbar, Tooltip } from '../../ui'
 import { errorMessage, type ConnectionKind, type FileEntry } from '../../types'
 import { ConfirmDialog, TextPromptDialog } from '../common/ActionDialogs'
 import { Glyph } from '../common/Glyph'
-import { FileList } from './FileList'
+import { FileList, type FileScrollPosition } from './FileList'
 import { FileEditor } from './FileEditor'
 import { FileToolbar } from './FileToolbar'
 import { FileTransfer, type Transfer } from './FileTransfer'
@@ -51,6 +51,7 @@ export function FileManager({
   const { path, entries, loadedPath, loading, error, setError, changePath, load } =
     useRemoteDirectory({ connectionId, kind, active, initialPath, onPathChange })
   const currentPath = path ?? '/'
+  const [scrollPositions] = useState(() => new Map<string, FileScrollPosition>())
   const [sort, setSort] = useState<FileSort>({ field: 'name', direction: 'asc' })
   const sortedEntries = useMemo(() => sortFileEntries(entries, sort), [entries, sort])
   const selectionScope = `${connectionId}\0${path ?? ''}`
@@ -459,6 +460,7 @@ export function FileManager({
           )}
           <FileList
             directoryKey={selectionScope}
+            scrollPositions={scrollPositions}
             hideActions={kind === 'vnc' && path === '/'}
             entries={visibleEntries}
             loading={loading || (!error && (path === null || loadedPath !== path))}
