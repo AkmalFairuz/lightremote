@@ -6,7 +6,7 @@ info:
   productIdentifier: com.akmalfairuz.lightremote
   description: Remote desktop and file workspace
   copyright: (c) 2026, AkmalFairuz
-  version: 0.1.0
+  version: 0.2.0
 
 dev_mode:
   root_path: .

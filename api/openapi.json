@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "LightRemote API",
-    "version": "0.1.0",
+    "version": "0.2.0",
     "description": "Browser-facing API for SSH, Telnet, VNC, SFTP, FTP, and FTPS connections. With LOCAL_MODE=true, the server uses one local owner and does not register setup, login, logout, password, or user-management endpoints."
   },
   "servers": [
