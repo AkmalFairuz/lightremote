@@ -5,6 +5,10 @@ WORKDIR /src/frontend
 COPY frontend/package.json frontend/package-lock.json ./
 RUN --mount=type=cache,target=/root/.npm npm ci
 COPY frontend/ ./
+COPY version.txt /src/version.txt
+COPY scripts/version.mjs /src/scripts/version.mjs
+COPY build/ /src/build/
+COPY api/openapi.json /src/api/openapi.json
 ENV VITE_DESKTOP=false
 RUN npm run build
 

@@ -134,7 +134,7 @@ validates the plist, architecture, signature, background, and mounted disk
 image contents before upload. Windows and Linux jobs package the compiled
 executable in a `.tar.gz`, and Windows jobs also provide a direct `.exe` download.
 Pull request and branch builds upload Actions artifacts with a 14-day retention
-period. Tag and release builds automatically attach desktop downloads and
+period. Release commits, tag pushes, and release builds automatically attach desktop downloads and
 [browser-mode bundles](browser-release.md) for each platform and architecture
 using a GitHub release action. A tag push creates the release if it does not
 already exist; published releases receive the assets on the existing release.
@@ -151,3 +151,33 @@ Windows also displays a startup-error dialog. For startup failures, read the
 log and check the vault key, database access, and native WebView dependencies.
 Windows needs WebView2. Restore the original vault key when startup reports a
 missing key beside existing data.
+
+## Versioning and automatic releases
+
+The root [`version.txt`](../version.txt) is the version source. Store a stable
+version without the `v` prefix, for example `0.1.0`. The About dialog reads this
+file directly. Frontend builds and development startup synchronize the macOS,
+Windows, Wails, and OpenAPI version metadata from it. You can also run
+`node scripts/version.mjs` manually; the other version fields are generated
+metadata and should not be edited independently.
+
+To publish a release, update `version.txt`, run `node scripts/version.mjs`,
+and include those changes in a commit whose subject is exactly:
+
+```text
+[release] v0.1.0
+```
+
+Push that commit as the tip of `master`. The workflow checks that the subject's
+version matches `version.txt`, builds all desktop and browser downloads, then
+creates the `v0.1.0` tag at that commit and publishes the GitHub release as
+**Latest** with generated release notes. Failed builds do not publish a release.
+A tag already pointing to a different commit causes publishing to fail.
+Ordinary commits and release messages on other branches do not create releases.
+Only the head commit of a push is inspected; use the release subject on the
+final squash or merge commit when applicable.
+
+The workflow then calls the Docker publishing workflow directly to publish the
+version tag and `latest` image. This uses the built-in `GITHUB_TOKEN`; no personal
+access token is needed. The direct call is necessary because tags and releases
+created with `GITHUB_TOKEN` do not trigger other workflows.

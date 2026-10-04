@@ -1,5 +1,5 @@
 import { useT } from '../../i18n/useT'
-import { version } from '../../../package.json'
+import version from '../../../../version.txt?raw'
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle } from '../../ui'
 
 export function AboutDialog({ onClose }: { onClose: () => void }) {
@@ -10,7 +10,7 @@ export function AboutDialog({ onClose }: { onClose: () => void }) {
       <DialogTitle id="about-dialog-title">{t('shell.aboutLightremote')}</DialogTitle>
       <DialogContent>
         <p>
-          {t('shell.version')} {version}
+          {t('shell.version')} {version.trim()}
         </p>
         <p>{t('shell.remoteDesktopAndFileWorkspace')}</p>
       </DialogContent>

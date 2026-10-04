@@ -117,7 +117,9 @@ the API origin. Leave it unset to retain API-only operation.
 
 [The Docker workflow](../.github/workflows/docker-build.yml) builds both Linux
 platforms on pull requests and pushes to `master`, without logging into GHCR
-or publishing images. Publishing a GitHub release builds the release's commit
+or publishing images. An automatic `[release] vX.Y.Z` commit release calls the
+Docker publishing workflow after the downloads are published. Publishing a
+GitHub release manually also builds the release's commit
 and pushes to `ghcr.io/<lowercase-owner>/<lowercase-repository>` using
 `GITHUB_TOKEN` and release-job-only `packages: write` permission.
 
